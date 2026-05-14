@@ -208,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppSidebar from '../components/layout/AppSidebar.vue'
 import AppTopbar from '../components/layout/AppTopbar.vue'
@@ -289,6 +289,19 @@ const categoryLabel = computed(() => {
 })
 const draftLabel = computed(() => (isEditMode.value ? 'Editing' : 'Creating'))
 
+function resetEditorState() {
+  editingLocalDraft.value = false
+  form.id = 0
+  form.title = ''
+  form.summary = ''
+  form.content = ''
+  form.categoryId = 2
+  form.status = 0
+  sourceTicket.value = null
+  feedbackMessage.value = ''
+  feedbackTraceId.value = ''
+}
+
 async function loadInitialArticle() {
   if (!canManage.value) {
     feedbackMessage.value = '当前账号只有阅读权限，不能新建或编辑知识文章。'
@@ -296,6 +309,7 @@ async function loadInitialArticle() {
     return
   }
 
+  resetEditorState()
   const id = Number(route.params.id)
   if (!id) {
     applyTicketSeed()
@@ -455,6 +469,13 @@ async function saveArticle(status: number) {
 onMounted(() => {
   loadInitialArticle()
 })
+
+watch(
+  () => [route.path, route.params.id, route.query.from].join('|'),
+  () => {
+    loadInitialArticle()
+  },
+)
 </script>
 
 <style scoped>

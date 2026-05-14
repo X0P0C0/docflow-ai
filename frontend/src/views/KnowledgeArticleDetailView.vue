@@ -521,19 +521,22 @@ async function loadArticle() {
   loading.value = true
   errorMessage.value = ''
   errorTraceId.value = ''
+  showAiSummary.value = true
+  activeParagraphIndex.value = 0
+  pinSourceTicketSummary.value = false
+  showSourceCommentPreview.value = false
+  showSourceTimelinePreview.value = false
 
   try {
     const localDraft = getKnowledgeDraft(id)
     if (localDraft) {
       article.value = attachArticleSourceTicket(localDraft)
-      activeParagraphIndex.value = 0
       await loadSourceTicketSummary()
       await loadRelatedArticles()
       return
     }
 
     article.value = attachArticleSourceTicket(await fetchKnowledgeArticleDetail(id))
-    activeParagraphIndex.value = 0
     await loadSourceTicketSummary()
     await loadRelatedArticles()
   } catch (error) {
@@ -771,6 +774,13 @@ function toggleAiSummary() {
 onMounted(() => {
   loadArticle()
 })
+
+watch(
+  () => route.params.id,
+  () => {
+    loadArticle()
+  },
+)
 </script>
 
 <style scoped>

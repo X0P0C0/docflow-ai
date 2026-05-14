@@ -1281,6 +1281,14 @@ onMounted(async () => {
 })
 
 watch(
+  () => route.params.id,
+  async () => {
+    await loadTicket()
+    await focusKnowledgeContext()
+  },
+)
+
+watch(
   () => route.fullPath,
   async () => {
     await focusKnowledgeContext()

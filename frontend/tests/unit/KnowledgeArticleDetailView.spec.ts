@@ -1,4 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getKnowledgeDraft, saveKnowledgeDraft } from '../../src/mock/knowledgeDrafts'
 import { createLocalTicket } from '../../src/mock/ticketWorkspace'
@@ -27,12 +28,12 @@ const {
   canManageState: { value: true },
 }))
 
-const route = {
+const route = reactive({
   path: '/knowledge/articles/501',
   params: { id: '501' },
   query: {},
   fullPath: '/knowledge/articles/501',
-}
+})
 
 vi.mock('vue-router', () => ({
   RouterLink: {
@@ -590,5 +591,33 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('当前还没有版本记录。')
     expect(wrapper.findAll('button.version-action')).toHaveLength(0)
     expect(wrapper.text()).toContain('当前筛选下还没有可展示的相关文章')
+  })
+
+  it('reloads article content when navigating to another knowledge detail route in the same component', async () => {
+    fetchKnowledgeArticleDetail
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 501,
+        title: '支付回调失败排查手册',
+      }))
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 602,
+        title: '订单回调常见问题',
+        summary: '切换路由后应重新加载新的文章内容。',
+      }))
+    fetchKnowledgeArticles.mockResolvedValue([])
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+
+    assignRouteState(route, {
+      path: '/knowledge/articles/602',
+      params: { id: '602' },
+      query: {},
+      fullPath: '/knowledge/articles/602',
+    })
+    await flushPromises()
+
+    expect(fetchKnowledgeArticleDetail).toHaveBeenNthCalledWith(2, 602)
+    expect(wrapper.text()).toContain('订单回调常见问题')
+    expect(wrapper.text()).toContain('切换路由后应重新加载新的文章内容。')
   })
 })

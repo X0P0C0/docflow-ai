@@ -1,4 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authState } from '../../src/auth'
 import { consumeKnowledgeDraftSeed, saveKnowledgeDraftSeed } from '../../src/utils/knowledgeFromTicket'
@@ -16,11 +17,11 @@ const { push, createKnowledgeArticle, updateKnowledgeArticle, fetchKnowledgeArti
   isDemoMode: vi.fn(),
 }))
 
-const route = {
+const route = reactive({
   path: '/knowledge/articles/create',
   params: {},
   query: {},
-}
+})
 
 vi.mock('vue-router', () => ({
   useRoute: () => route,
@@ -200,6 +201,44 @@ describe('KnowledgeArticleEditorView', () => {
     expect(wrapper.text()).toContain('工单 TK-701 已关闭，已经帮你带出沉淀草稿和关闭备注。')
     expect(wrapper.text()).toContain('来源工单：TK-701 · 支付回调失败')
     expect(consumeKnowledgeDraftSeed()).toBeNull()
+  })
+
+  it('resets the form when navigating from edit mode back to create mode without a seed', async () => {
+    assignRouteState(route, {
+      path: '/knowledge/articles/66/edit',
+      params: { id: '66' },
+      query: {},
+    })
+    fetchKnowledgeArticleDetail.mockResolvedValue({
+      id: 66,
+      title: '远程知识文章标题',
+      summary: '远程知识文章摘要',
+      content: '远程知识文章正文，包含处理步骤和结论。',
+      categoryId: 3,
+      status: 0,
+      sourceTicketId: null,
+      createTime: '2026-05-14T09:00:00',
+      updateTime: '2026-05-14T10:00:00',
+      publishTime: null,
+      authorName: '知识管理员',
+      statusLabel: '草稿',
+      viewCount: 0,
+      likeCount: 0,
+      collectCount: 0,
+    })
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+
+    assignRouteState(route, {
+      path: '/knowledge/articles/create',
+      params: {},
+      query: {},
+    })
+    await flushPromises()
+
+    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.findAll('textarea')[0].element as HTMLTextAreaElement).value).toBe('')
+    expect((wrapper.find('.editor-textarea').element as HTMLTextAreaElement).value).toBe('')
   })
 
   it('falls back to a local draft for 5xx save failures', async () => {
