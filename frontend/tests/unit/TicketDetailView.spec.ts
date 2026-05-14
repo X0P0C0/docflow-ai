@@ -144,6 +144,41 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).not.toContain('支付回调接口偶发超时')
   })
 
+  it('clears stale comment error state when switching to another ticket route', async () => {
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+      }))
+    fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])
+    addTicketComment.mockRejectedValue(Object.assign(new Error('评论内容涉嫌敏感信息，无法提交'), {
+      status: 403,
+      traceId: 'trace-comment-403',
+    }))
+
+    const wrapper = await mountTicketDetailView()
+
+    await wrapper.find('form.ticket-form textarea').setValue('请帮我同步用户手机号和支付订单号。')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+    await flushPromises()
+    expect(wrapper.text()).toContain('评论内容涉嫌敏感信息，无法提交')
+
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二张工单')
+    expect(wrapper.text()).not.toContain('评论内容涉嫌敏感信息，无法提交')
+  })
+
   it('shows the new remote comment and resets the form after a successful submission', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])

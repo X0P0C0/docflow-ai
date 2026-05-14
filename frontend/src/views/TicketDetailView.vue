@@ -983,6 +983,21 @@ function syncAssignForm(data: TicketDetailApiItem | null) {
   assignForm.value.assigneeUserId = data?.assigneeUserId ?? 0
 }
 
+function resetTransientDetailState() {
+  commentError.value = ''
+  statusError.value = ''
+  assignError.value = ''
+  commentErrorTraceId.value = ''
+  statusErrorTraceId.value = ''
+  assignErrorTraceId.value = ''
+  commentForm.value.content = ''
+  commentForm.value.commentType = 1
+  commentForm.value.internal = false
+  statusForm.value.remark = ''
+  assignForm.value.remark = ''
+  activeCommentFilter.value = 'all'
+}
+
 async function loadAssignableUsers() {
   if (!canAssignCurrentTicket.value) {
     assigneeOptions.value = []
@@ -1014,9 +1029,10 @@ async function loadTicket() {
   remoteTicket.value = null
   remoteSourceKnowledgeArticles.value = []
   linkedKnowledgeArticles.value = []
+  resetTransientDetailState()
   const id = Number(route.params.id)
   if (!id) {
-    topErrorMessage.value = '工单 ID 不合法'
+      topErrorMessage.value = '工单 ID 不合法'
     topErrorTraceId.value = ''
     successMessage.value = ''
     return
