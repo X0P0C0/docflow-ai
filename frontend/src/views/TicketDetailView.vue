@@ -1257,6 +1257,9 @@ async function submitStatusUpdate() {
       syncStatusForm()
       successMessage.value = buildStatusSuccessMessage(statusForm.value.status, true)
       await loadLinkedKnowledgeArticles()
+      if (requestId !== statusUpdateRequestId) {
+        return
+      }
       if (shouldSuggestKnowledgeCapture) {
         await createKnowledgeDraft({
           origin: 'ticket-close',
@@ -1282,6 +1285,9 @@ async function submitStatusUpdate() {
     syncAssignForm(data)
     successMessage.value = buildStatusSuccessMessage(statusForm.value.status, false)
     await loadLinkedKnowledgeArticles()
+    if (requestId !== statusUpdateRequestId) {
+      return
+    }
     if (shouldSuggestKnowledgeCapture) {
       await createKnowledgeDraft({
         origin: 'ticket-close',

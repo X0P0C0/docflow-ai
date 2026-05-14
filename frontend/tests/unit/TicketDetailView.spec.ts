@@ -827,6 +827,52 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).not.toContain('当前处理人：林哲')
   })
 
+  it('does not continue into ticket-close knowledge capture after switching to another ticket', async () => {
+    let resolveStatusUpdate: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+        status: 3,
+        statusLabel: '已解决',
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+        status: 3,
+        statusLabel: '已解决',
+      }))
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    updateTicketStatus.mockImplementation(() => new Promise((resolve) => {
+      resolveStatusUpdate = resolve as typeof resolveStatusUpdate
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    const statusForm = wrapper.findAll('form.ticket-form')[2]
+    await statusForm.find('select').setValue('4')
+    await statusForm.find('textarea').setValue('关闭前准备沉淀知识')
+    await statusForm.trigger('submit.prevent')
+
+    resolveStatusUpdate?.(createTicketDetailFixture({
+      id: 101,
+      title: '第一张工单',
+      status: 4,
+      statusLabel: '已关闭',
+    }))
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二张工单')
+    expect(createTicketKnowledgeDraft).not.toHaveBeenCalled()
+    expect(push).not.toHaveBeenCalledWith('/knowledge/articles/501/edit?from=ticket-close')
+  })
+
   it('validates empty comment submission before calling the api', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])
