@@ -519,4 +519,36 @@ describe('KnowledgeArticleEditorView', () => {
 
     expect(push).toHaveBeenCalledWith('/knowledge/articles/902')
   })
+
+  it('ignores a stale save result after navigating away during the first save request', async () => {
+    let resolveCreate: ((value: { id: number; title: string; summary: string; content: string; categoryId: number; status: number }) => void) | null = null
+    createKnowledgeArticle.mockImplementation(() => new Promise((resolve) => {
+      resolveCreate = resolve as typeof resolveCreate
+    }))
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+    await fillRequiredFields(wrapper)
+
+    await wrapper.find('button.ghost-button').trigger('click')
+
+    assignRouteState(route, {
+      path: '/knowledge/articles/create',
+      params: {},
+      query: {},
+    })
+    await flushPromises()
+
+    resolveCreate?.({
+      id: 999,
+      title: '支付回调失败排查手册',
+      summary: '',
+      content: '先检查签名配置，再检查回调地址连通性和幂等控制键，最后对照日志链路逐步排查。',
+      categoryId: 2,
+      status: 0,
+    })
+    await flushPromises()
+
+    expect(push).not.toHaveBeenCalledWith('/knowledge/articles/999')
+    expect((wrapper.find('input[type=\"text\"]').element as HTMLInputElement).value).toBe('')
+  })
 })

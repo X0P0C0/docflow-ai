@@ -241,6 +241,7 @@ const feedbackTraceId = ref('')
 const submitting = ref(false)
 const editingLocalDraft = ref(false)
 let editorLoadRequestId = 0
+let editorSaveRequestId = 0
 const isEditMode = computed(() => route.path.includes('/edit'))
 const canManage = computed(() => canManageKnowledgeArticles())
 const sourceTicket = ref<KnowledgeSourceTicketLink | null>(null)
@@ -291,7 +292,9 @@ const categoryLabel = computed(() => {
 const draftLabel = computed(() => (isEditMode.value ? 'Editing' : 'Creating'))
 
 function resetEditorState() {
+  editorSaveRequestId += 1
   editingLocalDraft.value = false
+  submitting.value = false
   form.id = 0
   form.title = ''
   form.summary = ''
@@ -434,6 +437,7 @@ async function saveArticle(status: number) {
   }
 
   submitting.value = true
+  const requestId = ++editorSaveRequestId
   feedbackMessage.value = ''
   feedbackTraceId.value = ''
 
@@ -445,6 +449,9 @@ async function saveArticle(status: number) {
       const article = !editingLocalDraft.value && form.id
         ? await updateKnowledgeArticle(form.id, payload)
         : await createKnowledgeArticle(payload)
+      if (requestId !== editorSaveRequestId) {
+        return
+      }
 
       if (editingLocalDraft.value && previousId) {
         removeKnowledgeDraft(previousId)
@@ -461,6 +468,9 @@ async function saveArticle(status: number) {
   } catch (error) {
     console.error(error)
     const result = resolveKnowledgeEditorSaveFailure(error, status)
+    if (requestId !== editorSaveRequestId) {
+      return
+    }
     if (result.mode === 'show-error') {
       feedbackMessage.value = result.message
       feedbackTraceId.value = result.traceId
@@ -469,9 +479,14 @@ async function saveArticle(status: number) {
     feedbackMessage.value = result.message
     feedbackTraceId.value = ''
   } finally {
-    submitting.value = false
+    if (requestId === editorSaveRequestId) {
+      submitting.value = false
+    }
   }
 
+  if (requestId !== editorSaveRequestId) {
+    return
+  }
   const publishTime = status === 1 ? new Date().toISOString().slice(0, 19) : null
   const localPayload = buildNormalizedArticleDraft(status)
   const draft = saveKnowledgeDraft({
