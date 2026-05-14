@@ -314,6 +314,11 @@ async function loadInitialArticle() {
 
   const id = Number(route.params.id)
   if (!id) {
+    if (isEditMode.value) {
+      feedbackMessage.value = '文章 ID 不合法，无法进入编辑模式。'
+      feedbackTraceId.value = ''
+      return
+    }
     applyTicketSeed()
     return
   }

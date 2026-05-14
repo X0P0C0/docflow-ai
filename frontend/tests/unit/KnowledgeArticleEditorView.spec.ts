@@ -172,6 +172,20 @@ describe('KnowledgeArticleEditorView', () => {
     expect(listKnowledgeDrafts()).toHaveLength(0)
   })
 
+  it('shows an inline error instead of treating an invalid edit id as create mode', async () => {
+    assignRouteState(route, {
+      path: '/knowledge/articles/not-a-number/edit',
+      params: { id: 'not-a-number' },
+      query: {},
+    })
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+
+    expect(fetchKnowledgeArticleDetail).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('文章 ID 不合法，无法进入编辑模式。')
+    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('')
+  })
+
   it('reuses the ticket seed in edit mode when the remote draft cannot be loaded', async () => {
     saveKnowledgeDraftSeed({
       title: '支付回调失败处理复盘',
