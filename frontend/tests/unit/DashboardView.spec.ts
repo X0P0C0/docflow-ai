@@ -280,4 +280,26 @@ describe('DashboardView', () => {
     expect(wrapper.find('.ticket-panel-props').text()).toContain('items=1')
     expect(fetchTickets).toHaveBeenCalledTimes(2)
   })
+
+  it('keeps the latest dashboard knowledge result when an older request resolves later', async () => {
+    let resolveFirstKnowledgeLoad: ((value: KnowledgeArticleApiItem[]) => void) | null = null
+    fetchTickets.mockResolvedValue([createTicketFixture()])
+    fetchKnowledgeArticles
+      .mockImplementationOnce(() => new Promise((resolve) => {
+        resolveFirstKnowledgeLoad = resolve as (value: KnowledgeArticleApiItem[]) => void
+      }))
+      .mockResolvedValueOnce([createKnowledgeArticleFixture({ id: 1203, title: '第二轮最新文章' })])
+
+    const wrapper = await mountView()
+
+    route.query = { reason: 'forbidden' }
+    route.fullPath = '/dashboard?reason=forbidden'
+    await flushPromises()
+
+    resolveFirstKnowledgeLoad?.([createKnowledgeArticleFixture({ id: 1204, title: '过期知识结果' })])
+    await flushPromises()
+
+    expect(wrapper.find('.knowledge-panel-props').text()).toContain('items=1')
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(2)
+  })
 })
