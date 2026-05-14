@@ -91,7 +91,7 @@
             v-if="canManage"
             class="primary-button"
             type="button"
-            @click="router.push('/knowledge/articles/create')"
+            @click="navigateTo('/knowledge/articles/create')"
           >
             {{ knowledgeHeroCopy.ctaLabel }}
           </button>
@@ -351,6 +351,13 @@ function formatDate(value: string | null) {
     return '-'
   }
   return value.replace('T', ' ')
+}
+
+function navigateTo(path: string) {
+  if (route.path === path) {
+    return
+  }
+  router.push(path)
 }
 
 function syncFiltersFromRoute() {

@@ -15,6 +15,7 @@ const { push, replace, fetchKnowledgeArticles, canManageState } = vi.hoisted(() 
 }))
 
 const route = reactive({
+  path: '/knowledge/articles',
   query: {},
   fullPath: '/knowledge/articles',
 })
@@ -68,6 +69,7 @@ describe('KnowledgeArticleListView', () => {
     fetchKnowledgeArticles.mockReset()
     canManageState.value = true
     resetWebStorage()
+    route.path = '/knowledge/articles'
     route.query = {}
     route.fullPath = '/knowledge/articles'
   })
@@ -415,5 +417,17 @@ describe('KnowledgeArticleListView', () => {
         viewMode: undefined,
       },
     })
+  })
+
+  it('suppresses redundant navigation when already on the knowledge-create route', async () => {
+    fetchKnowledgeArticles.mockResolvedValue([createKnowledgeArticleFixture()])
+    route.path = '/knowledge/articles/create'
+    route.fullPath = '/knowledge/articles/create'
+
+    const wrapper = await mountView()
+
+    await wrapper.findAll('button').find((item) => item.text().includes('新建'))!.trigger('click')
+
+    expect(push).not.toHaveBeenCalled()
   })
 })
