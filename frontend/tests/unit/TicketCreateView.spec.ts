@@ -1,4 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLocalTicket } from '../../src/mock/ticketWorkspace'
 import { mountTicketCreateView } from './helpers/pageMounts'
@@ -9,12 +10,17 @@ const { replace, createTicket } = vi.hoisted(() => ({
   createTicket: vi.fn(),
 }))
 
+const route = reactive({
+  path: '/tickets/create',
+})
+
 vi.mock('vue-router', () => ({
   RouterLink: {
     name: 'RouterLink',
     props: ['to'],
     template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
   },
+  useRoute: () => route,
   useRouter: () => ({
     replace,
   }),
@@ -29,6 +35,7 @@ describe('TicketCreateView', () => {
     replace.mockReset()
     createTicket.mockReset()
     resetWebStorage()
+    route.path = '/tickets/create'
   })
 
   afterEach(() => {
@@ -223,5 +230,26 @@ describe('TicketCreateView', () => {
 
     resolveCreate?.({ id: 778 })
     await flushPromises()
+  })
+
+  it('ignores a stale create-ticket result after navigating away from the create page', async () => {
+    let resolveCreate: ((value: { id: number }) => void) | null = null
+    createTicket.mockImplementation(() => new Promise((resolve) => {
+      resolveCreate = resolve as typeof resolveCreate
+    }))
+
+    const wrapper = await mountTicketCreateView()
+    const inputs = wrapper.findAll('input.field-control')
+
+    await inputs[0].setValue('离开后不该再跳转')
+    await wrapper.find('textarea').setValue('提交中的请求在离开创建页后不应该再把当前界面带走。')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+
+    route.path = '/tickets'
+    resolveCreate?.({ id: 901 })
+    await flushPromises()
+
+    expect(replace).not.toHaveBeenCalledWith('/tickets/901?created=1')
+    expect((inputs[0].element as HTMLInputElement).value).toBe('离开后不该再跳转')
   })
 })

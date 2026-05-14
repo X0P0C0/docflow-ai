@@ -110,16 +110,18 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { createTicket } from '../api/ticket'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
 import { createLocalTicket } from '../mock/ticketWorkspace'
 import { resolveTicketSubmissionFailure } from '../utils/ticketSubmission'
 
+const route = useRoute()
 const router = useRouter()
 const submitting = ref(false)
 const submitError = ref('')
 const submitErrorTraceId = ref('')
+let submitRequestId = 0
 
 const typeOptions = [
   { value: 'INCIDENT', label: '故障事件' },
@@ -176,6 +178,7 @@ async function submitTicket() {
     return
   }
 
+  const requestId = ++submitRequestId
   submitting.value = true
   submitError.value = ''
   submitErrorTraceId.value = ''
@@ -188,9 +191,15 @@ async function submitTicket() {
       priority: form.priority,
       content: form.content.trim(),
     })
+    if (requestId !== submitRequestId || route.path !== '/tickets/create') {
+      return
+    }
     router.replace(`/tickets/${data.id}?created=1`)
   } catch (error) {
     const result = resolveTicketSubmissionFailure(error)
+    if (requestId !== submitRequestId || route.path !== '/tickets/create') {
+      return
+    }
     if (result.mode === 'show-error') {
       submitError.value = result.message
       submitErrorTraceId.value = result.traceId
@@ -206,7 +215,9 @@ async function submitTicket() {
     })
     router.replace(`/tickets/${localTicket.id}?localCreated=1`)
   } finally {
-    submitting.value = false
+    if (requestId === submitRequestId && route.path === '/tickets/create') {
+      submitting.value = false
+    }
   }
 }
 </script>
