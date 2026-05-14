@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": ".test-dist",
+    "rootDir": ".",
+    "lib": ["ES2020", "DOM"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/api/http.ts",
+    "src/utils/authFailure.ts",
+    "src/utils/apiErrorDisplay.ts",
+    "src/utils/knowledgeEditor.ts",
+    "src/utils/listLoadFailure.ts",
+    "src/utils/loginAuthNotice.ts",
+    "src/utils/ticketDetailFailure.ts",
+    "src/utils/ticketSubmission.ts"
+  ]
+}

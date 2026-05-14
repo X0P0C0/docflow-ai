@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocFlow AI UI Prototype</title>
+  <style>
+    :root {
+      --bg: #f3f5f8;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-strong: #ffffff;
+      --line: rgba(15, 23, 42, 0.08);
+      --line-strong: rgba(15, 23, 42, 0.14);
+      --text: #0f172a;
+      --muted: #64748b;
+      --soft: #94a3b8;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.1);
+      --success: #15803d;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 28%),
+        radial-gradient(circle at 85% 10%, rgba(14, 165, 233, 0.12), transparent 22%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      min-height: 100vh;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .sidebar {
+      background: rgba(248, 250, 252, 0.72);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 30px;
+      box-shadow: var(--shadow);
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .brand {
+      padding: 10px 12px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin-bottom: 14px;
+      box-shadow: 0 14px 30px rgba(37, 99, 235, 0.28);
+    }
+
+    .brand h1,
+    .hero h2,
+    .section-title,
+    .doc h3 {
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+
+    .brand h1 {
+      font-size: 24px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .nav-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-title {
+      font-size: 12px;
+      color: var(--soft);
+      padding: 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      color: #1e293b;
+      text-decoration: none;
+      transition: 160ms ease;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: var(--panel-strong);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08);
+    }
+
+    .nav-item.active {
+      color: #0f172a;
+    }
+
+    .nav-pill {
+      min-width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .side-card {
+      margin-top: auto;
+      background: linear-gradient(180deg, #ffffff, #eff6ff);
+      border-radius: 22px;
+      padding: 18px;
+      border: 1px solid rgba(37, 99, 235, 0.08);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-weight: 600;
+      border: 0;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+    }
+
+    .button.secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .main {
+      display: grid;
+      gap: 20px;
+    }
+
+    .topbar {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: 28px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .search {
+      flex: 1;
+      max-width: 520px;
+      background: rgba(248, 250, 252, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      color: var(--muted);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(239, 246, 255, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 30px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -100px -100px auto;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.18), transparent 62%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(37, 99, 235, 0.08);
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .hero h2 {
+      font-size: 40px;
+      line-height: 1.08;
+      margin-bottom: 14px;
+      max-width: 12ch;
+    }
+
+    .hero-copy {
+      font-size: 15px;
+      line-height: 1.8;
+      max-width: 62ch;
+    }
+
+    .hero-actions {
+      margin-top: 22px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero-panel {
+      background: rgba(248, 250, 252, 0.8);
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .panel-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+    }
+
+    .column {
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 26px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 20px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      padding: 18px;
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 28px;
+      margin: 10px 0 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge.blue {
+      color: #1d4ed8;
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    .badge.green {
+      color: var(--success);
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .badge.orange {
+      color: var(--warn);
+      background: rgba(245, 158, 11, 0.14);
+    }
+
+    .badge.red {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .list-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .list-item strong,
+    .doc h3 {
+      font-size: 16px;
+    }
+
+    .ticket-side {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .doc {
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+    }
+
+    .doc p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .doc-meta,
+    .timeline-item,
+    .mini-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--soft);
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .ai-panel {
+      background: linear-gradient(180deg, #0f172a, #172554);
+      color: rgba(255, 255, 255, 0.94);
+    }
+
+    .ai-panel .muted,
+    .ai-panel .mini-item {
+      color: rgba(255, 255, 255, 0.68);
+    }
+
+    .ai-box {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 16px;
+      line-height: 1.8;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .timeline-item {
+      align-items: flex-start;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .timeline-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-top: 6px;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      flex: 0 0 auto;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mini-item {
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mini-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    @media (max-width: 1200px) {
+      .hero,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+
+      .sidebar {
+        order: 2;
+      }
+
+      .main {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search {
+        max-width: none;
+      }
+
+      .hero h2 {
+        font-size: 30px;
+      }
+
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-actions,
+      .topbar-actions {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">D</div>
+        <h1>DocFlow AI</h1>
+        <p class="muted">团队知识库与工单协同平台</p>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-title">Workspace</div>
+        <a class="nav-item active" href="#">
+          <span>控制台</span>
+          <span class="nav-pill">08</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span>知识库</span>
+          <span class="nav-pill">24</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span>工单中心</span>
+          <span class="nav-pill">16</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span>AI 助手</span>
+          <span class="nav-pill">AI</span>
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-title">Manage</div>
+        <a class="nav-item" href="#">
+          <span>通知中心</span>
+          <span class="muted">3</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span>系统管理</span>
+          <span class="muted">Admin</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span>个人中心</span>
+          <span class="muted">Me</span>
+        </a>
+      </div>
+
+      <div class="side-card">
+        <div class="badge blue">AI Focus</div>
+        <h3 style="margin: 12px 0 8px;">今天的协作效率已提升 18%</h3>
+        <p class="muted" style="margin: 0 0 16px;">AI 已为知识文档生成摘要，为工单推荐回复建议与关联文章。</p>
+        <a class="button primary" href="#">查看 AI 面板</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search">搜索知识文档、工单、标签或成员…</div>
+        <div class="topbar-actions">
+          <a class="button secondary" href="#">新建工单</a>
+          <a class="button primary" href="#">发布文章</a>
+          <div class="avatar">X</div>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Product Direction · Linear x Notion x AI Workspace</div>
+          <h2>像真实产品一样工作，而不是像后台模板一样展示。</h2>
+          <p class="hero-copy muted">
+            这是我们为 `DocFlow AI` 设定的首页气质原型。它会把知识库、工单协作和 AI 辅助能力放进同一套克制、现代、专业的产品语言里，让整个系统看起来更像成熟 SaaS，而不是练手项目。
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#">进入控制台</a>
+            <a class="button secondary" href="#">查看知识库</a>
+          </div>
+        </div>
+
+        <div class="hero-panel">
+          <div class="panel-row">
+            <div>
+              <div class="muted">待处理工单</div>
+              <strong style="font-size: 30px;">16</strong>
+            </div>
+            <span class="badge orange">较昨日 +4</span>
+          </div>
+          <div class="panel-row">
+            <div>
+              <div class="muted">知识命中率</div>
+              <strong style="font-size: 30px;">87%</strong>
+            </div>
+            <span class="badge green">稳定提升</span>
+          </div>
+          <div class="panel-row">
+            <div>
+              <div class="muted">AI 建议采纳率</div>
+              <strong style="font-size: 30px;">62%</strong>
+            </div>
+            <span class="badge blue">持续优化中</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h3 class="section-title">今日概览</h3>
+          <span class="muted">团队状态一目了然</span>
+        </div>
+        <div class="metric-grid">
+          <div class="metric">
+            <span class="badge blue">总工单</span>
+            <strong>128</strong>
+            <div class="muted">本周新建工单数量</div>
+          </div>
+          <div class="metric">
+            <span class="badge green">已解决</span>
+            <strong>94</strong>
+            <div class="muted">平均处理时长 2.8 小时</div>
+          </div>
+          <div class="metric">
+            <span class="badge orange">待分配</span>
+            <strong>11</strong>
+            <div class="muted">建议优先处理高优问题</div>
+          </div>
+          <div class="metric">
+            <span class="badge blue">知识文章</span>
+            <strong>342</strong>
+            <div class="muted">本周新增 18 篇知识沉淀</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="column">
+          <div class="card">
+            <div class="section-head">
+              <h3 class="section-title">待处理工单</h3>
+              <span class="muted">接近 Linear 的秩序感列表</span>
+            </div>
+            <div class="list">
+              <div class="list-item">
+                <div>
+                  <strong>支付回调接口偶发超时</strong>
+                  <div class="doc-meta">
+                    <span>#INC-2031</span>
+                    <span>订单中心</span>
+                    <span>更新于 10 分钟前</span>
+                  </div>
+                </div>
+                <div class="ticket-side">
+                  <span class="badge red">高优先级</span>
+                  <span class="badge blue">处理中</span>
+                </div>
+              </div>
+              <div class="list-item">
+                <div>
+                  <strong>员工无法访问内部文档附件</strong>
+                  <div class="doc-meta">
+                    <span>#INC-2027</span>
+                    <span>知识平台</span>
+                    <span>负责人：Luna</span>
+                  </div>
+                </div>
+                <div class="ticket-side">
+                  <span class="badge orange">待分配</span>
+                  <span class="badge blue">新建</span>
+                </div>
+              </div>
+              <div class="list-item">
+                <div>
+                  <strong>客服后台批量导出速度较慢</strong>
+                  <div class="doc-meta">
+                    <span>#TASK-881</span>
+                    <span>运营支持</span>
+                    <span>预计 16:30 前处理</span>
+                  </div>
+                </div>
+                <div class="ticket-side">
+                  <span class="badge blue">排查中</span>
+                  <span class="badge green">普通</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h3 class="section-title">热门知识文章</h3>
+              <span class="muted">接近 Notion / Mintlify 的内容质感</span>
+            </div>
+            <div class="list">
+              <article class="doc">
+                <div class="badge blue" style="width: fit-content;">支付系统 · 指南</div>
+                <h3>支付回调失败排查手册</h3>
+                <p>从签名校验、重试机制、幂等判断到日志链路追踪，帮助支持人员快速定位问题并输出统一处理方案。</p>
+                <div class="doc-meta">
+                  <span>作者：系统团队</span>
+                  <span>最近更新：今天 09:20</span>
+                  <span>浏览量：1,284</span>
+                </div>
+              </article>
+              <article class="doc">
+                <div class="badge green" style="width: fit-content;">运维流程 · SOP</div>
+                <h3>生产环境发布异常应急处理流程</h3>
+                <p>覆盖回滚判断、服务降级、缓存预热、异常上报与复盘记录，适合做团队统一操作标准。</p>
+                <div class="doc-meta">
+                  <span>作者：运维组</span>
+                  <span>最近更新：昨天</span>
+                  <span>命中率：79%</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="column">
+          <div class="card ai-panel">
+            <div class="section-head">
+              <h3 class="section-title">AI 助手摘要</h3>
+              <span class="muted">像安静的辅助面板，不喧宾夺主</span>
+            </div>
+            <div class="ai-box">
+              已识别到 3 条工单与“支付回调失败”知识文章高度相关。建议优先检查签名过期、消息重试间隔以及 Redis 幂等键是否提前失效。
+            </div>
+            <div class="mini-list">
+              <div class="mini-item">
+                <span>推荐回复模板</span>
+                <span>2 条</span>
+              </div>
+              <div class="mini-item">
+                <span>关联知识文章</span>
+                <span>5 篇</span>
+              </div>
+              <div class="mini-item">
+                <span>可自动分类工单</span>
+                <span>11 条</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h3 class="section-title">最近动态</h3>
+              <span class="muted">团队协作时间线</span>
+            </div>
+            <div class="timeline">
+              <div class="timeline-item">
+                <span class="dot"></span>
+                <div>
+                  <strong>林哲</strong>
+                  <div class="muted">将工单 #INC-2031 状态更新为“处理中”</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="dot"></span>
+                <div>
+                  <strong>AI 助手</strong>
+                  <div class="muted">为《支付回调失败排查手册》生成了新的摘要版本</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="dot"></span>
+                <div>
+                  <strong>产品组</strong>
+                  <div class="muted">新增知识分类“结算与对账”</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h3 class="section-title">视觉结论</h3>
+              <span class="muted">我们要的不是模板感</span>
+            </div>
+            <div class="mini-list">
+              <div class="mini-item">
+                <span>整体气质</span>
+                <span>克制、专业、现代</span>
+              </div>
+              <div class="mini-item">
+                <span>页面结构</span>
+                <span>左导航 + 顶部工具栏 + 主内容区</span>
+              </div>
+              <div class="mini-item">
+                <span>内容页方向</span>
+                <span>强调阅读体验与留白</span>
+              </div>
+              <div class="mini-item">
+                <span>AI 呈现方式</span>
+                <span>摘要卡片、推荐面板、辅助建议</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
