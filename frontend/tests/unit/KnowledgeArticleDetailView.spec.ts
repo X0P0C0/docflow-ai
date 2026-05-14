@@ -755,4 +755,44 @@ describe('KnowledgeArticleDetailView', () => {
 
     expect(wrapper.text()).toContain('已归档')
   })
+
+  it('ignores a stale archive result after navigating to another article', async () => {
+    let resolveArchive: ((value: KnowledgeArticleApiItem) => void) | null = null
+    fetchKnowledgeArticleDetail
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 501,
+        title: '第一篇文章',
+      }))
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 605,
+        title: '第二篇文章',
+        status: 1,
+      }))
+    fetchKnowledgeArticles.mockResolvedValue([])
+    archiveKnowledgeArticle.mockImplementation(() => new Promise((resolve) => {
+      resolveArchive = resolve as (value: KnowledgeArticleApiItem) => void
+    }))
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+    const archiveButton = wrapper.findAll('button').find((item) => item.text().includes('归档文章'))!
+
+    await archiveButton.trigger('click')
+    assignRouteState(route, {
+      path: '/knowledge/articles/605',
+      params: { id: '605' },
+      query: {},
+      fullPath: '/knowledge/articles/605',
+    })
+    await flushPromises()
+
+    resolveArchive?.(createKnowledgeArticleDetailFixture({
+      id: 501,
+      title: '第一篇文章',
+      status: 2,
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二篇文章')
+    expect(wrapper.text()).not.toContain('第一篇文章')
+  })
 })

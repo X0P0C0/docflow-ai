@@ -344,6 +344,7 @@ const showSourceTimelinePreview = ref(false)
 const relatedSortMode = ref<'match' | 'title' | 'status'>('match')
 const activeRelatedSourceFilter = ref<'all' | 'ticket-linked' | 'same-category'>('all')
 let articleLoadRequestId = 0
+let articleActionRequestId = 0
 const sourceCommentPreview = computed(() => sourceTicketPreview.value?.comments?.slice(0, 2) || [])
 const sourceTimelinePreview = computed(() => sourceTicketPreview.value?.timeline?.slice(0, 3) || [])
 const relatedSourceFilters = [
@@ -513,6 +514,7 @@ function buildSourceTicketRoute(focus: 'timeline' | 'comments' | 'knowledge') {
 
 async function loadArticle() {
   const requestId = ++articleLoadRequestId
+  articleActionRequestId += 1
   article.value = null
   sourceTicketPreview.value = null
   relatedRemoteArticles.value = []
@@ -740,6 +742,7 @@ async function handleArchive() {
     return
   }
 
+  const requestId = ++articleActionRequestId
   errorMessage.value = ''
   errorTraceId.value = ''
   archiving.value = true
@@ -748,19 +751,31 @@ async function handleArchive() {
     if ('source' in article.value) {
       const nextDraft = updateKnowledgeDraftStatus(article.value.id, 2)
       if (nextDraft) {
+        if (requestId !== articleActionRequestId) {
+          return
+        }
         article.value = attachArticleSourceTicket(nextDraft)
       }
       return
     }
 
-    article.value = attachArticleSourceTicket(await archiveKnowledgeArticle(article.value.id))
+    const nextArticle = await archiveKnowledgeArticle(article.value.id)
+    if (requestId !== articleActionRequestId) {
+      return
+    }
+    article.value = attachArticleSourceTicket(nextArticle)
   } catch (error) {
+    if (requestId !== articleActionRequestId) {
+      return
+    }
     const result = getApiErrorDisplay(error, '文章归档失败，请稍后重试。')
     errorMessage.value = result.message
     errorTraceId.value = result.traceId
     console.error(error)
   } finally {
-    archiving.value = false
+    if (requestId === articleActionRequestId) {
+      archiving.value = false
+    }
   }
 }
 
