@@ -221,6 +221,40 @@ describe('TicketDetailView', () => {
     expect(wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '全部')!.classes()).toContain('active-chip')
   })
 
+  it('syncs the creation feedback banner when only the same ticket route query changes', async () => {
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    assignRouteState(route, {
+      path: '/tickets/101',
+      params: { id: '101' },
+      query: { created: '1' },
+      fullPath: '/tickets/101?created=1',
+    })
+
+    const wrapper = await mountTicketDetailView()
+
+    expect(wrapper.text()).toContain('工单已创建成功。')
+
+    assignRouteState(route, {
+      path: '/tickets/101',
+      params: { id: '101' },
+      query: { localCreated: '1' },
+      fullPath: '/tickets/101?localCreated=1',
+    })
+    await flushPromises()
+    expect(wrapper.text()).toContain('工单已保存到本地工作流')
+
+    assignRouteState(route, {
+      path: '/tickets/101',
+      params: { id: '101' },
+      query: {},
+      fullPath: '/tickets/101',
+    })
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('工单已创建成功。')
+    expect(wrapper.text()).not.toContain('工单已保存到本地工作流')
+  })
+
   it('prevents duplicate comment submissions while the first comment request is still in flight', async () => {
     let resolveComment: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())

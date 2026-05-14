@@ -1015,6 +1015,14 @@ function resetTransientDetailState() {
   activeSourceKnowledgeStatus.value = 'all'
 }
 
+function syncRouteFeedbackMessage() {
+  successMessage.value = route.query.localCreated === '1'
+    ? '工单已保存到本地工作流，后续可以继续评论、指派和改状态。'
+    : route.query.created === '1'
+      ? '工单已创建成功。'
+      : ''
+}
+
 async function loadAssignableUsers() {
   if (!canAssignCurrentTicket.value) {
     assigneeOptions.value = []
@@ -1057,11 +1065,7 @@ async function loadTicket() {
 
   topErrorMessage.value = ''
   topErrorTraceId.value = ''
-  successMessage.value = route.query.localCreated === '1'
-    ? '\u5de5\u5355\u5df2\u4fdd\u5b58\u5230\u672c\u5730\u5de5\u4f5c\u6d41\uff0c\u540e\u7eed\u53ef\u4ee5\u7ee7\u7eed\u8bc4\u8bba\u3001\u6307\u6d3e\u548c\u6539\u72b6\u6001\u3002'
-    : route.query.created === '1'
-      ? '\u5de5\u5355\u5df2\u521b\u5efa\u6210\u529f\u3002'
-      : ''
+  syncRouteFeedbackMessage()
 
   const localTicket = getLocalTicket(id)
   if (localTicket) {
@@ -1353,6 +1357,7 @@ watch(
 watch(
   () => route.fullPath,
   async () => {
+    syncRouteFeedbackMessage()
     await focusKnowledgeContext()
   },
 )
