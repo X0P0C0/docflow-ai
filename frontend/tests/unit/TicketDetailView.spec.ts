@@ -735,6 +735,98 @@ describe('TicketDetailView', () => {
     expect(push).not.toHaveBeenCalledWith('/knowledge/articles/999/edit?from=ticket')
   })
 
+  it('ignores a stale comment result after navigating to another ticket', async () => {
+    let resolveComment: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+      }))
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    addTicketComment.mockImplementation(() => new Promise((resolve) => {
+      resolveComment = resolve as typeof resolveComment
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    await wrapper.find('form.ticket-form textarea').setValue('这条评论不应该回写到新工单')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    resolveComment?.(createTicketDetailFixture({
+      id: 101,
+      title: '第一张工单',
+      comments: [
+        {
+          id: 999,
+          authorName: '李晓安',
+          content: '这条评论不应该回写到新工单',
+          commentTypeLabel: '处理说明',
+          internal: false,
+          createTime: '2026-05-14T12:00:00',
+        },
+      ],
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二张工单')
+    expect(wrapper.text()).not.toContain('评论已提交')
+    expect(wrapper.text()).not.toContain('这条评论不应该回写到新工单')
+  })
+
+  it('ignores a stale assignment result after navigating to another ticket', async () => {
+    let resolveAssignment: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+      }))
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    assignTicket.mockImplementation(() => new Promise((resolve) => {
+      resolveAssignment = resolve as typeof resolveAssignment
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    const assignForm = wrapper.findAll('form.ticket-form')[1]
+    await assignForm.find('select').setValue('102')
+    await assignForm.find('textarea').setValue('准备转给林哲')
+    await assignForm.trigger('submit.prevent')
+
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    resolveAssignment?.(createTicketDetailFixture({
+      id: 101,
+      title: '第一张工单',
+      assigneeUserId: 102,
+      assigneeName: '林哲',
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二张工单')
+    expect(wrapper.text()).not.toContain('处理人已更新')
+    expect(wrapper.text()).not.toContain('当前处理人：林哲')
+  })
+
   it('validates empty comment submission before calling the api', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])

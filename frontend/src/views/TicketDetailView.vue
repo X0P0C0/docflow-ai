@@ -604,6 +604,8 @@ const activeSourceKnowledgeStatus = ref<'all' | 'published' | 'draft' | 'archive
 let ticketLoadRequestId = 0
 let knowledgeDraftRequestId = 0
 let statusUpdateRequestId = 0
+let commentRequestId = 0
+let assignmentRequestId = 0
 
 const commentForm = ref({
   content: '',
@@ -1073,6 +1075,8 @@ async function loadTicket() {
   const requestId = ++ticketLoadRequestId
   knowledgeDraftRequestId += 1
   statusUpdateRequestId += 1
+  commentRequestId += 1
+  assignmentRequestId += 1
   remoteTicket.value = null
   remoteSourceKnowledgeArticles.value = []
   linkedKnowledgeArticles.value = []
@@ -1154,6 +1158,7 @@ async function submitComment() {
     return
   }
 
+  const requestId = ++commentRequestId
   commentSubmitting.value = true
   commentError.value = ''
   commentErrorTraceId.value = ''
@@ -1161,11 +1166,15 @@ async function submitComment() {
   try {
     const localTicket = getLocalTicket(id)
     if (localTicket) {
-      remoteTicket.value = appendLocalComment(localTicket, {
+      const nextTicket = appendLocalComment(localTicket, {
         content,
         commentType,
         internal,
       })
+      if (requestId !== commentRequestId) {
+        return
+      }
+      remoteTicket.value = nextTicket
       topErrorMessage.value = ''
       topErrorTraceId.value = ''
       remoteSourceKnowledgeArticles.value = []
@@ -1181,6 +1190,9 @@ async function submitComment() {
       commentType,
       internal,
     })
+    if (requestId !== commentRequestId) {
+      return
+    }
     remoteTicket.value = formatTicketDetailItem(data)
     topErrorMessage.value = ''
     topErrorTraceId.value = ''
@@ -1192,11 +1204,16 @@ async function submitComment() {
     syncAssignForm(data)
     successMessage.value = buildCommentSuccessMessage(false)
   } catch (error) {
+    if (requestId !== commentRequestId) {
+      return
+    }
     const result = getApiErrorDisplay(error, '评论提交失败')
     commentError.value = result.message
     commentErrorTraceId.value = result.traceId
   } finally {
-    commentSubmitting.value = false
+    if (requestId === commentRequestId) {
+      commentSubmitting.value = false
+    }
   }
 }
 
@@ -1304,6 +1321,7 @@ async function submitAssignment() {
     return
   }
 
+  const requestId = ++assignmentRequestId
   assignSubmitting.value = true
   assignError.value = ''
   assignErrorTraceId.value = ''
@@ -1312,7 +1330,11 @@ async function submitAssignment() {
     const localTicket = getLocalTicket(id)
     if (localTicket) {
       const assigneeName = assigneeOptions.value.find((item) => item.id === assignForm.value.assigneeUserId)?.displayName || '\u5df2\u6307\u6d3e\u6210\u5458'
-      remoteTicket.value = assignLocalTicket(localTicket, assigneeName, assignForm.value.remark.trim(), assignForm.value.assigneeUserId)
+      const nextTicket = assignLocalTicket(localTicket, assigneeName, assignForm.value.remark.trim(), assignForm.value.assigneeUserId)
+      if (requestId !== assignmentRequestId) {
+        return
+      }
+      remoteTicket.value = nextTicket
       topErrorMessage.value = ''
       topErrorTraceId.value = ''
       remoteSourceKnowledgeArticles.value = []
@@ -1325,6 +1347,9 @@ async function submitAssignment() {
       assigneeUserId: assignForm.value.assigneeUserId,
       remark: assignForm.value.remark.trim(),
     })
+    if (requestId !== assignmentRequestId) {
+      return
+    }
     remoteTicket.value = formatTicketDetailItem(data)
     topErrorMessage.value = ''
     topErrorTraceId.value = ''
@@ -1334,11 +1359,16 @@ async function submitAssignment() {
     syncAssignForm(data)
     successMessage.value = buildAssignmentSuccessMessage(false)
   } catch (error) {
+    if (requestId !== assignmentRequestId) {
+      return
+    }
     const result = getApiErrorDisplay(error, '指派处理人失败')
     assignError.value = result.message
     assignErrorTraceId.value = result.traceId
   } finally {
-    assignSubmitting.value = false
+    if (requestId === assignmentRequestId) {
+      assignSubmitting.value = false
+    }
   }
 }
 
