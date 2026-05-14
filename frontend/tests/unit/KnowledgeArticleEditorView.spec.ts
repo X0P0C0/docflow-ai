@@ -21,6 +21,7 @@ const route = reactive({
   path: '/knowledge/articles/create',
   params: {},
   query: {},
+  fullPath: '/knowledge/articles/create',
 })
 
 vi.mock('vue-router', () => ({
@@ -59,6 +60,7 @@ describe('KnowledgeArticleEditorView', () => {
       path: '/knowledge/articles/create',
       params: {},
       query: {},
+      fullPath: '/knowledge/articles/create',
     })
     authState.token = 'prod-token'
     authState.restored = true
@@ -550,5 +552,49 @@ describe('KnowledgeArticleEditorView', () => {
 
     expect(push).not.toHaveBeenCalledWith('/knowledge/articles/999')
     expect((wrapper.find('input[type=\"text\"]').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('reloads the create form when only the source ticket query changes on the same route', async () => {
+    saveKnowledgeDraftSeed({
+      title: '来自 TK-701 的沉淀草稿',
+      summary: '第一张工单摘要。',
+      content: '第一张工单正文。',
+      categoryId: 3,
+      sourceTicketId: 701,
+      sourceTicketNo: 'TK-701',
+      sourceTicketTitle: '支付回调失败',
+      origin: 'ticket',
+    })
+    assignRouteState(route, {
+      path: '/knowledge/articles/create',
+      params: {},
+      query: { from: 'ticket', sourceTicketId: '701' },
+      fullPath: '/knowledge/articles/create?from=ticket&sourceTicketId=701',
+    })
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+
+    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('来自 TK-701 的沉淀草稿')
+
+    saveKnowledgeDraftSeed({
+      title: '来自 TK-702 的沉淀草稿',
+      summary: '第二张工单摘要。',
+      content: '第二张工单正文。',
+      categoryId: 2,
+      sourceTicketId: 702,
+      sourceTicketNo: 'TK-702',
+      sourceTicketTitle: '订单回调常见问题',
+      origin: 'ticket',
+    })
+    assignRouteState(route, {
+      path: '/knowledge/articles/create',
+      params: {},
+      query: { from: 'ticket', sourceTicketId: '702' },
+      fullPath: '/knowledge/articles/create?from=ticket&sourceTicketId=702',
+    })
+    await flushPromises()
+
+    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('来自 TK-702 的沉淀草稿')
+    expect(wrapper.text()).toContain('来源工单：TK-702 · 订单回调常见问题')
   })
 })

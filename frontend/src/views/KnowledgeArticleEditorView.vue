@@ -511,7 +511,7 @@ onMounted(() => {
 })
 
 watch(
-  () => [route.path, route.params.id, route.query.from].join('|'),
+  () => route.fullPath,
   () => {
     loadInitialArticle()
   },
