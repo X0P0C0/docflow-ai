@@ -179,6 +179,40 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).not.toContain('评论内容涉嫌敏感信息，无法提交')
   })
 
+  it('prevents duplicate comment submissions while the first comment request is still in flight', async () => {
+    let resolveComment: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    addTicketComment.mockImplementation(() => new Promise((resolve) => {
+      resolveComment = resolve as typeof resolveComment
+    }))
+
+    const wrapper = await mountTicketDetailView()
+
+    await wrapper.find('form.ticket-form textarea').setValue('重复评论保护测试')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(addTicketComment).toHaveBeenCalledTimes(1)
+
+    resolveComment?.(createTicketDetailFixture({
+      comments: [
+        {
+          id: 99,
+          authorName: '李晓安',
+          content: '重复评论保护测试',
+          commentTypeLabel: '补充说明',
+          internal: false,
+          createTime: '2026-05-14T12:00:00',
+        },
+      ],
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('评论已补充到当前工单')
+  })
+
   it('shows the new remote comment and resets the form after a successful submission', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])

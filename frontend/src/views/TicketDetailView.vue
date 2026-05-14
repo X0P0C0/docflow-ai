@@ -1099,6 +1099,9 @@ async function submitComment() {
   const content = commentForm.value.content.trim()
   const commentType = canUseInternalComments.value ? commentForm.value.commentType : 1
   const internal = canUseInternalComments.value ? commentForm.value.internal : false
+  if (commentSubmitting.value) {
+    return
+  }
   if (!id) {
     return
   }
