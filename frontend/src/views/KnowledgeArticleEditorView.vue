@@ -406,6 +406,17 @@ function syncForm(article: {
   form.status = article.status
 }
 
+function buildNormalizedArticleDraft(status: number) {
+  return {
+    title: form.title.trim(),
+    summary: form.summary.trim(),
+    content: form.content.trim(),
+    categoryId: form.categoryId,
+    sourceTicketId: sourceTicket.value?.id ?? null,
+    status,
+  }
+}
+
 async function saveArticle(status: number) {
   if (submitting.value) {
     return
@@ -427,16 +438,9 @@ async function saveArticle(status: number) {
   feedbackTraceId.value = ''
 
   try {
+    const payload = buildNormalizedArticleDraft(status)
     if (!isDemoMode()) {
       const previousId = form.id
-      const payload = {
-        title: form.title,
-        summary: form.summary,
-        content: form.content,
-        categoryId: form.categoryId,
-        sourceTicketId: sourceTicket.value?.id ?? null,
-        status,
-      }
 
       const article = !editingLocalDraft.value && form.id
         ? await updateKnowledgeArticle(form.id, payload)
@@ -469,12 +473,13 @@ async function saveArticle(status: number) {
   }
 
   const publishTime = status === 1 ? new Date().toISOString().slice(0, 19) : null
+  const localPayload = buildNormalizedArticleDraft(status)
   const draft = saveKnowledgeDraft({
     id: form.id,
-    title: form.title,
-    summary: form.summary,
-    content: form.content,
-    categoryId: form.categoryId,
+    title: localPayload.title,
+    summary: localPayload.summary,
+    content: localPayload.content,
+    categoryId: localPayload.categoryId,
     authorUserId: authState.user?.id || 1,
     status,
     publishTime,

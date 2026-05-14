@@ -452,6 +452,46 @@ describe('KnowledgeArticleEditorView', () => {
     expect(wrapper.text()).toContain('后端不可用，草稿已保存到本地。')
   })
 
+  it('normalizes remote save payloads even when seeded content contains leading and trailing whitespace', async () => {
+    createKnowledgeArticle.mockResolvedValue({
+      id: 903,
+      title: '支付回调失败排查手册',
+      summary: '摘要内容',
+      content: '正文内容',
+      categoryId: 2,
+      status: 0,
+    })
+    saveKnowledgeDraftSeed({
+      title: '  支付回调失败排查手册  ',
+      summary: '  摘要内容  ',
+      content: '  正文内容  ',
+      categoryId: 2,
+      sourceTicketId: 700,
+      sourceTicketNo: 'TK-700',
+      sourceTicketTitle: '支付回调失败',
+      origin: 'ticket',
+    })
+    assignRouteState(route, {
+      path: '/knowledge/articles/create',
+      params: {},
+      query: { from: 'ticket' },
+    })
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+
+    await wrapper.find('button.ghost-button').trigger('click')
+    await flushPromises()
+
+    expect(createKnowledgeArticle).toHaveBeenCalledWith({
+      title: '支付回调失败排查手册',
+      summary: '摘要内容',
+      content: '正文内容',
+      categoryId: 2,
+      sourceTicketId: 700,
+      status: 0,
+    })
+  })
+
   it('prevents duplicate saves while the first knowledge save is still in flight', async () => {
     let resolveCreate: ((value: { id: number; title: string; summary: string; content: string; categoryId: number; status: number }) => void) | null = null
     createKnowledgeArticle.mockImplementation(() => new Promise((resolve) => {
