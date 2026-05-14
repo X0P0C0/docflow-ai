@@ -302,4 +302,56 @@ describe('LoginView', () => {
 
     expect(replace).toHaveBeenCalledWith('/dashboard')
   })
+
+  it('prevents demo-account switches while the login request is still in flight', async () => {
+    let resolveLogin: ((value: {
+      token: string
+      expireSeconds: number
+      user: {
+        id: number
+        username: string
+        nickname: string
+        realName: string
+        email: string
+        phone: string
+        avatar: null
+        roles: string[]
+        permissions: string[]
+        capabilities: string[]
+      }
+    }) => void) | null = null
+    login.mockImplementation(() => new Promise((resolve) => {
+      resolveLogin = resolve as typeof resolveLogin
+    }))
+
+    const wrapper = await mountLoginView()
+    const demoButtons = wrapper.findAll('button.login-demo-account')
+
+    await wrapper.find('form.login-form').trigger('submit.prevent')
+    await demoButtons[1].trigger('click')
+    await flushPromises()
+
+    const inputs = wrapper.findAll('input')
+    expect((inputs[0].element as HTMLInputElement).value).toBe('admin')
+    expect((inputs[1].element as HTMLInputElement).value).toBe('password')
+    expect((demoButtons[1].element as HTMLButtonElement).disabled).toBe(true)
+
+    resolveLogin?.({
+      token: 'live-token',
+      expireSeconds: 7200,
+      user: {
+        id: 1,
+        username: 'admin',
+        nickname: '系统管理员',
+        realName: '系统管理员',
+        email: 'admin@docflow.ai',
+        phone: '13800000000',
+        avatar: null,
+        roles: ['ADMIN'],
+        permissions: [],
+        capabilities: [],
+      },
+    })
+    await flushPromises()
+  })
 })

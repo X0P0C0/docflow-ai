@@ -16,15 +16,15 @@
       <div class="login-demo-card">
         <strong>演示账号</strong>
         <div class="login-demo-grid">
-          <button type="button" class="login-demo-account" @click="fillDemoAccount('admin', 'password')">
+          <button type="button" class="login-demo-account" :disabled="submitting" @click="fillDemoAccount('admin', 'password')">
             <span>管理员</span>
             <p>admin / password</p>
           </button>
-          <button type="button" class="login-demo-account" @click="fillDemoAccount('support01', 'password')">
+          <button type="button" class="login-demo-account" :disabled="submitting" @click="fillDemoAccount('support01', 'password')">
             <span>技术支持</span>
             <p>support01 / password</p>
           </button>
-          <button type="button" class="login-demo-account" @click="fillDemoAccount('user01', 'password')">
+          <button type="button" class="login-demo-account" :disabled="submitting" @click="fillDemoAccount('user01', 'password')">
             <span>普通用户</span>
             <p>user01 / password</p>
           </button>
@@ -159,6 +159,9 @@ async function handleSubmit() {
 }
 
 function fillDemoAccount(username: string, password: string) {
+  if (submitting.value) {
+    return
+  }
   form.username = username
   form.password = password
   errorMessage.value = ''
