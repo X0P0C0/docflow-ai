@@ -91,6 +91,7 @@ const submitting = ref(false)
 const errorMessage = ref('')
 const errorTraceId = ref('')
 const showingRouteAuthNotice = ref(false)
+let loginRequestId = 0
 const runtimeModeText = computed(() => getRuntimeModeText())
 const runtimePanelClass = computed(() => (isDemoMode() ? 'login-runtime-panel-demo' : 'login-runtime-panel-live'))
 const runtimeHeadline = computed(() => (isDemoMode() ? '当前默认会进入演示模式' : '当前默认会进入正常模式'))
@@ -133,6 +134,7 @@ async function handleSubmit() {
     return
   }
 
+  const requestId = ++loginRequestId
   submitting.value = true
   errorMessage.value = ''
   errorTraceId.value = ''
@@ -140,11 +142,17 @@ async function handleSubmit() {
 
   try {
     const result = await login(form)
+    if (requestId !== loginRequestId || route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?')) {
+      return
+    }
     saveSession(result)
 
     await router.replace(resolveRedirectTarget())
   } catch (error) {
     const demoSession = createDemoSession(form.username, form.password)
+    if (requestId !== loginRequestId || route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?')) {
+      return
+    }
     if (demoSession && isNetworkFallbackCandidate(error)) {
       saveSession(demoSession)
       await router.replace(resolveRedirectTarget())
@@ -154,7 +162,9 @@ async function handleSubmit() {
     errorMessage.value = getApiErrorMessage(error, '登录失败，请稍后重试。')
     errorTraceId.value = getApiErrorTraceId(error)
   } finally {
-    submitting.value = false
+    if (requestId === loginRequestId && (route.fullPath === '/login' || String(route.fullPath).startsWith('/login?'))) {
+      submitting.value = false
+    }
   }
 }
 
