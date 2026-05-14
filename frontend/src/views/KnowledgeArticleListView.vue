@@ -275,6 +275,7 @@ const errorTraceId = ref('')
 const usedFallbackData = ref(false)
 let skipNextRouteDrivenLoad = false
 let skipNextQuickFilterRefresh = false
+let skipNextViewModeRefresh = false
 let articleLoadRequestId = 0
 
 const categoryOptions = [
@@ -362,6 +363,8 @@ function syncFiltersFromRoute() {
     && quickFilters.some((item) => item.value === route.query.quickFilter)
       ? route.query.quickFilter as typeof activeQuickFilter.value
       : 'all'
+  skipNextViewModeRefresh = true
+  viewMode.value = route.query.viewMode === 'list' ? 'list' : 'grid'
 }
 
 function updateRouteQuery() {
@@ -372,6 +375,7 @@ function updateRouteQuery() {
       categoryId: filters.categoryId !== 'all' ? filters.categoryId : undefined,
       status: filters.status !== 'all' ? filters.status : undefined,
       quickFilter: activeQuickFilter.value !== 'all' ? activeQuickFilter.value : undefined,
+      viewMode: viewMode.value !== 'grid' ? viewMode.value : undefined,
     },
   })
 }
@@ -452,6 +456,15 @@ watch(activeQuickFilter, () => {
     return
   }
   refreshFromLocalState()
+})
+
+watch(viewMode, () => {
+  if (skipNextViewModeRefresh) {
+    skipNextViewModeRefresh = false
+    return
+  }
+  skipNextRouteDrivenLoad = true
+  updateRouteQuery()
 })
 
 watch(

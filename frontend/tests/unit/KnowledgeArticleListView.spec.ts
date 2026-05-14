@@ -154,6 +154,7 @@ describe('KnowledgeArticleListView', () => {
         categoryId: undefined,
         status: undefined,
         quickFilter: undefined,
+        viewMode: undefined,
       },
     })
     expect(fetchKnowledgeArticles).toHaveBeenLastCalledWith({
@@ -314,6 +315,7 @@ describe('KnowledgeArticleListView', () => {
         categoryId: '2',
         status: '0',
         quickFilter: 'popular',
+        viewMode: undefined,
       },
     })
     expect(fetchKnowledgeArticles).toHaveBeenLastCalledWith({
@@ -381,5 +383,37 @@ describe('KnowledgeArticleListView', () => {
     await mountView()
 
     expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(1)
+  })
+
+  it('syncs list view mode from route state and persists it back to the url', async () => {
+    route.query = { quickFilter: 'draft', viewMode: 'list' }
+    route.fullPath = '/knowledge/articles?quickFilter=draft&viewMode=list'
+    fetchKnowledgeArticles.mockResolvedValue([
+      createKnowledgeArticleFixture({
+        id: 862,
+        title: '列表视图知识草稿',
+        status: 0,
+        publishTime: null,
+      }),
+    ])
+
+    const wrapper = await mountView()
+
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('.knowledge-list-view').exists()).toBe(true)
+
+    await wrapper.findAll('button').find((item) => item.text() === '卡片视图')!.trigger('click')
+    await flushPromises()
+
+    expect(replace).toHaveBeenLastCalledWith({
+      query: {
+        keyword: undefined,
+        sourceTicketNo: undefined,
+        categoryId: undefined,
+        status: undefined,
+        quickFilter: 'draft',
+        viewMode: undefined,
+      },
+    })
   })
 })
