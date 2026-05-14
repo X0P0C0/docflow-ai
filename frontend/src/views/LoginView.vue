@@ -99,6 +99,14 @@ const runtimeDescription = computed(() => (
     : '说明当前已经拿到了真实登录态，后续进入工作台会优先读取并写入后端数据。'
 ))
 
+function resolveRedirectTarget() {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+  if (redirect.startsWith('/') && !redirect.startsWith('//')) {
+    return redirect
+  }
+  return '/dashboard'
+}
+
 function syncRouteAuthReason() {
   if (errorMessage.value) {
     return
@@ -125,14 +133,12 @@ async function handleSubmit() {
     const result = await login(form)
     saveSession(result)
 
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
-    await router.replace(redirect)
+    await router.replace(resolveRedirectTarget())
   } catch (error) {
     const demoSession = createDemoSession(form.username, form.password)
     if (demoSession && isNetworkFallbackCandidate(error)) {
       saveSession(demoSession)
-      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
-      await router.replace(redirect)
+      await router.replace(resolveRedirectTarget())
       return
     }
 

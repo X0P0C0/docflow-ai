@@ -155,6 +155,35 @@ describe('LoginView', () => {
     expect(replace).toHaveBeenCalledWith('/dashboard')
   })
 
+  it('falls back to /dashboard when the redirect target is not an in-app path', async () => {
+    assignRouteState(route, {
+      query: { redirect: 'https://evil.example/phish' },
+      fullPath: '/login?redirect=https%3A%2F%2Fevil.example%2Fphish',
+    })
+    login.mockResolvedValue({
+      token: 'live-token-redirect',
+      expireSeconds: 7200,
+      user: {
+        id: 1,
+        username: 'admin',
+        nickname: '系统管理员',
+        realName: '系统管理员',
+        email: 'admin@docflow.ai',
+        phone: '13800000000',
+        avatar: null,
+        roles: ['ADMIN'],
+        permissions: [],
+        capabilities: [],
+      },
+    })
+
+    const wrapper = await mountLoginView()
+    await wrapper.find('form.login-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith('/dashboard')
+  })
+
   it('keeps business login errors visible instead of falling back to demo mode', async () => {
     login.mockRejectedValue(Object.assign(new Error('用户名或密码错误'), {
       status: 401,
