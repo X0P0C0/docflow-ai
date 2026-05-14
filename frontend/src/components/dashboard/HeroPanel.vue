@@ -16,8 +16,8 @@
         <span class="dashboard-mode-badge">{{ runtimeMode }}</span>
       </section>
       <div class="hero-actions">
-        <button class="primary-button" type="button" @click="router.push(primaryAction.to)">{{ primaryAction.label }}</button>
-        <button class="ghost-button" type="button" @click="router.push(secondaryAction.to)">{{ secondaryAction.label }}</button>
+        <button class="primary-button" type="button" @click="navigateTo(primaryAction.to)">{{ primaryAction.label }}</button>
+        <button class="ghost-button" type="button" @click="navigateTo(secondaryAction.to)">{{ secondaryAction.label }}</button>
       </div>
       <p class="hero-capability-note">{{ capabilityNote }}</p>
     </div>
@@ -50,9 +50,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { authState } from '../../auth'
 
+const route = useRoute()
 const router = useRouter()
 
 const props = defineProps<{
@@ -83,4 +84,11 @@ const modeDescription = computed(() => (
     ? '当前页面中的工单、知识和流转反馈会优先使用本地演示数据，适合预览页面和讲解流程。'
     : '当前页面的数据优先来自后端接口，后续新增、编辑和状态变更会按真实业务链路处理。'
 ))
+
+function navigateTo(path: string) {
+  if (route.path === path) {
+    return
+  }
+  router.push(path)
+}
 </script>

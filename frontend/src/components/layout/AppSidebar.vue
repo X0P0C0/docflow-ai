@@ -96,7 +96,7 @@ function navBadgeText(target: string, fallback: string) {
 }
 
 function handleAiAction() {
-  if (!canOpenAiCenter.value) {
+  if (!canOpenAiCenter.value || route.path === '/ai-center') {
     return
   }
   router.push('/ai-center')

@@ -171,6 +171,44 @@ describe('shared components', () => {
     expect(state.router.push).toHaveBeenCalledWith('/ai-center')
   })
 
+  it('suppresses redundant shared-component navigation when the current route already matches the target', async () => {
+    state.route.path = '/knowledge/articles'
+
+    const topbar = mount(AppTopbar)
+    await topbar.findAll('button').find((item) => item.text().includes('搜索知识文章'))!.trigger('click')
+
+    const hero = mount(HeroPanel, {
+      props: {
+        pendingCount: 6,
+        knowledgeCoverage: 87,
+        localCount: 2,
+        runtimeMode: '正常模式',
+        heroHeadline: '把工单工作台和知识沉淀放在一起。',
+        heroDescription: '当前账号偏向处理侧。',
+        capabilityNote: 'AI 工作台已开放。',
+        primaryAction: { label: '进入知识库', to: '/knowledge/articles' },
+        secondaryAction: { label: '新建知识文章', to: '/knowledge/articles/create' },
+      },
+    })
+    await hero.findAll('button')[0].trigger('click')
+
+    state.route.path = '/ai-center'
+    state.canAccessAiCenter = true
+    state.routeAccessMap['/ai-center'] = true
+    const sidebar = mount(AppSidebar, {
+      props: {
+        workspaceNav: [
+          { name: '工作台', to: '/dashboard', badge: 'Hot' },
+          { name: 'AI 工作台', to: '/ai-center', badge: 'Soon' },
+        ],
+        manageNav: [],
+      },
+    })
+    await sidebar.find('.primary-button').trigger('click')
+
+    expect(state.router.push).not.toHaveBeenCalled()
+  })
+
   it('renders topbar mode, gated knowledge actions, and logs out through clearSession', async () => {
     state.canManageKnowledge = true
 
