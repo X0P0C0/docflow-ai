@@ -620,4 +620,39 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('订单回调常见问题')
     expect(wrapper.text()).toContain('切换路由后应重新加载新的文章内容。')
   })
+
+  it('keeps the latest article when an older detail request resolves after a route switch', async () => {
+    let resolveFirst: ((value: KnowledgeArticleApiItem) => void) | null = null
+    fetchKnowledgeArticleDetail
+      .mockImplementationOnce(() => new Promise((resolve) => {
+        resolveFirst = resolve as (value: KnowledgeArticleApiItem) => void
+      }))
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 603,
+        title: '最新文章内容',
+        summary: '后触发的请求先回来时，应保留最新路由的内容。',
+      }))
+    fetchKnowledgeArticles.mockResolvedValue([])
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+
+    assignRouteState(route, {
+      path: '/knowledge/articles/603',
+      params: { id: '603' },
+      query: {},
+      fullPath: '/knowledge/articles/603',
+    })
+    await flushPromises()
+
+    resolveFirst?.(createKnowledgeArticleDetailFixture({
+      id: 501,
+      title: '过期文章内容',
+      summary: '这个结果不应该覆盖最新文章。',
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('最新文章内容')
+    expect(wrapper.text()).toContain('后触发的请求先回来时，应保留最新路由的内容。')
+    expect(wrapper.text()).not.toContain('过期文章内容')
+  })
 })

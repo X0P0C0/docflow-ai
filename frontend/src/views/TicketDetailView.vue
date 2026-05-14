@@ -592,6 +592,7 @@ const highlightedSection = ref<'comments' | 'timeline' | 'knowledge' | null>(nul
 const sourceKnowledgeSort = ref<'latest' | 'status' | 'title'>('latest')
 const recommendedKnowledgeSort = ref<'default' | 'title'>('default')
 const activeSourceKnowledgeStatus = ref<'all' | 'published' | 'draft' | 'archived' | 'local'>('all')
+let ticketLoadRequestId = 0
 
 const commentForm = ref({
   content: '',
@@ -1009,6 +1010,7 @@ async function loadAssignableUsers() {
 }
 
 async function loadTicket() {
+  const requestId = ++ticketLoadRequestId
   const id = Number(route.params.id)
   if (!id) {
     return
@@ -1024,6 +1026,9 @@ async function loadTicket() {
 
   const localTicket = getLocalTicket(id)
   if (localTicket) {
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     if (!canCurrentUserAccessTicket(localTicket)) {
       await router.replace('/tickets')
       return
@@ -1039,6 +1044,9 @@ async function loadTicket() {
   try {
     const data = await fetchTicketDetail(id)
     const formattedTicket = formatTicketDetailItem(data)
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     if (!canCurrentUserAccessTicket(formattedTicket)) {
       await router.replace('/tickets')
       return
@@ -1049,6 +1057,9 @@ async function loadTicket() {
     syncAssignForm(data)
     await loadLinkedKnowledgeArticles()
   } catch (error) {
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     const result = resolveTicketDetailFallback(error, '工单详情加载失败，请稍后重试。')
     if (result.mode === 'show-error') {
       topErrorMessage.value = result.message

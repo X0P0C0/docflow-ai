@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveKnowledgeDraft } from '../../src/mock/knowledgeDrafts'
 import { saveArticleSourceTicket } from '../../src/utils/knowledgeSourceTicket'
@@ -13,10 +14,10 @@ const { push, replace, fetchKnowledgeArticles, canManageState } = vi.hoisted(() 
   canManageState: { value: true },
 }))
 
-const route = {
+const route = reactive({
   query: {},
   fullPath: '/knowledge/articles',
-}
+})
 
 vi.mock('vue-router', () => ({
   RouterLink: {
@@ -365,5 +366,20 @@ describe('KnowledgeArticleListView', () => {
     const emptyWrapper = await mountView()
 
     expect(emptyWrapper.text()).toContain('当前筛选条件下还没有知识文章，可以继续新建一篇沉淀当前经验。')
+  })
+
+  it('loads only once on mount when quickFilter comes from route state', async () => {
+    route.query = { quickFilter: 'popular' }
+    route.fullPath = '/knowledge/articles?quickFilter=popular'
+    fetchKnowledgeArticles.mockResolvedValue([
+      createKnowledgeArticleFixture({
+        id: 861,
+        title: '高浏览知识文章',
+      }),
+    ])
+
+    await mountView()
+
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(1)
   })
 })

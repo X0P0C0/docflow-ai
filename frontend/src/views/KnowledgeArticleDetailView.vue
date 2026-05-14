@@ -343,6 +343,7 @@ const showSourceCommentPreview = ref(false)
 const showSourceTimelinePreview = ref(false)
 const relatedSortMode = ref<'match' | 'title' | 'status'>('match')
 const activeRelatedSourceFilter = ref<'all' | 'ticket-linked' | 'same-category'>('all')
+let articleLoadRequestId = 0
 const sourceCommentPreview = computed(() => sourceTicketPreview.value?.comments?.slice(0, 2) || [])
 const sourceTimelinePreview = computed(() => sourceTicketPreview.value?.timeline?.slice(0, 3) || [])
 const relatedSourceFilters = [
@@ -511,6 +512,7 @@ function buildSourceTicketRoute(focus: 'timeline' | 'comments' | 'knowledge') {
 }
 
 async function loadArticle() {
+  const requestId = ++articleLoadRequestId
   const id = Number(route.params.id)
   if (!id) {
     errorMessage.value = '文章 ID 不合法'
@@ -530,26 +532,38 @@ async function loadArticle() {
   try {
     const localDraft = getKnowledgeDraft(id)
     if (localDraft) {
+      if (requestId !== articleLoadRequestId) {
+        return
+      }
       article.value = attachArticleSourceTicket(localDraft)
-      await loadSourceTicketSummary()
-      await loadRelatedArticles()
+      await loadSourceTicketSummary(requestId)
+      await loadRelatedArticles(requestId)
       return
     }
 
-    article.value = attachArticleSourceTicket(await fetchKnowledgeArticleDetail(id))
-    await loadSourceTicketSummary()
-    await loadRelatedArticles()
+    const detail = await fetchKnowledgeArticleDetail(id)
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
+    article.value = attachArticleSourceTicket(detail)
+    await loadSourceTicketSummary(requestId)
+    await loadRelatedArticles(requestId)
   } catch (error) {
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     const result = getApiErrorDisplay(error, '文章详情加载失败，请稍后重试。')
     errorMessage.value = result.message
     errorTraceId.value = result.traceId
     console.error(error)
   } finally {
-    loading.value = false
+    if (requestId === articleLoadRequestId) {
+      loading.value = false
+    }
   }
 }
 
-async function loadSourceTicketSummary() {
+async function loadSourceTicketSummary(requestId = articleLoadRequestId) {
   if (!article.value?.sourceTicket?.id) {
     sourceTicketPreview.value = null
     return
@@ -557,14 +571,23 @@ async function loadSourceTicketSummary() {
 
   const localTicket = getLocalTicket(article.value.sourceTicket.id)
   if (localTicket) {
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     sourceTicketPreview.value = localTicket
     return
   }
 
   try {
     const ticket = formatTicketDetailItem(await fetchTicketDetail(article.value.sourceTicket.id))
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     sourceTicketPreview.value = ticket
   } catch (error) {
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     sourceTicketPreview.value = null
     console.error(error)
   }
@@ -577,7 +600,7 @@ watch(pinSourceTicketSummary, (pinned) => {
   }
 })
 
-async function loadRelatedArticles() {
+async function loadRelatedArticles(requestId = articleLoadRequestId) {
   if (!article.value) {
     relatedRemoteArticles.value = []
     return
@@ -588,11 +611,17 @@ async function loadRelatedArticles() {
       categoryId: article.value.categoryId ?? undefined,
       status: 1,
     })
+    if (requestId !== articleLoadRequestId || !article.value) {
+      return
+    }
     relatedRemoteArticles.value = remoteArticles
       .map((item) => attachArticleSourceTicket(item))
       .filter((item) => item.id !== article.value?.id)
       .sort((a, b) => scoreRelatedArticle(article.value, b) - scoreRelatedArticle(article.value, a))
   } catch (error) {
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     relatedRemoteArticles.value = []
     console.error(error)
   }

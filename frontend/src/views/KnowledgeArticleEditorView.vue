@@ -240,6 +240,7 @@ const feedbackMessage = ref('')
 const feedbackTraceId = ref('')
 const submitting = ref(false)
 const editingLocalDraft = ref(false)
+let editorLoadRequestId = 0
 const isEditMode = computed(() => route.path.includes('/edit'))
 const canManage = computed(() => canManageKnowledgeArticles())
 const sourceTicket = ref<KnowledgeSourceTicketLink | null>(null)
@@ -303,6 +304,7 @@ function resetEditorState() {
 }
 
 async function loadInitialArticle() {
+  const requestId = ++editorLoadRequestId
   if (!canManage.value) {
     feedbackMessage.value = '当前账号只有阅读权限，不能新建或编辑知识文章。'
     feedbackTraceId.value = ''
@@ -318,6 +320,9 @@ async function loadInitialArticle() {
 
   const localDraft = getKnowledgeDraft(id)
   if (localDraft) {
+    if (requestId !== editorLoadRequestId) {
+      return
+    }
     if (route.query.from === 'ticket' || route.query.from === 'ticket-close') {
       consumeKnowledgeDraftSeed()
     }
@@ -328,7 +333,11 @@ async function loadInitialArticle() {
   }
 
   try {
-    const article = attachArticleSourceTicket(await fetchKnowledgeArticleDetail(id))
+    const detail = await fetchKnowledgeArticleDetail(id)
+    if (requestId !== editorLoadRequestId) {
+      return
+    }
+    const article = attachArticleSourceTicket(detail)
     if (route.query.from === 'ticket' || route.query.from === 'ticket-close') {
       consumeKnowledgeDraftSeed()
     }
@@ -336,6 +345,9 @@ async function loadInitialArticle() {
     syncForm(article)
     sourceTicket.value = article.sourceTicket || null
   } catch (error) {
+    if (requestId !== editorLoadRequestId) {
+      return
+    }
     console.error(error)
     const result = resolveKnowledgeEditorLoadFailure(error)
     if (result.mode === 'fallback-local') {

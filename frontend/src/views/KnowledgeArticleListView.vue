@@ -274,6 +274,8 @@ const errorMessage = ref('')
 const errorTraceId = ref('')
 const usedFallbackData = ref(false)
 let skipNextRouteDrivenLoad = false
+let skipNextQuickFilterRefresh = false
+let articleLoadRequestId = 0
 
 const categoryOptions = [
   { value: 'all', label: '全部分类' },
@@ -355,6 +357,7 @@ function syncFiltersFromRoute() {
   filters.sourceTicketNo = typeof route.query.sourceTicketNo === 'string' ? route.query.sourceTicketNo : ''
   filters.categoryId = typeof route.query.categoryId === 'string' ? route.query.categoryId : 'all'
   filters.status = typeof route.query.status === 'string' ? route.query.status : 'all'
+  skipNextQuickFilterRefresh = true
   activeQuickFilter.value = typeof route.query.quickFilter === 'string'
     && quickFilters.some((item) => item.value === route.query.quickFilter)
       ? route.query.quickFilter as typeof activeQuickFilter.value
@@ -380,6 +383,7 @@ function refreshFromLocalState() {
 }
 
 async function loadArticles() {
+  const requestId = ++articleLoadRequestId
   loading.value = true
   errorMessage.value = ''
   errorTraceId.value = ''
@@ -392,8 +396,14 @@ async function loadArticles() {
       categoryId: filters.categoryId === 'all' ? undefined : Number(filters.categoryId),
       status: filters.status === 'all' ? undefined : Number(filters.status),
     })
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     articles.value = mergeKnowledgeArticles(data).map((item) => attachArticleSourceTicket(item))
   } catch (error) {
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     const result = resolveListLoadFailure(error, {
       networkFallbackMessage: '知识库接口暂时不可用',
       defaultMessage: '知识文章列表加载失败，请稍后重试。',
@@ -407,7 +417,9 @@ async function loadArticles() {
     ).map((item) => attachArticleSourceTicket(item))
     console.error(error)
   } finally {
-    loading.value = false
+    if (requestId === articleLoadRequestId) {
+      loading.value = false
+    }
   }
 }
 
@@ -435,6 +447,10 @@ onMounted(() => {
 })
 
 watch(activeQuickFilter, () => {
+  if (skipNextQuickFilterRefresh) {
+    skipNextQuickFilterRefresh = false
+    return
+  }
   refreshFromLocalState()
 })
 
