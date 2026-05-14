@@ -1010,6 +1010,9 @@ function resetTransientDetailState() {
   statusForm.value.remark = ''
   assignForm.value.remark = ''
   activeCommentFilter.value = 'all'
+  sourceKnowledgeSort.value = 'latest'
+  recommendedKnowledgeSort.value = 'default'
+  activeSourceKnowledgeStatus.value = 'all'
 }
 
 async function loadAssignableUsers() {

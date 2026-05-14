@@ -179,6 +179,48 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).not.toContain('评论内容涉嫌敏感信息，无法提交')
   })
 
+  it('resets knowledge filters and sorting when switching to another ticket route', async () => {
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+        sourceKnowledgeArticles: [
+          {
+            id: 901,
+            title: '支付回调 FAQ',
+            status: 1,
+            statusLabel: '已发布',
+            updateTime: '2026-05-14T10:00:00',
+            publishTime: '2026-05-14T10:00:00',
+          },
+        ],
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+      }))
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+
+    const wrapper = await mountTicketDetailView()
+
+    await wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '已发布')!.trigger('click')
+    await wrapper.findAll('select.knowledge-sort-select')[0].setValue('title')
+    await wrapper.findAll('select.knowledge-sort-select')[1].setValue('title')
+    await flushPromises()
+
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    expect((wrapper.findAll('select.knowledge-sort-select')[0].element as HTMLSelectElement).value).toBe('latest')
+    expect((wrapper.findAll('select.knowledge-sort-select')[1].element as HTMLSelectElement).value).toBe('default')
+    expect(wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '全部')!.classes()).toContain('active-chip')
+  })
+
   it('prevents duplicate comment submissions while the first comment request is still in flight', async () => {
     let resolveComment: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
