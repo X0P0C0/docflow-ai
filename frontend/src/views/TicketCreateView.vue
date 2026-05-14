@@ -3,7 +3,7 @@
     <header class="detail-topbar">
       <RouterLink class="back-link" to="/tickets">返回工单中心</RouterLink>
       <div class="detail-topbar-actions">
-        <button class="ghost-button" type="button" @click="resetForm">清空表单</button>
+        <button class="ghost-button" type="button" :disabled="submitting" @click="resetForm">清空表单</button>
       </div>
     </header>
 
@@ -149,6 +149,9 @@ const form = reactive({
 })
 
 function resetForm() {
+  if (submitting.value) {
+    return
+  }
   form.title = ''
   form.type = 'TASK'
   form.categoryId = 3

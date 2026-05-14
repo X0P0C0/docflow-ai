@@ -200,4 +200,28 @@ describe('TicketCreateView', () => {
 
     expect(replace).toHaveBeenCalledWith('/tickets/777?created=1')
   })
+
+  it('prevents clearing the form while the create request is still in flight', async () => {
+    let resolveCreate: ((value: { id: number }) => void) | null = null
+    createTicket.mockImplementation(() => new Promise((resolve) => {
+      resolveCreate = resolve as (value: { id: number }) => void
+    }))
+
+    const wrapper = await mountTicketCreateView()
+    const inputs = wrapper.findAll('input.field-control')
+    const textarea = wrapper.find('textarea')
+
+    await inputs[0].setValue('提交中的表单')
+    await textarea.setValue('提交过程中不应该还能把表单清空。')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+    await wrapper.findAll('button').find((item) => item.text() === '清空表单')!.trigger('click')
+    await flushPromises()
+
+    expect((inputs[0].element as HTMLInputElement).value).toBe('提交中的表单')
+    expect((textarea.element as HTMLTextAreaElement).value).toBe('提交过程中不应该还能把表单清空。')
+    expect((wrapper.findAll('button').find((item) => item.text() === '清空表单')!.element as HTMLButtonElement).disabled).toBe(true)
+
+    resolveCreate?.({ id: 778 })
+    await flushPromises()
+  })
 })
