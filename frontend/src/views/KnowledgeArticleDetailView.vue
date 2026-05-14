@@ -317,6 +317,7 @@ import {
   restoreKnowledgeArticleVersion,
 } from '../api/knowledge'
 import { getKnowledgeDraft, removeKnowledgeDraft, updateKnowledgeDraftStatus } from '../mock/knowledgeDrafts'
+import { getLocalTicket } from '../mock/ticketWorkspace'
 import { fallbackArticles } from '../mock/dashboard'
 import type { KnowledgeArticleApiItem, KnowledgeArticleDraft, TicketItem } from '../types/dashboard'
 import { getApiErrorDisplay } from '../utils/apiErrorDisplay'
@@ -548,6 +549,12 @@ async function loadArticle() {
 async function loadSourceTicketSummary() {
   if (!article.value?.sourceTicket?.id) {
     sourceTicketPreview.value = null
+    return
+  }
+
+  const localTicket = getLocalTicket(article.value.sourceTicket.id)
+  if (localTicket) {
+    sourceTicketPreview.value = localTicket
     return
   }
 

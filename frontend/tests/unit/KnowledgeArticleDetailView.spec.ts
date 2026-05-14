@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getKnowledgeDraft, saveKnowledgeDraft } from '../../src/mock/knowledgeDrafts'
+import { createLocalTicket } from '../../src/mock/ticketWorkspace'
 import type { KnowledgeArticleApiItem } from '../../src/types/dashboard'
 import { createTicketDetailFixture } from './helpers/fixtures'
 import { mountKnowledgeArticleDetailView } from './helpers/pageMounts'
@@ -518,6 +519,47 @@ describe('KnowledgeArticleDetailView', () => {
 
     expect(wrapper.text()).toContain('B 文章')
     expect(wrapper.text()).not.toContain('A 文章')
+  })
+
+  it('uses the local ticket workspace for source-ticket summary when the linked ticket is local', async () => {
+    const localTicket = createLocalTicket({
+      title: '本地支付回调排查',
+      content: '先在本地记录排查过程，待后端恢复后再同步。',
+      type: 'INCIDENT',
+      categoryId: 3,
+      priority: 3,
+    })
+    saveKnowledgeDraft({
+      id: 8804,
+      title: '来自本地工单的知识草稿',
+      summary: '沉淀本地工单里的处理经验。',
+      content: '先记录排查过程。再补充最终结论。',
+      categoryId: 3,
+      authorUserId: 7,
+      status: 0,
+      publishTime: null,
+      sourceTicket: {
+        id: localTicket.id,
+        ticketNo: localTicket.ticketNo,
+        title: localTicket.title,
+      },
+    })
+    fetchKnowledgeArticles.mockResolvedValue([])
+    assignRouteState(route, {
+      path: '/knowledge/articles/8804',
+      params: { id: '8804' },
+      query: {},
+      fullPath: '/knowledge/articles/8804',
+    })
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+
+    expect(fetchKnowledgeArticleDetail).not.toHaveBeenCalled()
+    expect(fetchTicketDetail).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('来源工单摘要')
+    expect(wrapper.text()).toContain('当前状态')
+    expect(wrapper.text()).toContain(localTicket.status)
+    expect(wrapper.text()).toContain(localTicket.assignee || '待分配')
   })
 
   it('shows local-draft version history without restore actions and falls back when related loading fails', async () => {
