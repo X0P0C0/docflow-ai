@@ -437,4 +437,32 @@ describe('KnowledgeArticleEditorView', () => {
     expect(listKnowledgeDrafts()).toHaveLength(1)
     expect(wrapper.text()).toContain('后端不可用，草稿已保存到本地。')
   })
+
+  it('prevents duplicate saves while the first knowledge save is still in flight', async () => {
+    let resolveCreate: ((value: { id: number; title: string; summary: string; content: string; categoryId: number; status: number }) => void) | null = null
+    createKnowledgeArticle.mockImplementation(() => new Promise((resolve) => {
+      resolveCreate = resolve as typeof resolveCreate
+    }))
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+    await fillRequiredFields(wrapper)
+
+    await wrapper.find('button.ghost-button').trigger('click')
+    await wrapper.find('button.ghost-button').trigger('click')
+    await flushPromises()
+
+    expect(createKnowledgeArticle).toHaveBeenCalledTimes(1)
+
+    resolveCreate?.({
+      id: 902,
+      title: '支付回调失败排查手册',
+      summary: '',
+      content: '先检查签名配置，再检查回调地址连通性和幂等控制键，最后对照日志链路逐步排查。',
+      categoryId: 2,
+      status: 0,
+    })
+    await flushPromises()
+
+    expect(push).toHaveBeenCalledWith('/knowledge/articles/902')
+  })
 })

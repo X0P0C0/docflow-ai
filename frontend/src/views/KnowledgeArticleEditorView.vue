@@ -402,6 +402,9 @@ function syncForm(article: {
 }
 
 async function saveArticle(status: number) {
+  if (submitting.value) {
+    return
+  }
   if (!canManage.value) {
     feedbackMessage.value = '当前账号只有阅读权限，不能保存知识文章。'
     feedbackTraceId.value = ''
