@@ -531,6 +531,8 @@ async function loadArticle() {
   pinSourceTicketSummary.value = false
   showSourceCommentPreview.value = false
   showSourceTimelinePreview.value = false
+  relatedSortMode.value = 'match'
+  activeRelatedSourceFilter.value = 'all'
 
   try {
     const localDraft = getKnowledgeDraft(id)

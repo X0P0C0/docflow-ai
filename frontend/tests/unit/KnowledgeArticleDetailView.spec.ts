@@ -677,6 +677,45 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).not.toContain('支付回调失败排查手册')
   })
 
+  it('resets related-article controls when navigating to another knowledge detail route', async () => {
+    fetchKnowledgeArticleDetail
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 501,
+        title: '第一篇文章',
+        categoryId: 3,
+      }))
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 604,
+        title: '第二篇文章',
+        categoryId: 2,
+      }))
+    fetchKnowledgeArticles.mockResolvedValue([
+      createKnowledgeArticleDetailFixture({
+        id: 701,
+        title: '同分类相关文章',
+        categoryId: 3,
+        sourceTicket: null,
+      }),
+    ])
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+
+    await wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '同分类')!.trigger('click')
+    await wrapper.find('select.knowledge-sort-select').setValue('title')
+    await flushPromises()
+
+    assignRouteState(route, {
+      path: '/knowledge/articles/604',
+      params: { id: '604' },
+      query: {},
+      fullPath: '/knowledge/articles/604',
+    })
+    await flushPromises()
+
+    expect((wrapper.find('select.knowledge-sort-select').element as HTMLSelectElement).value).toBe('match')
+    expect(wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '全部')!.classes()).toContain('active-chip')
+  })
+
   it('prevents duplicate archive requests while an archive is already in flight', async () => {
     let resolveArchive: ((value: KnowledgeArticleApiItem) => void) | null = null
     fetchKnowledgeArticleDetail.mockResolvedValue(createKnowledgeArticleDetailFixture())
