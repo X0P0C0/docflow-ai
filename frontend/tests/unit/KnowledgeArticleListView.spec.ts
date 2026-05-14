@@ -114,7 +114,8 @@ describe('KnowledgeArticleListView', () => {
     expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('知识库接口暂时不可用，当前先回退到本地演示数据。')
     expect(wrapper.text()).not.toContain('trace-knowledge-list-503')
-    expect(wrapper.findAll('.knowledge-card').length).toBe(0)
+    expect(wrapper.findAll('.knowledge-card').length).toBeGreaterThan(0)
+    expect(wrapper.text()).toContain('本地支付草稿')
   })
 
   it('loads with the source-ticket filter from route and clears it from the banner action', async () => {
@@ -351,6 +352,7 @@ describe('KnowledgeArticleListView', () => {
     expect(errorWrapper.text()).toContain('知识库查询条件不合法')
     expect(errorWrapper.text()).toContain('trace-knowledge-list-422')
     expect(errorWrapper.text()).not.toContain('当前先回退到本地演示数据')
+    expect(errorWrapper.text()).toContain('本地知识草稿')
 
     fetchKnowledgeArticles.mockReset()
     fetchKnowledgeArticles.mockResolvedValue([])

@@ -137,9 +137,9 @@
           :message="`${errorMessage}${usedFallbackData ? '，当前先回退到本地演示数据。' : ''}`"
           :trace-id="errorTraceId"
         />
-        <div v-else-if="displayedArticles.length === 0" class="state-box">{{ knowledgeHeroCopy.emptyHint }}</div>
+        <div v-if="!loading && displayedArticles.length === 0" class="state-box">{{ knowledgeHeroCopy.emptyHint }}</div>
 
-        <div v-else-if="viewMode === 'grid'" class="knowledge-grid">
+        <div v-else-if="!loading && viewMode === 'grid'" class="knowledge-grid">
           <RouterLink
             v-for="article in displayedArticles"
             :key="article.id"
@@ -169,7 +169,7 @@
           </RouterLink>
         </div>
 
-        <div v-else class="knowledge-list-view">
+        <div v-else-if="!loading" class="knowledge-list-view">
           <RouterLink
             v-for="article in displayedArticles"
             :key="article.id"
