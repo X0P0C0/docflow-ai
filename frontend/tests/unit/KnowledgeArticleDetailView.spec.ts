@@ -831,4 +831,33 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('第二篇文章')
     expect(push).not.toHaveBeenCalledWith('/knowledge/articles')
   })
+
+  it('locks other management actions while a version restore is still in flight', async () => {
+    let resolveRestore: ((value: KnowledgeArticleApiItem) => void) | null = null
+    fetchKnowledgeArticleDetail.mockResolvedValue(createKnowledgeArticleDetailFixture())
+    fetchKnowledgeArticles.mockResolvedValue([])
+    restoreKnowledgeArticleVersion.mockImplementation(() => new Promise((resolve) => {
+      resolveRestore = resolve as typeof resolveRestore
+    }))
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+    const restoreButton = wrapper.find('button.version-action')
+    const archiveButton = wrapper.findAll('button').find((item) => item.text().includes('归档文章'))!
+    const deleteButton = wrapper.findAll('button').find((item) => item.text().includes('删除文章'))!
+    const editButton = wrapper.findAll('button').find((item) => item.text().includes('编辑文章'))!
+
+    await restoreButton.trigger('click')
+    await flushPromises()
+
+    expect((archiveButton.element as HTMLButtonElement).disabled).toBe(true)
+    expect((deleteButton.element as HTMLButtonElement).disabled).toBe(true)
+    expect((editButton.element as HTMLButtonElement).disabled).toBe(true)
+    expect(archiveKnowledgeArticle).not.toHaveBeenCalled()
+    expect(deleteKnowledgeArticle).not.toHaveBeenCalled()
+
+    resolveRestore?.(createKnowledgeArticleDetailFixture({
+      title: '恢复后的版本',
+    }))
+    await flushPromises()
+  })
 })

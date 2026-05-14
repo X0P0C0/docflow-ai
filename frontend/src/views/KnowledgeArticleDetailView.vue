@@ -3,12 +3,12 @@
     <header class="detail-topbar">
       <RouterLink class="back-link" to="/knowledge/articles">返回知识库</RouterLink>
       <div class="detail-topbar-actions">
-        <button v-if="canManage" class="ghost-button" type="button" @click="handleEdit">编辑文章</button>
+        <button v-if="canManage" class="ghost-button" type="button" :disabled="isMutatingArticle" @click="handleEdit">编辑文章</button>
         <button
           v-if="article && canManage && canArchiveArticle"
           class="ghost-button"
           type="button"
-          :disabled="archiving"
+          :disabled="isMutatingArticle"
           @click="handleArchive"
         >
           {{ archiving ? '归档中...' : '归档文章' }}
@@ -17,7 +17,7 @@
           v-if="article && canManage"
           class="ghost-button danger-button"
           type="button"
-          :disabled="deleting"
+          :disabled="isMutatingArticle"
           @click="handleDelete"
         >
           {{ deleting ? '删除中...' : '删除文章' }}
@@ -461,6 +461,7 @@ const relatedArticles = computed(() => {
 const articleVersions = computed(() => article.value?.versions || [])
 const latestVersionId = computed(() => articleVersions.value[0]?.id ?? null)
 const canArchiveArticle = computed(() => article.value?.status !== 2)
+const isMutatingArticle = computed(() => restoringVersionId.value !== null || archiving.value || deleting.value)
 
 function categoryText(categoryId: number | null) {
   if (!categoryId) {
