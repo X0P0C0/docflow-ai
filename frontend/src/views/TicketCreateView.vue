@@ -159,6 +159,9 @@ function resetForm() {
 }
 
 async function submitTicket() {
+  if (submitting.value) {
+    return
+  }
   if (!form.title.trim()) {
     submitError.value = '请先填写工单标题'
     submitErrorTraceId.value = ''

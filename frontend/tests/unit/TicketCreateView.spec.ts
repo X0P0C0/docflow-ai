@@ -177,4 +177,27 @@ describe('TicketCreateView', () => {
     expect((textarea.element as HTMLTextAreaElement).value).toBe('')
     expect(wrapper.text()).not.toContain('标题长度超过限制')
   })
+
+  it('prevents duplicate submissions while the create request is still in flight', async () => {
+    let resolveCreate: ((value: { id: number }) => void) | null = null
+    createTicket.mockImplementation(() => new Promise((resolve) => {
+      resolveCreate = resolve as (value: { id: number }) => void
+    }))
+
+    const wrapper = await mountTicketCreateView()
+    const inputs = wrapper.findAll('input.field-control')
+
+    await inputs[0].setValue('重复提交保护')
+    await wrapper.find('textarea').setValue('这条工单用于验证提交中的重复触发不会再次发请求。')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+    await wrapper.find('form.ticket-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(createTicket).toHaveBeenCalledTimes(1)
+
+    resolveCreate?.({ id: 777 })
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith('/tickets/777?created=1')
+  })
 })
