@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveKnowledgeDraft } from '../../src/mock/knowledgeDrafts'
 import { createLocalTicket } from '../../src/mock/ticketWorkspace'
@@ -13,10 +14,10 @@ const { fetchKnowledgeArticles, fetchTickets, getRuntimeModeText } = vi.hoisted(
   getRuntimeModeText: vi.fn(),
 }))
 
-const route = {
+const route = reactive({
   query: {},
   fullPath: '/dashboard',
-}
+})
 
 vi.mock('vue-router', () => ({
   useRoute: () => route,
@@ -234,5 +235,49 @@ describe('DashboardView', () => {
     expect(wrapper.find('.ticket-panel-props').text()).toContain('items=1')
     expect(wrapper.find('.ticket-panel-props').text()).toContain('error=没有查看工单的权限（追踪号：trace-dashboard-ticket-403）')
     expect(wrapper.find('.ticket-panel-props').text()).toContain('trace=trace-dashboard-ticket-403')
+  })
+
+  it('reloads dashboard panels when the same dashboard view is revisited with a new route query', async () => {
+    fetchKnowledgeArticles
+      .mockResolvedValueOnce([createKnowledgeArticleFixture({ id: 1201, title: '第一次加载的文章' })])
+      .mockResolvedValueOnce([createKnowledgeArticleFixture({ id: 1202, title: '第二次加载的文章' })])
+    fetchTickets
+      .mockResolvedValueOnce([createTicketFixture({ id: 601, title: '第一次加载的工单' })])
+      .mockResolvedValueOnce([createTicketFixture({ id: 602, title: '第二次加载的工单' })])
+
+    const wrapper = await mountView()
+
+    expect(wrapper.find('.ticket-panel-props').text()).toContain('items=1')
+    expect(wrapper.find('.knowledge-panel-props').text()).toContain('items=1')
+
+    route.query = { reason: 'forbidden' }
+    route.fullPath = '/dashboard?reason=forbidden'
+    await flushPromises()
+
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(2)
+    expect(fetchTickets).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('当前账号没有访问刚才那个页面的权限，已为你返回可访问的工作台。')
+  })
+
+  it('keeps the latest dashboard ticket result when an older request resolves later', async () => {
+    let resolveFirstTicketLoad: ((value: TicketApiItem[]) => void) | null = null
+    fetchKnowledgeArticles.mockResolvedValue([createKnowledgeArticleFixture()])
+    fetchTickets
+      .mockImplementationOnce(() => new Promise((resolve) => {
+        resolveFirstTicketLoad = resolve as (value: TicketApiItem[]) => void
+      }))
+      .mockResolvedValueOnce([createTicketFixture({ id: 603, title: '第二轮最新工单' })])
+
+    const wrapper = await mountView()
+
+    route.query = { reason: 'forbidden' }
+    route.fullPath = '/dashboard?reason=forbidden'
+    await flushPromises()
+
+    resolveFirstTicketLoad?.([createTicketFixture({ id: 604, title: '过期工单结果' })])
+    await flushPromises()
+
+    expect(wrapper.find('.ticket-panel-props').text()).toContain('items=1')
+    expect(fetchTickets).toHaveBeenCalledTimes(2)
   })
 })

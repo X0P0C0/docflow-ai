@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   buildDashboardHeroCopy,
@@ -81,6 +81,8 @@ const articleErrorTraceId = ref('')
 const dashboardTickets = ref<TicketItem[]>(tickets)
 const ticketErrorMessage = ref('')
 const ticketErrorTraceId = ref('')
+let articleLoadRequestId = 0
+let ticketLoadRequestId = 0
 const runtimeModeText = computed(() => getRuntimeModeText())
 const authNotice = computed(() => {
   if (route.query.reason !== 'forbidden') {
@@ -165,14 +167,21 @@ function buildLocalKnowledgeArticles() {
 }
 
 async function loadKnowledgeArticles() {
+  const requestId = ++articleLoadRequestId
   articleLoading.value = true
   articleErrorMessage.value = ''
   articleErrorTraceId.value = ''
 
   try {
     const data = await fetchKnowledgeArticles()
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     knowledgeArticles.value = mergeKnowledgeArticles(data, listKnowledgeDrafts()).map(formatApiArticle)
   } catch (error) {
+    if (requestId !== articleLoadRequestId) {
+      return
+    }
     const result = resolveListLoadFailure(error, {
       networkFallbackMessage: '后端接口暂时不可用',
       defaultMessage: '知识文章加载失败，请稍后重试。',
@@ -184,18 +193,27 @@ async function loadKnowledgeArticles() {
       : buildLocalKnowledgeArticles()
     console.error(error)
   } finally {
-    articleLoading.value = false
+    if (requestId === articleLoadRequestId) {
+      articleLoading.value = false
+    }
   }
 }
 
 async function loadTickets() {
+  const requestId = ++ticketLoadRequestId
   ticketErrorMessage.value = ''
   ticketErrorTraceId.value = ''
 
   try {
     const data = await fetchTickets()
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     dashboardTickets.value = mergeTickets(data.map(formatTicketListItem as (ticket: TicketApiItem) => TicketItem))
   } catch (error) {
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     const result = resolveListLoadFailure(error, {
       networkFallbackMessage: '工单接口暂时不可用',
       defaultMessage: '工单数据加载失败，请稍后重试。',
@@ -213,4 +231,12 @@ onMounted(() => {
   loadKnowledgeArticles()
   loadTickets()
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    loadKnowledgeArticles()
+    loadTickets()
+  },
+)
 </script>
