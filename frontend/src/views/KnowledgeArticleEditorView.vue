@@ -305,13 +305,13 @@ function resetEditorState() {
 
 async function loadInitialArticle() {
   const requestId = ++editorLoadRequestId
-  if (!canManage.value) {
-    feedbackMessage.value = '当前账号只有阅读权限，不能新建或编辑知识文章。'
-    feedbackTraceId.value = ''
-    return
-  }
-
   resetEditorState()
+  if (!canManage.value) {
+      feedbackMessage.value = '当前账号只有阅读权限，不能新建或编辑知识文章。'
+      feedbackTraceId.value = ''
+      return
+    }
+
   const id = Number(route.params.id)
   if (!id) {
     applyTicketSeed()

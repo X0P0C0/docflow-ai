@@ -513,6 +513,9 @@ function buildSourceTicketRoute(focus: 'timeline' | 'comments' | 'knowledge') {
 
 async function loadArticle() {
   const requestId = ++articleLoadRequestId
+  article.value = null
+  sourceTicketPreview.value = null
+  relatedRemoteArticles.value = []
   const id = Number(route.params.id)
   if (!id) {
     errorMessage.value = '文章 ID 不合法'

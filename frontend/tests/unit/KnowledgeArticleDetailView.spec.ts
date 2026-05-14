@@ -655,4 +655,25 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('后触发的请求先回来时，应保留最新路由的内容。')
     expect(wrapper.text()).not.toContain('过期文章内容')
   })
+
+  it('clears the previous article when navigating to an invalid knowledge detail id', async () => {
+    fetchKnowledgeArticleDetail.mockResolvedValue(createKnowledgeArticleDetailFixture({
+      id: 501,
+      title: '支付回调失败排查手册',
+    }))
+    fetchKnowledgeArticles.mockResolvedValue([])
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+
+    assignRouteState(route, {
+      path: '/knowledge/articles/not-a-number',
+      params: { id: 'not-a-number' },
+      query: {},
+      fullPath: '/knowledge/articles/not-a-number',
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('文章 ID 不合法')
+    expect(wrapper.text()).not.toContain('支付回调失败排查手册')
+  })
 })

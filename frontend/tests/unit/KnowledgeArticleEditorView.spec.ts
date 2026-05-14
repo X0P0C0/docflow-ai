@@ -241,6 +241,40 @@ describe('KnowledgeArticleEditorView', () => {
     expect((wrapper.find('.editor-textarea').element as HTMLTextAreaElement).value).toBe('')
   })
 
+  it('clears stale editor content before showing the no-permission message', async () => {
+    fetchKnowledgeArticleDetail.mockResolvedValue({
+      id: 66,
+      title: '远程知识文章标题',
+      summary: '远程知识文章摘要',
+      content: '远程知识文章正文，包含处理步骤和结论。',
+      categoryId: 3,
+      status: 0,
+      sourceTicketId: null,
+      createTime: '2026-05-14T09:00:00',
+      updateTime: '2026-05-14T10:00:00',
+      publishTime: null,
+      authorName: '知识管理员',
+      statusLabel: '草稿',
+      viewCount: 0,
+      likeCount: 0,
+      collectCount: 0,
+    })
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+
+    canManageState.value = false
+    assignRouteState(route, {
+      path: '/knowledge/articles/77/edit',
+      params: { id: '77' },
+      query: {},
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('当前账号只有阅读权限，不能新建或编辑知识文章。')
+    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.find('.editor-textarea').element as HTMLTextAreaElement).value).toBe('')
+  })
+
   it('falls back to a local draft for 5xx save failures', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(24680)
     createKnowledgeArticle.mockRejectedValue(Object.assign(new Error('服务暂时不可用'), {
