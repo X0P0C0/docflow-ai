@@ -798,6 +798,9 @@ async function handleDelete() {
 
 function handleEdit() {
   const id = Number(route.params.id)
+  if (!id || route.path === `/knowledge/articles/${id}/edit`) {
+    return
+  }
   router.push(`/knowledge/articles/${id}/edit`)
 }
 

@@ -481,6 +481,23 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('取消固定')
   })
 
+  it('suppresses redundant edit navigation when already on the article edit route', async () => {
+    fetchKnowledgeArticleDetail.mockResolvedValue(createKnowledgeArticleDetailFixture())
+    fetchKnowledgeArticles.mockResolvedValue([])
+    assignRouteState(route, {
+      path: '/knowledge/articles/501/edit',
+      params: { id: '501' },
+      query: {},
+      fullPath: '/knowledge/articles/501/edit',
+    })
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+
+    await wrapper.findAll('button').find((item) => item.text().includes('编辑文章'))!.trigger('click')
+
+    expect(push).not.toHaveBeenCalled()
+  })
+
   it('handles source-summary failures and related-article fallback sorting without crashing', async () => {
     fetchKnowledgeArticleDetail.mockResolvedValue(createKnowledgeArticleDetailFixture({
       sourceTicket: {
