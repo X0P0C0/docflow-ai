@@ -145,6 +145,7 @@ describe('KnowledgeArticleListView', () => {
     await clearButton!.trigger('click')
     await flushPromises()
 
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(2)
     expect(replace).toHaveBeenCalledWith({
       query: {
         keyword: undefined,
@@ -304,6 +305,7 @@ describe('KnowledgeArticleListView', () => {
     await wrapper.find('form.filter-grid').trigger('submit.prevent')
     await flushPromises()
 
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(2)
     expect(replace).toHaveBeenCalledWith({
       query: {
         keyword: '回调',
@@ -323,6 +325,7 @@ describe('KnowledgeArticleListView', () => {
     await wrapper.findAll('button').find((item) => item.text() === '重置')!.trigger('click')
     await flushPromises()
 
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(3)
     expect(fetchKnowledgeArticles).toHaveBeenLastCalledWith({
       keyword: undefined,
       sourceTicketNo: undefined,

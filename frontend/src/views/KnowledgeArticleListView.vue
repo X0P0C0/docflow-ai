@@ -273,6 +273,7 @@ const loading = ref(false)
 const errorMessage = ref('')
 const errorTraceId = ref('')
 const usedFallbackData = ref(false)
+let skipNextRouteDrivenLoad = false
 
 const categoryOptions = [
   { value: 'all', label: '全部分类' },
@@ -372,6 +373,12 @@ function updateRouteQuery() {
   })
 }
 
+function refreshFromLocalState() {
+  skipNextRouteDrivenLoad = true
+  updateRouteQuery()
+  loadArticles()
+}
+
 async function loadArticles() {
   loading.value = true
   errorMessage.value = ''
@@ -405,8 +412,7 @@ async function loadArticles() {
 }
 
 function handleSearch() {
-  updateRouteQuery()
-  loadArticles()
+  refreshFromLocalState()
 }
 
 function handleReset() {
@@ -415,14 +421,12 @@ function handleReset() {
   filters.categoryId = 'all'
   filters.status = 'all'
   activeQuickFilter.value = 'all'
-  updateRouteQuery()
-  loadArticles()
+  refreshFromLocalState()
 }
 
 function clearSourceTicketFilter() {
   filters.sourceTicketNo = ''
-  updateRouteQuery()
-  loadArticles()
+  refreshFromLocalState()
 }
 
 onMounted(() => {
@@ -431,12 +435,16 @@ onMounted(() => {
 })
 
 watch(activeQuickFilter, () => {
-  updateRouteQuery()
+  refreshFromLocalState()
 })
 
 watch(
   () => route.fullPath,
   () => {
+    if (skipNextRouteDrivenLoad) {
+      skipNextRouteDrivenLoad = false
+      return
+    }
     syncFiltersFromRoute()
     loadArticles()
   },
