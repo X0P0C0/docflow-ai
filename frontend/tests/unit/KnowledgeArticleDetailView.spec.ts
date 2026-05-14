@@ -676,4 +676,27 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('文章 ID 不合法')
     expect(wrapper.text()).not.toContain('支付回调失败排查手册')
   })
+
+  it('prevents duplicate archive requests while an archive is already in flight', async () => {
+    let resolveArchive: ((value: KnowledgeArticleApiItem) => void) | null = null
+    fetchKnowledgeArticleDetail.mockResolvedValue(createKnowledgeArticleDetailFixture())
+    fetchKnowledgeArticles.mockResolvedValue([])
+    archiveKnowledgeArticle.mockImplementation(() => new Promise((resolve) => {
+      resolveArchive = resolve as (value: KnowledgeArticleApiItem) => void
+    }))
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+    const archiveButton = wrapper.findAll('button').find((item) => item.text().includes('归档文章'))!
+
+    await archiveButton.trigger('click')
+    await archiveButton.trigger('click')
+    await flushPromises()
+
+    expect(archiveKnowledgeArticle).toHaveBeenCalledTimes(1)
+
+    resolveArchive?.(createKnowledgeArticleDetailFixture({ status: 2 }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('已归档')
+  })
 })

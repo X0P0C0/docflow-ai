@@ -712,7 +712,7 @@ function canRestoreVersion(versionId: number) {
 }
 
 async function handleRestoreVersion(versionId: number) {
-  if (!article.value || 'source' in article.value) {
+  if (!article.value || 'source' in article.value || restoringVersionId.value !== null) {
     return
   }
 
@@ -734,7 +734,7 @@ async function handleRestoreVersion(versionId: number) {
 }
 
 async function handleArchive() {
-  if (!article.value) {
+  if (!article.value || archiving.value) {
     return
   }
 
@@ -763,7 +763,7 @@ async function handleArchive() {
 }
 
 async function handleDelete() {
-  if (!article.value) {
+  if (!article.value || deleting.value) {
     return
   }
 
