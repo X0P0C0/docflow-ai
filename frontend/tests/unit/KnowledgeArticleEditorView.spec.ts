@@ -194,7 +194,7 @@ describe('KnowledgeArticleEditorView', () => {
     expect(push).toHaveBeenCalledWith('/knowledge/articles/24680')
   })
 
-  it('removes the local draft and redirects to the real article after a successful edit save', async () => {
+  it('creates a real article from a local draft and removes the local draft after a successful save', async () => {
     saveKnowledgeDraft({
       id: 88,
       title: '历史草稿标题',
@@ -210,8 +210,8 @@ describe('KnowledgeArticleEditorView', () => {
       params: { id: '88' },
       query: {},
     })
-    updateKnowledgeArticle.mockResolvedValue({
-      id: 88,
+    createKnowledgeArticle.mockResolvedValue({
+      id: 188,
       title: '支付回调失败排查手册',
       summary: '更新后的摘要',
       content: '更新后的正文',
@@ -229,10 +229,18 @@ describe('KnowledgeArticleEditorView', () => {
     await wrapper.find('button.ghost-button').trigger('click')
     await flushPromises()
 
-    expect(updateKnowledgeArticle).toHaveBeenCalledTimes(1)
-    expect(createKnowledgeArticle).not.toHaveBeenCalled()
+    expect(createKnowledgeArticle).toHaveBeenCalledTimes(1)
+    expect(createKnowledgeArticle).toHaveBeenCalledWith({
+      title: '支付回调失败排查手册',
+      summary: '更新后的摘要',
+      content: '更新后的正文，已经同步到真实知识库。',
+      categoryId: 3,
+      sourceTicketId: null,
+      status: 0,
+    })
+    expect(updateKnowledgeArticle).not.toHaveBeenCalled()
     expect(listKnowledgeDrafts()).toHaveLength(0)
-    expect(push).toHaveBeenCalledWith('/knowledge/articles/88')
+    expect(push).toHaveBeenCalledWith('/knowledge/articles/188')
   })
 
   it('blocks loading and saving for read-only users', async () => {

@@ -239,6 +239,7 @@ const form = reactive({
 const feedbackMessage = ref('')
 const feedbackTraceId = ref('')
 const submitting = ref(false)
+const editingLocalDraft = ref(false)
 const isEditMode = computed(() => route.path.includes('/edit'))
 const canManage = computed(() => canManageKnowledgeArticles())
 const sourceTicket = ref<KnowledgeSourceTicketLink | null>(null)
@@ -303,6 +304,7 @@ async function loadInitialArticle() {
 
   const localDraft = getKnowledgeDraft(id)
   if (localDraft) {
+    editingLocalDraft.value = true
     syncForm(localDraft)
     sourceTicket.value = localDraft.sourceTicket || null
     return
@@ -310,6 +312,7 @@ async function loadInitialArticle() {
 
   try {
     const article = attachArticleSourceTicket(await fetchKnowledgeArticleDetail(id))
+    editingLocalDraft.value = false
     syncForm(article)
     sourceTicket.value = article.sourceTicket || null
   } catch (error) {
@@ -326,6 +329,7 @@ function applyTicketSeed() {
     return
   }
 
+  editingLocalDraft.value = false
   form.id = 0
   form.title = seed.title
   form.summary = seed.summary
@@ -378,6 +382,7 @@ async function saveArticle(status: number) {
 
   try {
     if (!isDemoMode()) {
+      const previousId = form.id
       const payload = {
         title: form.title,
         summary: form.summary,
@@ -387,13 +392,15 @@ async function saveArticle(status: number) {
         status,
       }
 
-      const article = form.id
+      const article = !editingLocalDraft.value && form.id
         ? await updateKnowledgeArticle(form.id, payload)
         : await createKnowledgeArticle(payload)
 
-      if (form.id) {
-        removeKnowledgeDraft(form.id)
+      if (editingLocalDraft.value && previousId) {
+        removeKnowledgeDraft(previousId)
+        saveArticleSourceTicket(previousId, null)
       }
+      editingLocalDraft.value = false
       form.id = article.id
       saveArticleSourceTicket(article.id, sourceTicket.value)
       feedbackMessage.value = status === 1 ? '文章已发布到真实知识库。' : '草稿已保存到真实知识库。'
