@@ -249,6 +249,43 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).toContain('工单状态已更新')
   })
 
+  it('prevents duplicate assignment submissions while the first assign request is still in flight', async () => {
+    let resolveAssignment: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    assignTicket.mockImplementation(() => new Promise((resolve) => {
+      resolveAssignment = resolve as typeof resolveAssignment
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    const statusForms = wrapper.findAll('form.ticket-form')
+
+    await statusForms[1].find('select').setValue(String(createDefaultAssigneeOptions()[1].id))
+    await statusForms[1].find('textarea').setValue('指派重复提交保护测试')
+    await statusForms[1].trigger('submit.prevent')
+    await statusForms[1].trigger('submit.prevent')
+    await flushPromises()
+
+    expect(assignTicket).toHaveBeenCalledTimes(1)
+
+    resolveAssignment?.(createTicketDetailFixture({
+      assigneeName: createDefaultAssigneeOptions()[1].displayName,
+      assigneeUserId: createDefaultAssigneeOptions()[1].id,
+      timeline: [
+        {
+          id: 401,
+          operatorName: '李晓安',
+          title: '已重新指派处理人',
+          desc: '指派重复提交保护测试',
+          createTime: '2026-05-14T12:40:00',
+        },
+      ],
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('处理人已更新')
+  })
+
   it('shows the new remote comment and resets the form after a successful submission', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])

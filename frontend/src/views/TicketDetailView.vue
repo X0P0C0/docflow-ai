@@ -1231,6 +1231,9 @@ async function submitStatusUpdate() {
 
 async function submitAssignment() {
   const id = Number(route.params.id)
+  if (assignSubmitting.value) {
+    return
+  }
   if (!id) {
     return
   }
