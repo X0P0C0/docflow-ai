@@ -1159,6 +1159,9 @@ async function submitComment() {
 
 async function submitStatusUpdate() {
   const id = Number(route.params.id)
+  if (statusSubmitting.value) {
+    return
+  }
   if (!id) {
     return
   }

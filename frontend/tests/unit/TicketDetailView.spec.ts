@@ -213,6 +213,42 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).toContain('评论已补充到当前工单')
   })
 
+  it('prevents duplicate status updates while the first transition request is still in flight', async () => {
+    let resolveStatusUpdate: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    transitionTicketStatus.mockImplementation(() => new Promise((resolve) => {
+      resolveStatusUpdate = resolve as typeof resolveStatusUpdate
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    const statusForms = wrapper.findAll('form.ticket-form')
+
+    await statusForms[2].find('textarea').setValue('状态流转重复提交保护测试')
+    await statusForms[2].trigger('submit.prevent')
+    await statusForms[2].trigger('submit.prevent')
+    await flushPromises()
+
+    expect(transitionTicketStatus).toHaveBeenCalledTimes(1)
+
+    resolveStatusUpdate?.(createTicketDetailFixture({
+      status: 3,
+      statusLabel: '已解决',
+      timeline: [
+        {
+          id: 301,
+          operatorName: '李晓安',
+          title: '状态已更新为已解决',
+          desc: '状态流转重复提交保护测试',
+          createTime: '2026-05-14T12:30:00',
+        },
+      ],
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('工单状态已更新')
+  })
+
   it('shows the new remote comment and resets the form after a successful submission', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])
