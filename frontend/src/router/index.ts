@@ -168,7 +168,7 @@ router.beforeEach(async (to) => {
     ? to.meta.requiredCapability
     : getRouteRequiredCapability(to.path)
 
-  if (!canAccessCapability(requiredCapability)) {
+  if (requiredCapability && !canAccessCapability(requiredCapability)) {
     if (requiredCapability === CAPABILITY_CODES.KNOWLEDGE_MANAGE) {
       return {
         path: '/knowledge/articles',

@@ -141,6 +141,22 @@ describe('router guards', () => {
     expect(result).toBe(true)
   })
 
+  it('does not capability-block routes that have no required capability', async () => {
+    const { getNavigationGuard, canAccessCapability } = await loadRouter({
+      authenticated: true,
+      canAccessCapability: false,
+    })
+
+    const result = await getNavigationGuard()!({
+      path: '/tickets',
+      fullPath: '/tickets',
+      meta: { requiresAuth: true },
+    })
+
+    expect(result).toBe(true)
+    expect(canAccessCapability).not.toHaveBeenCalled()
+  })
+
   it('redirects knowledge-manage routes to the knowledge list when capability is missing', async () => {
     const { getNavigationGuard, canAccessCapability } = await loadRouter({
       authenticated: true,
