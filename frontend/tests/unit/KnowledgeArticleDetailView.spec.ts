@@ -795,4 +795,40 @@ describe('KnowledgeArticleDetailView', () => {
     expect(wrapper.text()).toContain('第二篇文章')
     expect(wrapper.text()).not.toContain('第一篇文章')
   })
+
+  it('ignores a stale delete result after navigating to another article', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    let resolveDelete: (() => void) | null = null
+    fetchKnowledgeArticleDetail
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 501,
+        title: '第一篇文章',
+      }))
+      .mockResolvedValueOnce(createKnowledgeArticleDetailFixture({
+        id: 606,
+        title: '第二篇文章',
+      }))
+    fetchKnowledgeArticles.mockResolvedValue([])
+    deleteKnowledgeArticle.mockImplementation(() => new Promise((resolve) => {
+      resolveDelete = resolve as typeof resolveDelete
+    }))
+
+    const wrapper = await mountKnowledgeArticleDetailView()
+    const deleteButton = wrapper.findAll('button').find((item) => item.text().includes('删除文章'))!
+
+    await deleteButton.trigger('click')
+    assignRouteState(route, {
+      path: '/knowledge/articles/606',
+      params: { id: '606' },
+      query: {},
+      fullPath: '/knowledge/articles/606',
+    })
+    await flushPromises()
+
+    resolveDelete?.()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二篇文章')
+    expect(push).not.toHaveBeenCalledWith('/knowledge/articles')
+  })
 })

@@ -720,20 +720,30 @@ async function handleRestoreVersion(versionId: number) {
     return
   }
 
+  const requestId = ++articleActionRequestId
   restoringVersionId.value = versionId
   errorMessage.value = ''
   errorTraceId.value = ''
 
   try {
-    article.value = attachArticleSourceTicket(await restoreKnowledgeArticleVersion(article.value.id, versionId))
+    const nextArticle = await restoreKnowledgeArticleVersion(article.value.id, versionId)
+    if (requestId !== articleActionRequestId) {
+      return
+    }
+    article.value = attachArticleSourceTicket(nextArticle)
     activeParagraphIndex.value = 0
   } catch (error) {
+    if (requestId !== articleActionRequestId) {
+      return
+    }
     const result = getApiErrorDisplay(error, '版本恢复失败，请稍后重试。')
     errorMessage.value = result.message
     errorTraceId.value = result.traceId
     console.error(error)
   } finally {
-    restoringVersionId.value = null
+    if (requestId === articleActionRequestId) {
+      restoringVersionId.value = null
+    }
   }
 }
 
@@ -789,6 +799,7 @@ async function handleDelete() {
     return
   }
 
+  const requestId = ++articleActionRequestId
   errorMessage.value = ''
   errorTraceId.value = ''
   deleting.value = true
@@ -799,15 +810,23 @@ async function handleDelete() {
     } else {
       await deleteKnowledgeArticle(article.value.id)
     }
+    if (requestId !== articleActionRequestId) {
+      return
+    }
     saveArticleSourceTicket(article.value.id, null)
     router.push('/knowledge/articles')
   } catch (error) {
+    if (requestId !== articleActionRequestId) {
+      return
+    }
     const result = getApiErrorDisplay(error, '文章删除失败，请稍后重试。')
     errorMessage.value = result.message
     errorTraceId.value = result.traceId
     console.error(error)
   } finally {
-    deleting.value = false
+    if (requestId === articleActionRequestId) {
+      deleting.value = false
+    }
   }
 }
 
