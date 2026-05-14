@@ -591,6 +591,34 @@ describe('TicketDetailView', () => {
     expect(seed?.origin).toBe('manual')
   })
 
+  it('prevents duplicate knowledge-draft creation while the first request is still in flight', async () => {
+    let resolveKnowledgeDraft: ((value: { id: number }) => void) | null = null
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture({
+      status: 3,
+      statusLabel: '已解决',
+    }))
+    fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])
+    createTicketKnowledgeDraft.mockImplementation(() => new Promise((resolve) => {
+      resolveKnowledgeDraft = resolve as typeof resolveKnowledgeDraft
+    }))
+
+    const wrapper = await mountTicketDetailView()
+
+    const knowledgeButton = wrapper.findAll('button').find((item) => item.text().includes('沉淀为知识文章'))
+    expect(knowledgeButton).toBeTruthy()
+
+    await knowledgeButton!.trigger('click')
+    await knowledgeButton!.trigger('click')
+    await flushPromises()
+
+    expect(createTicketKnowledgeDraft).toHaveBeenCalledTimes(1)
+
+    resolveKnowledgeDraft?.({ id: 901 })
+    await flushPromises()
+
+    expect(push).toHaveBeenCalledWith('/knowledge/articles/901/edit?from=ticket')
+  })
+
   it('validates empty comment submission before calling the api', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])

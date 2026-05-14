@@ -4,14 +4,15 @@
       <RouterLink class="back-link" to="/tickets">返回工单中心</RouterLink>
       <div class="detail-topbar-actions">
         <button class="ghost-button" type="button" @click="loadTicket">刷新详情</button>
-        <button
-          v-if="canCreateKnowledgeFromTicket"
-          class="ghost-button"
-          type="button"
-          @click="createKnowledgeDraftFromAction"
-        >
-          沉淀为知识文章
-        </button>
+          <button
+            v-if="canCreateKnowledgeFromTicket"
+            class="ghost-button"
+            type="button"
+            :disabled="knowledgeDraftSubmitting"
+            @click="createKnowledgeDraftFromAction"
+          >
+            {{ knowledgeDraftSubmitting ? '生成中...' : '沉淀为知识文章' }}
+          </button>
         <button class="primary-button" type="button" @click="focusCommentInput">
           {{ canUseInternalComments ? '新增评论' : '补充反馈' }}
         </button>
@@ -83,7 +84,13 @@
               </p>
             </div>
             <div class="knowledge-capture-actions">
-              <button v-if="canCreateKnowledgeFromTicket" class="ghost-button" type="button" @click="createKnowledgeDraftFromAction">
+              <button
+                v-if="canCreateKnowledgeFromTicket"
+                class="ghost-button"
+                type="button"
+                :disabled="knowledgeDraftSubmitting"
+                @click="createKnowledgeDraftFromAction"
+              >
                 {{ knowledgePrimaryActionLabel }}
               </button>
               <RouterLink
@@ -357,14 +364,15 @@
             </div>
           </div>
           <div class="knowledge-workbench-actions">
-            <button
-              v-if="canCreateKnowledgeFromTicket"
-              class="primary-button"
-              type="button"
-              @click="createKnowledgeDraftFromAction"
-            >
-              {{ knowledgePrimaryActionLabel }}
-            </button>
+              <button
+                v-if="canCreateKnowledgeFromTicket"
+                class="primary-button"
+                type="button"
+                :disabled="knowledgeDraftSubmitting"
+                @click="createKnowledgeDraftFromAction"
+              >
+                {{ knowledgeDraftSubmitting ? '生成中...' : knowledgePrimaryActionLabel }}
+              </button>
             <RouterLink class="ghost-button inline-link-button" :to="buildKnowledgeListRoute()">
               查看同工单文章
             </RouterLink>
@@ -557,6 +565,7 @@ const knowledgeSectionRef = ref<HTMLElement | null>(null)
 const commentSubmitting = ref(false)
 const statusSubmitting = ref(false)
 const assignSubmitting = ref(false)
+const knowledgeDraftSubmitting = ref(false)
 const commentError = ref('')
 const statusError = ref('')
 const assignError = ref('')
@@ -809,23 +818,25 @@ const latestDraftKnowledgeArticle = computed(() => {
 })
 
 async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-close'; closeRemark?: string }) {
-  if (!ticket.value || !canCreateKnowledgeFromTicket.value) {
+  if (!ticket.value || !canCreateKnowledgeFromTicket.value || knowledgeDraftSubmitting.value) {
     return
   }
 
   topErrorMessage.value = ''
   topErrorTraceId.value = ''
+  knowledgeDraftSubmitting.value = true
 
-  const existingDraft = latestDraftKnowledgeArticle.value
-  if (existingDraft) {
-    successMessage.value = existingDraft.statusKey === 'local'
-      ? '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u672c\u5730\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
-      : '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u771f\u5b9e\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
-    const query = getKnowledgeDraftRedirectQuery(options?.origin)
-    const targetPath = `/knowledge/articles/${existingDraft.id}/edit${query}`
-    await router.push(targetPath)
-    return
-  }
+  try {
+    const existingDraft = latestDraftKnowledgeArticle.value
+    if (existingDraft) {
+      successMessage.value = existingDraft.statusKey === 'local'
+        ? '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u672c\u5730\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
+        : '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u771f\u5b9e\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
+      const query = getKnowledgeDraftRedirectQuery(options?.origin)
+      const targetPath = `/knowledge/articles/${existingDraft.id}/edit${query}`
+      await router.push(targetPath)
+      return
+    }
 
     if (!isDemoMode()) {
       try {
@@ -839,20 +850,23 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
         const query = getKnowledgeDraftRedirectQuery(options?.origin)
         await router.push(`/knowledge/articles/${article.id}/edit${query}`)
         return
-    } catch (error) {
-      const result = resolveTicketDetailFallback(error, '知识草稿生成失败，请稍后重试。')
-      if (result.mode === 'show-error') {
-        topErrorMessage.value = result.message
-        topErrorTraceId.value = result.traceId
-        return
+      } catch (error) {
+        const result = resolveTicketDetailFallback(error, '知识草稿生成失败，请稍后重试。')
+        if (result.mode === 'show-error') {
+          topErrorMessage.value = result.message
+          topErrorTraceId.value = result.traceId
+          return
+        }
+        console.error(error)
       }
-      console.error(error)
     }
-  }
 
-  saveKnowledgeDraftSeed(buildKnowledgeDraftFromTicket(ticket.value, options))
-  const query = getKnowledgeDraftRedirectQuery(options?.origin)
-  await router.push(`/knowledge/articles/create${query}`)
+    saveKnowledgeDraftSeed(buildKnowledgeDraftFromTicket(ticket.value, options))
+    const query = getKnowledgeDraftRedirectQuery(options?.origin)
+    await router.push(`/knowledge/articles/create${query}`)
+  } finally {
+    knowledgeDraftSubmitting.value = false
+  }
 }
 
 function createKnowledgeDraftFromAction() {
