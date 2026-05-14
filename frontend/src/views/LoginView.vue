@@ -90,6 +90,7 @@ const form = reactive({
 const submitting = ref(false)
 const errorMessage = ref('')
 const errorTraceId = ref('')
+const showingRouteAuthNotice = ref(false)
 const runtimeModeText = computed(() => getRuntimeModeText())
 const runtimePanelClass = computed(() => (isDemoMode() ? 'login-runtime-panel-demo' : 'login-runtime-panel-live'))
 const runtimeHeadline = computed(() => (isDemoMode() ? '当前默认会进入演示模式' : '当前默认会进入正常模式'))
@@ -108,13 +109,17 @@ function resolveRedirectTarget() {
 }
 
 function syncRouteAuthReason() {
-  if (errorMessage.value) {
-    return
-  }
   const authNotice = getLoginAuthNotice(route.query.reason)
   if (authNotice) {
     errorMessage.value = authNotice
     errorTraceId.value = ''
+    showingRouteAuthNotice.value = true
+    return
+  }
+  if (showingRouteAuthNotice.value) {
+    errorMessage.value = ''
+    errorTraceId.value = ''
+    showingRouteAuthNotice.value = false
   }
 }
 
@@ -128,6 +133,7 @@ async function handleSubmit() {
   submitting.value = true
   errorMessage.value = ''
   errorTraceId.value = ''
+  showingRouteAuthNotice.value = false
 
   try {
     const result = await login(form)
@@ -154,6 +160,7 @@ function fillDemoAccount(username: string, password: string) {
   form.password = password
   errorMessage.value = ''
   errorTraceId.value = ''
+  showingRouteAuthNotice.value = false
 }
 
 watch(

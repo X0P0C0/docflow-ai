@@ -68,6 +68,24 @@ describe('LoginView', () => {
     expect(wrapper.text()).toContain('登录状态已失效，请重新登录后继续。')
   })
 
+  it('clears the route-driven auth notice when the reason disappears', async () => {
+    assignRouteState(route, {
+      query: { reason: 'session-expired' },
+      fullPath: '/login?reason=session-expired',
+    })
+
+    const wrapper = await mountLoginView()
+    expect(wrapper.text()).toContain('登录状态已失效，请重新登录后继续。')
+
+    assignRouteState(route, {
+      query: {},
+      fullPath: '/login',
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('登录状态已失效，请重新登录后继续。')
+  })
+
   it('falls back to a demo session on network-like login failures and preserves the redirect target', async () => {
     assignRouteState(route, {
       query: { redirect: '/tickets/101' },
