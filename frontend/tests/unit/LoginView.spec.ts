@@ -252,4 +252,54 @@ describe('LoginView', () => {
     expect((inputs[1].element as HTMLInputElement).value).toBe('password')
     expect(wrapper.text()).not.toContain('登录状态已失效，请重新登录后继续。')
   })
+
+  it('prevents duplicate login submissions while the first request is still in flight', async () => {
+    let resolveLogin: ((value: {
+      token: string
+      expireSeconds: number
+      user: {
+        id: number
+        username: string
+        nickname: string
+        realName: string
+        email: string
+        phone: string
+        avatar: null
+        roles: string[]
+        permissions: string[]
+        capabilities: string[]
+      }
+    }) => void) | null = null
+    login.mockImplementation(() => new Promise((resolve) => {
+      resolveLogin = resolve as typeof resolveLogin
+    }))
+
+    const wrapper = await mountLoginView()
+
+    await wrapper.find('form.login-form').trigger('submit.prevent')
+    await wrapper.find('form.login-form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(login).toHaveBeenCalledTimes(1)
+
+    resolveLogin?.({
+      token: 'live-token-once',
+      expireSeconds: 7200,
+      user: {
+        id: 1,
+        username: 'admin',
+        nickname: '系统管理员',
+        realName: '系统管理员',
+        email: 'admin@docflow.ai',
+        phone: '13800000000',
+        avatar: null,
+        roles: ['ADMIN'],
+        permissions: [],
+        capabilities: [],
+      },
+    })
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith('/dashboard')
+  })
 })

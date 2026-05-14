@@ -124,6 +124,9 @@ function syncRouteAuthReason() {
 }
 
 async function handleSubmit() {
+  if (submitting.value) {
+    return
+  }
   if (!form.username || !form.password) {
     errorMessage.value = '请输入用户名和密码。'
     errorTraceId.value = ''
