@@ -103,13 +103,43 @@ describe('auth state helpers', () => {
     expect(JSON.parse(localStorage.getItem('docflow.ai.user') || '{}')).toEqual(backendUser)
   })
 
-  it('clears local session state when remote restore fails', async () => {
+  it('keeps the cached session when remote restore fails with a network-like error', async () => {
+    localStorage.setItem('docflow.ai.token', 'live-token-123')
+    localStorage.setItem('docflow.ai.user', JSON.stringify({
+      id: 2,
+      username: 'cached-user',
+      nickname: '缓存用户',
+      realName: '缓存用户',
+      email: 'cached@docflow.ai',
+      phone: '13800000002',
+      avatar: null,
+      roles: ['USER'],
+      permissions: [],
+      capabilities: [],
+    }))
+
+    const { authState, restoreSession } = await loadAuthModule({
+      fetchCurrentUserImpl: async () => {
+        throw Object.assign(new Error('Bad Gateway'), { status: 503 })
+      },
+    })
+
+    await restoreSession()
+
+    expect(authState.restored).toBe(true)
+    expect(authState.token).toBe('live-token-123')
+    expect(authState.user?.username).toBe('cached-user')
+    expect(localStorage.getItem('docflow.ai.token')).toBe('live-token-123')
+    expect(JSON.parse(localStorage.getItem('docflow.ai.user') || '{}').username).toBe('cached-user')
+  })
+
+  it('clears local session state when remote restore fails with a non-network error', async () => {
     localStorage.setItem('docflow.ai.token', 'live-token-123')
     localStorage.setItem('docflow.ai.user', JSON.stringify({ username: 'stale-user' }))
 
     const { authState, restoreSession } = await loadAuthModule({
       fetchCurrentUserImpl: async () => {
-        throw new Error('Unauthorized')
+        throw Object.assign(new Error('Unauthorized'), { status: 401 })
       },
     })
 

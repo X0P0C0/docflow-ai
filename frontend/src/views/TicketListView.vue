@@ -158,7 +158,7 @@ import { authState } from '../auth'
 import { canViewAllTickets } from '../authz'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
 import { tickets as fallbackTickets } from '../mock/dashboard'
-import { mergeTickets } from '../mock/ticketWorkspace'
+import { listLocalTickets, mergeTickets } from '../mock/ticketWorkspace'
 import type { TicketItem } from '../types/dashboard'
 import { resolveListLoadFailure } from '../utils/listLoadFailure'
 import { countArticlesBySourceTicket } from '../utils/knowledgeSourceTicket'
@@ -308,11 +308,11 @@ async function loadTickets() {
     })
     await syncKnowledgeArticleCounts(mergeTickets(data.map(formatTicketListItem as (ticket: TicketApiItem) => TicketItem)))
   } catch (error) {
-    await syncKnowledgeArticleCounts(mergeTickets(fallbackTickets))
     const result = resolveListLoadFailure(error, {
       networkFallbackMessage: '筛选接口暂时不可用',
       defaultMessage: '工单列表加载失败，请稍后重试。',
     })
+    await syncKnowledgeArticleCounts(result.shouldUseFallbackData ? mergeTickets(fallbackTickets) : listLocalTickets())
     usedFallbackData.value = result.shouldUseFallbackData
     errorMessage.value = result.message
     errorTraceId.value = result.traceId

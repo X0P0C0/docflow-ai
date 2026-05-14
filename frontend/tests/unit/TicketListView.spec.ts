@@ -92,6 +92,27 @@ describe('TicketListView', () => {
     expect(wrapper.findAll('.ticket-board-item').length).toBeGreaterThan(0)
   })
 
+  it('shows the backend business error without falling back to demo tickets', async () => {
+    createLocalTicket({
+      title: '仅本地保留的工单',
+      content: '业务错误时不应继续显示演示工单。',
+      type: 'TASK',
+      categoryId: 2,
+      priority: 2,
+    })
+    fetchTickets.mockRejectedValue(Object.assign(new Error('没有查看工单的权限'), {
+      status: 403,
+      traceId: 'trace-ticket-list-403',
+    }))
+
+    const wrapper = await mountView()
+
+    expect(wrapper.text()).toContain('没有查看工单的权限')
+    expect(wrapper.text()).toContain('trace-ticket-list-403')
+    expect(wrapper.text()).not.toContain('已回退到本地演示数据')
+    expect(wrapper.text()).not.toContain('支付回调接口偶发超时')
+  })
+
   it('filters the board down to knowledge-gap tickets with the quick filter', async () => {
     fetchTickets.mockResolvedValue([
       createTicketListItemFixture({

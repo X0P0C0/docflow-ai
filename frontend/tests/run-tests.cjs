@@ -238,7 +238,7 @@ test('resolveListLoadFailure preserves business error message and traceId', () =
   })
 
   assert.deepEqual(result, {
-    shouldUseFallbackData: true,
+    shouldUseFallbackData: false,
     message: '没有查看列表的权限（追踪号：trace-403-list）',
     traceId: 'trace-403-list',
   })

@@ -142,6 +142,28 @@ function formatApiArticle(article: KnowledgeArticleApiItem): KnowledgeArticleIte
   }
 }
 
+function buildFallbackKnowledgeArticles() {
+  const merged = new Map<number, KnowledgeArticleItem>()
+
+  mergeKnowledgeArticles([], listKnowledgeDrafts())
+    .map(formatApiArticle)
+    .forEach((item) => {
+      merged.set(item.id, item)
+    })
+
+  fallbackArticles.forEach((item) => {
+    if (!merged.has(item.id)) {
+      merged.set(item.id, item)
+    }
+  })
+
+  return Array.from(merged.values())
+}
+
+function buildLocalKnowledgeArticles() {
+  return mergeKnowledgeArticles([], listKnowledgeDrafts()).map(formatApiArticle)
+}
+
 async function loadKnowledgeArticles() {
   articleLoading.value = true
   articleErrorMessage.value = ''
@@ -157,7 +179,9 @@ async function loadKnowledgeArticles() {
     })
     articleErrorMessage.value = result.message
     articleErrorTraceId.value = result.traceId
-    knowledgeArticles.value = mergeKnowledgeArticles([], listKnowledgeDrafts()).map(formatApiArticle)
+    knowledgeArticles.value = result.shouldUseFallbackData
+      ? buildFallbackKnowledgeArticles()
+      : buildLocalKnowledgeArticles()
     console.error(error)
   } finally {
     articleLoading.value = false
@@ -178,7 +202,9 @@ async function loadTickets() {
     })
     ticketErrorMessage.value = result.message
     ticketErrorTraceId.value = result.traceId
-    dashboardTickets.value = mergeTickets(tickets.length ? tickets : listLocalTickets())
+    dashboardTickets.value = result.shouldUseFallbackData
+      ? mergeTickets(tickets.length ? tickets : listLocalTickets())
+      : listLocalTickets()
     console.error(error)
   }
 }

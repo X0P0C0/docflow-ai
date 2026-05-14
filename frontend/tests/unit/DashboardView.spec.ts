@@ -170,6 +170,16 @@ describe('DashboardView', () => {
   })
 
   it('passes network fallback messages to both panels without exposing trace ids', async () => {
+    saveKnowledgeDraft({
+      id: 9905,
+      title: '本地知识草稿',
+      summary: '后端不可用时保留在本地的知识内容。',
+      content: '本地知识内容',
+      categoryId: 2,
+      authorUserId: 9,
+      status: 0,
+      publishTime: null,
+    })
     fetchKnowledgeArticles.mockRejectedValue(Object.assign(new Error('Bad Gateway'), {
       status: 503,
       traceId: 'trace-dashboard-knowledge-503',
@@ -181,6 +191,7 @@ describe('DashboardView', () => {
 
     const wrapper = await mountView()
 
+    expect(wrapper.find('.knowledge-panel-props').text()).toContain('items=3')
     expect(wrapper.find('.knowledge-panel-props').text()).toContain('error=后端接口暂时不可用')
     expect(wrapper.find('.knowledge-panel-props').text()).toContain('trace=')
     expect(wrapper.find('.knowledge-panel-props').text()).not.toContain('trace-dashboard-knowledge-503')
@@ -189,6 +200,23 @@ describe('DashboardView', () => {
   })
 
   it('preserves backend business errors and trace ids when dashboard list calls fail with 4xx errors', async () => {
+    saveKnowledgeDraft({
+      id: 9906,
+      title: '仅本地保留的知识草稿',
+      summary: '业务错误时不应注入演示知识。',
+      content: '本地知识内容',
+      categoryId: 2,
+      authorUserId: 9,
+      status: 0,
+      publishTime: null,
+    })
+    createLocalTicket({
+      title: '仅本地保留的工单',
+      content: '业务错误时不应注入演示工单。',
+      type: 'TASK',
+      categoryId: 2,
+      priority: 2,
+    })
     fetchKnowledgeArticles.mockRejectedValue(Object.assign(new Error('没有查看知识文章的权限'), {
       status: 403,
       traceId: 'trace-dashboard-knowledge-403',
@@ -200,8 +228,10 @@ describe('DashboardView', () => {
 
     const wrapper = await mountView()
 
+    expect(wrapper.find('.knowledge-panel-props').text()).toContain('items=1')
     expect(wrapper.find('.knowledge-panel-props').text()).toContain('error=没有查看知识文章的权限（追踪号：trace-dashboard-knowledge-403）')
     expect(wrapper.find('.knowledge-panel-props').text()).toContain('trace=trace-dashboard-knowledge-403')
+    expect(wrapper.find('.ticket-panel-props').text()).toContain('items=1')
     expect(wrapper.find('.ticket-panel-props').text()).toContain('error=没有查看工单的权限（追踪号：trace-dashboard-ticket-403）')
     expect(wrapper.find('.ticket-panel-props').text()).toContain('trace=trace-dashboard-ticket-403')
   })

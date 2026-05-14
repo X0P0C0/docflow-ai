@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { fetchCurrentUser, isDemoToken, type CurrentUser, type LoginResponse } from './api/auth'
+import { isNetworkFallbackCandidate } from './api/http'
 
 const TOKEN_KEY = 'docflow.ai.token'
 const USER_KEY = 'docflow.ai.user'
@@ -55,7 +56,11 @@ export async function restoreSession() {
         updateCurrentUser(user)
         authState.restored = true
       })
-      .catch(() => {
+      .catch((error) => {
+        if (isNetworkFallbackCandidate(error) && authState.user) {
+          authState.restored = true
+          return
+        }
         clearSession()
         authState.restored = true
       })

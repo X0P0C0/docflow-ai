@@ -394,7 +394,10 @@ async function loadArticles() {
     usedFallbackData.value = result.shouldUseFallbackData
     errorMessage.value = result.message
     errorTraceId.value = result.traceId
-    articles.value = mergeKnowledgeArticles(fallbackArticles, listKnowledgeDrafts()).map((item) => attachArticleSourceTicket(item))
+    articles.value = mergeKnowledgeArticles(
+      result.shouldUseFallbackData ? fallbackArticles : [],
+      listKnowledgeDrafts(),
+    ).map((item) => attachArticleSourceTicket(item))
     console.error(error)
   } finally {
     loading.value = false

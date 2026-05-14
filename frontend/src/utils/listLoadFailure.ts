@@ -22,7 +22,7 @@ export function resolveListLoadFailure(
   }
 
   return {
-    shouldUseFallbackData: true,
+    shouldUseFallbackData: false,
     message: getApiErrorMessage(error, options.defaultMessage),
     traceId: getApiErrorTraceId(error),
   }

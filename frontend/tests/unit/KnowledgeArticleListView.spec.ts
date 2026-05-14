@@ -331,6 +331,16 @@ describe('KnowledgeArticleListView', () => {
   })
 
   it('shows trace details for business errors and empty-state copy when no articles match', async () => {
+    saveKnowledgeDraft({
+      id: 9904,
+      title: '本地知识草稿',
+      summary: '业务错误时仍可保留本地草稿。',
+      content: '本地知识内容',
+      categoryId: 3,
+      authorUserId: 7,
+      status: 0,
+      publishTime: null,
+    })
     fetchKnowledgeArticles.mockRejectedValue(Object.assign(new Error('知识库查询条件不合法'), {
       status: 422,
       traceId: 'trace-knowledge-list-422',
@@ -340,6 +350,7 @@ describe('KnowledgeArticleListView', () => {
 
     expect(errorWrapper.text()).toContain('知识库查询条件不合法')
     expect(errorWrapper.text()).toContain('trace-knowledge-list-422')
+    expect(errorWrapper.text()).not.toContain('当前先回退到本地演示数据')
 
     fetchKnowledgeArticles.mockReset()
     fetchKnowledgeArticles.mockResolvedValue([])
