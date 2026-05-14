@@ -1,4 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authState } from '../../src/auth'
 import { saveKnowledgeDraft } from '../../src/mock/knowledgeDrafts'
@@ -36,12 +37,12 @@ const {
   },
 }))
 
-const route = {
+const route = reactive({
   path: '/tickets/101',
   params: { id: '101' },
   query: {},
   fullPath: '/tickets/101',
-}
+})
 
 vi.mock('vue-router', () => ({
   RouterLink: {
@@ -123,6 +124,24 @@ describe('TicketDetailView', () => {
     expect(addTicketComment).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('评论内容涉嫌敏感信息，无法提交')
     expect(wrapper.text()).toContain('trace-comment-403')
+  })
+
+  it('clears the previous ticket when navigating to an invalid ticket id', async () => {
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+
+    const wrapper = await mountTicketDetailView()
+
+    assignRouteState(route, {
+      path: '/tickets/not-a-number',
+      params: { id: 'not-a-number' },
+      query: {},
+      fullPath: '/tickets/not-a-number',
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('工单 ID 不合法')
+    expect(wrapper.text()).not.toContain('支付回调接口偶发超时')
   })
 
   it('shows the new remote comment and resets the form after a successful submission', async () => {

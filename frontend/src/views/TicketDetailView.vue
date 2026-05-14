@@ -1011,8 +1011,14 @@ async function loadAssignableUsers() {
 
 async function loadTicket() {
   const requestId = ++ticketLoadRequestId
+  remoteTicket.value = null
+  remoteSourceKnowledgeArticles.value = []
+  linkedKnowledgeArticles.value = []
   const id = Number(route.params.id)
   if (!id) {
+    topErrorMessage.value = '工单 ID 不合法'
+    topErrorTraceId.value = ''
+    successMessage.value = ''
     return
   }
 
@@ -1060,6 +1066,9 @@ async function loadTicket() {
     if (requestId !== ticketLoadRequestId) {
       return
     }
+    remoteTicket.value = null
+    remoteSourceKnowledgeArticles.value = []
+    linkedKnowledgeArticles.value = []
     const result = resolveTicketDetailFallback(error, '工单详情加载失败，请稍后重试。')
     if (result.mode === 'show-error') {
       topErrorMessage.value = result.message

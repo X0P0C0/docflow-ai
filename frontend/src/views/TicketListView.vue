@@ -19,7 +19,7 @@
         <span class="chip chip-blue">Ticket Workspace</span>
       </div>
 
-      <form v-if="showFilters" class="ticket-filter-bar" @submit.prevent="loadTickets">
+      <form v-if="showFilters" class="ticket-filter-bar" @submit.prevent="handleSearch">
         <input
           v-model="filters.keyword"
           class="field-control"
@@ -150,8 +150,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { fetchTickets, type TicketApiItem } from '../api/ticket'
 import { buildTicketListScopeMessage } from '../access-policy'
 import { authState } from '../auth'
@@ -165,12 +165,17 @@ import { countArticlesBySourceTicket } from '../utils/knowledgeSourceTicket'
 import { formatTicketListItem } from '../utils/ticketPresentation'
 
 const router = useRouter()
+const route = useRoute()
 const tickets = ref<TicketItem[]>(fallbackTickets)
 const showFilters = ref(true)
 const loading = ref(false)
 const errorMessage = ref('')
 const errorTraceId = ref('')
 const usedFallbackData = ref(false)
+let ticketLoadRequestId = 0
+let skipNextRouteDrivenLoad = false
+let skipNextQuickFilterRefresh = false
+let skipNextViewModeRefresh = false
 const filters = reactive({
   keyword: '',
   status: '',
@@ -285,16 +290,54 @@ function toggleFilters() {
   showFilters.value = !showFilters.value
 }
 
+function syncFiltersFromRoute() {
+  filters.keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
+  filters.status = typeof route.query.status === 'string' ? route.query.status : ''
+  filters.priority = typeof route.query.priority === 'string' ? route.query.priority : ''
+  filters.type = typeof route.query.type === 'string' ? route.query.type : ''
+  skipNextQuickFilterRefresh = true
+  activeQuickFilter.value = typeof route.query.quickFilter === 'string'
+    && quickFilters.some((item) => item.value === route.query.quickFilter)
+      ? route.query.quickFilter as typeof activeQuickFilter.value
+      : 'all'
+  skipNextViewModeRefresh = true
+  viewMode.value = route.query.viewMode === 'compact' ? 'compact' : 'board'
+}
+
+function updateRouteQuery() {
+  router.replace({
+    query: {
+      keyword: filters.keyword.trim() || undefined,
+      status: filters.status || undefined,
+      priority: filters.priority || undefined,
+      type: filters.type || undefined,
+      quickFilter: activeQuickFilter.value !== 'all' ? activeQuickFilter.value : undefined,
+      viewMode: viewMode.value !== 'board' ? viewMode.value : undefined,
+    },
+  })
+}
+
+function refreshFromLocalState() {
+  skipNextRouteDrivenLoad = true
+  updateRouteQuery()
+  loadTickets()
+}
+
+function handleSearch() {
+  refreshFromLocalState()
+}
+
 function resetFilters() {
   filters.keyword = ''
   filters.status = ''
   filters.priority = ''
   filters.type = ''
   activeQuickFilter.value = 'all'
-  loadTickets()
+  refreshFromLocalState()
 }
 
 async function loadTickets() {
+  const requestId = ++ticketLoadRequestId
   loading.value = true
   errorMessage.value = ''
   errorTraceId.value = ''
@@ -306,8 +349,14 @@ async function loadTickets() {
       priority: filters.priority ? Number(filters.priority) : undefined,
       type: filters.type || undefined,
     })
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     await syncKnowledgeArticleCounts(mergeTickets(data.map(formatTicketListItem as (ticket: TicketApiItem) => TicketItem)))
   } catch (error) {
+    if (requestId !== ticketLoadRequestId) {
+      return
+    }
     const result = resolveListLoadFailure(error, {
       networkFallbackMessage: '筛选接口暂时不可用',
       defaultMessage: '工单列表加载失败，请稍后重试。',
@@ -318,13 +367,45 @@ async function loadTickets() {
     errorTraceId.value = result.traceId
     console.error(error)
   } finally {
-    loading.value = false
+    if (requestId === ticketLoadRequestId) {
+      loading.value = false
+    }
   }
 }
 
 onMounted(async () => {
+  syncFiltersFromRoute()
   await loadTickets()
 })
+
+watch(activeQuickFilter, () => {
+  if (skipNextQuickFilterRefresh) {
+    skipNextQuickFilterRefresh = false
+    return
+  }
+  refreshFromLocalState()
+})
+
+watch(viewMode, () => {
+  if (skipNextViewModeRefresh) {
+    skipNextViewModeRefresh = false
+    return
+  }
+  skipNextRouteDrivenLoad = true
+  updateRouteQuery()
+})
+
+watch(
+  () => route.fullPath,
+  async () => {
+    if (skipNextRouteDrivenLoad) {
+      skipNextRouteDrivenLoad = false
+      return
+    }
+    syncFiltersFromRoute()
+    await loadTickets()
+  },
+)
 </script>
 
 <style scoped>

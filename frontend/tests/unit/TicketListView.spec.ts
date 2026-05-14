@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authState } from '../../src/auth'
 import { createLocalTicket } from '../../src/mock/ticketWorkspace'
@@ -7,11 +8,17 @@ import { createAuthUser } from './helpers/fixtures'
 import { resetWebStorage } from './helpers/testHarness'
 import TicketListView from '../../src/views/TicketListView.vue'
 
-const { push, fetchTickets, canViewAllState } = vi.hoisted(() => ({
+const { push, replace, fetchTickets, canViewAllState } = vi.hoisted(() => ({
   push: vi.fn(),
+  replace: vi.fn(),
   fetchTickets: vi.fn(),
   canViewAllState: { value: true },
 }))
+
+const route = reactive({
+  query: {},
+  fullPath: '/tickets',
+})
 
 vi.mock('vue-router', () => ({
   RouterLink: {
@@ -19,8 +26,10 @@ vi.mock('vue-router', () => ({
     props: ['to'],
     template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
   },
+  useRoute: () => route,
   useRouter: () => ({
     push,
+    replace,
   }),
 }))
 
@@ -60,9 +69,12 @@ describe('TicketListView', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     push.mockReset()
+    replace.mockReset()
     fetchTickets.mockReset()
     canViewAllState.value = true
     resetWebStorage()
+    route.query = {}
+    route.fullPath = '/tickets'
     authState.token = 'prod-token'
     authState.restored = true
     authState.user = createAuthUser()
@@ -206,6 +218,16 @@ describe('TicketListView', () => {
     await wrapper.find('form.ticket-filter-bar').trigger('submit.prevent')
     await flushPromises()
 
+    expect(replace).toHaveBeenCalledWith({
+      query: {
+        keyword: '支付回调',
+        status: '2',
+        priority: '4',
+        type: 'TASK',
+        quickFilter: undefined,
+        viewMode: undefined,
+      },
+    })
     expect(fetchTickets).toHaveBeenLastCalledWith({
       keyword: '支付回调',
       status: 2,
@@ -216,6 +238,16 @@ describe('TicketListView', () => {
     await wrapper.findAll('button').find((item) => item.text() === '重置')!.trigger('click')
     await flushPromises()
 
+    expect(replace).toHaveBeenLastCalledWith({
+      query: {
+        keyword: undefined,
+        status: undefined,
+        priority: undefined,
+        type: undefined,
+        quickFilter: undefined,
+        viewMode: undefined,
+      },
+    })
     expect(fetchTickets).toHaveBeenLastCalledWith({
       keyword: undefined,
       status: undefined,
@@ -252,6 +284,16 @@ describe('TicketListView', () => {
     expect(wrapper.find('.ticket-compact-list').exists()).toBe(true)
     expect(wrapper.text()).toContain('高优先级支付事故')
     expect(wrapper.text()).not.toContain('普通咨询工单')
+    expect(replace).toHaveBeenLastCalledWith({
+      query: {
+        keyword: undefined,
+        status: undefined,
+        priority: undefined,
+        type: undefined,
+        quickFilter: 'urgent',
+        viewMode: 'compact',
+      },
+    })
   })
 
   it('scopes the mine filter to the current user when all-ticket access is unavailable', async () => {
@@ -353,5 +395,39 @@ describe('TicketListView', () => {
 
     expect(wrapper.text()).toContain('当前筛选条件下没有匹配的工单。')
     expect(wrapper.findAll('.ticket-board-item')).toHaveLength(0)
+  })
+
+  it('syncs filter and view state from the route on first load without duplicate requests', async () => {
+    route.query = {
+      keyword: '支付',
+      status: '2',
+      priority: '4',
+      type: 'TASK',
+      quickFilter: 'urgent',
+      viewMode: 'compact',
+    }
+    route.fullPath = '/tickets?keyword=%E6%94%AF%E4%BB%98&status=2&priority=4&type=TASK&quickFilter=urgent&viewMode=compact'
+    fetchTickets.mockResolvedValue([
+      createTicketListItemFixture({
+        id: 901,
+        ticketNo: 'TK-901',
+        title: '按路由恢复的工单',
+        priority: 4,
+        priorityLabel: '紧急',
+        type: 'TASK',
+      }),
+    ])
+
+    const wrapper = await mountView()
+
+    expect(fetchTickets).toHaveBeenCalledTimes(1)
+    expect(fetchTickets).toHaveBeenCalledWith({
+      keyword: '支付',
+      status: 2,
+      priority: 4,
+      type: 'TASK',
+    })
+    expect(wrapper.find('.ticket-compact-list').exists()).toBe(true)
+    expect(wrapper.text()).toContain('按路由恢复的工单')
   })
 })
