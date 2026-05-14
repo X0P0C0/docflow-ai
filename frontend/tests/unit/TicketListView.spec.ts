@@ -16,6 +16,7 @@ const { push, replace, fetchTickets, canViewAllState } = vi.hoisted(() => ({
 }))
 
 const route = reactive({
+  path: '/tickets',
   query: {},
   fullPath: '/tickets',
 })
@@ -74,6 +75,7 @@ describe('TicketListView', () => {
     canViewAllState.value = true
     resetWebStorage()
     route.query = {}
+    route.path = '/tickets'
     route.fullPath = '/tickets'
     authState.token = 'prod-token'
     authState.restored = true
@@ -429,5 +431,17 @@ describe('TicketListView', () => {
     })
     expect(wrapper.find('.ticket-compact-list').exists()).toBe(true)
     expect(wrapper.text()).toContain('按路由恢复的工单')
+  })
+
+  it('suppresses redundant navigation when already on the ticket-create route', async () => {
+    fetchTickets.mockResolvedValue([createTicketListItemFixture()])
+    route.path = '/tickets/create'
+    route.fullPath = '/tickets/create'
+
+    const wrapper = await mountView()
+
+    await wrapper.findAll('button').find((item) => item.text() === '新建工单')!.trigger('click')
+
+    expect(push).not.toHaveBeenCalled()
   })
 })

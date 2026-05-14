@@ -6,7 +6,7 @@
         <button class="ghost-button" type="button" @click="toggleFilters">
           {{ showFilters ? '收起筛选' : '筛选工单' }}
         </button>
-        <button class="primary-button" type="button" @click="router.push('/tickets/create')">新建工单</button>
+        <button class="primary-button" type="button" @click="navigateTo('/tickets/create')">新建工单</button>
       </div>
     </header>
 
@@ -288,6 +288,13 @@ function statusChipClass(status: string) {
 
 function toggleFilters() {
   showFilters.value = !showFilters.value
+}
+
+function navigateTo(path: string) {
+  if (route.path === path) {
+    return
+  }
+  router.push(path)
 }
 
 function syncFiltersFromRoute() {
