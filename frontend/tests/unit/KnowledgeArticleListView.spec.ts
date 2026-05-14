@@ -430,4 +430,36 @@ describe('KnowledgeArticleListView', () => {
 
     expect(push).not.toHaveBeenCalled()
   })
+
+  it('keeps the latest knowledge list result when an older request resolves later', async () => {
+    let resolveFirstLoad: ((value: KnowledgeArticleApiItem[]) => void) | null = null
+    fetchKnowledgeArticles
+      .mockImplementationOnce(() => new Promise((resolve) => {
+        resolveFirstLoad = resolve as (value: KnowledgeArticleApiItem[]) => void
+      }))
+      .mockResolvedValueOnce([
+        createKnowledgeArticleFixture({
+          id: 901,
+          title: '第二轮最新知识文章',
+        }),
+      ])
+
+    const wrapper = await mountView()
+
+    route.query = { quickFilter: 'popular' }
+    route.fullPath = '/knowledge/articles?quickFilter=popular'
+    await flushPromises()
+
+    resolveFirstLoad?.([
+      createKnowledgeArticleFixture({
+        id: 902,
+        title: '过期知识列表结果',
+      }),
+    ])
+    await flushPromises()
+
+    expect(fetchKnowledgeArticles).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('第二轮最新知识文章')
+    expect(wrapper.text()).not.toContain('过期知识列表结果')
+  })
 })
