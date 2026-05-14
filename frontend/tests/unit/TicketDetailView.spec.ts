@@ -695,6 +695,46 @@ describe('TicketDetailView', () => {
     expect(push).toHaveBeenCalledWith('/knowledge/articles/901/edit?from=ticket')
   })
 
+  it('ignores a stale knowledge-draft result after navigating to another ticket', async () => {
+    let resolveKnowledgeDraft: ((value: { id: number }) => void) | null = null
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+        status: 3,
+        statusLabel: '已解决',
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+        status: 3,
+        statusLabel: '已解决',
+      }))
+    fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])
+    createTicketKnowledgeDraft.mockImplementation(() => new Promise((resolve) => {
+      resolveKnowledgeDraft = resolve as typeof resolveKnowledgeDraft
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    const knowledgeButton = wrapper.findAll('button').find((item) => item.text().includes('沉淀为知识文章'))
+    expect(knowledgeButton).toBeTruthy()
+
+    await knowledgeButton!.trigger('click')
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    resolveKnowledgeDraft?.({ id: 999 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二张工单')
+    expect(push).not.toHaveBeenCalledWith('/knowledge/articles/999/edit?from=ticket')
+  })
+
   it('validates empty comment submission before calling the api', async () => {
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])

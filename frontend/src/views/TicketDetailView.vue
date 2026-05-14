@@ -602,6 +602,7 @@ const sourceKnowledgeSort = ref<'latest' | 'status' | 'title'>('latest')
 const recommendedKnowledgeSort = ref<'default' | 'title'>('default')
 const activeSourceKnowledgeStatus = ref<'all' | 'published' | 'draft' | 'archived' | 'local'>('all')
 let ticketLoadRequestId = 0
+let knowledgeDraftRequestId = 0
 
 const commentForm = ref({
   content: '',
@@ -822,6 +823,7 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
     return
   }
 
+  const requestId = ++knowledgeDraftRequestId
   topErrorMessage.value = ''
   topErrorTraceId.value = ''
   knowledgeDraftSubmitting.value = true
@@ -834,6 +836,9 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
         : '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u771f\u5b9e\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
       const query = getKnowledgeDraftRedirectQuery(options?.origin)
       const targetPath = `/knowledge/articles/${existingDraft.id}/edit${query}`
+      if (requestId !== knowledgeDraftRequestId) {
+        return
+      }
       await router.push(targetPath)
       return
     }
@@ -844,14 +849,23 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
           origin: options?.origin,
           closeRemark: options?.closeRemark,
         })
+        if (requestId !== knowledgeDraftRequestId) {
+          return
+        }
         saveKnowledgeDraftSeed(buildKnowledgeDraftFromTicket(ticket.value, options))
         successMessage.value = '\u5df2\u57fa\u4e8e\u5f53\u524d\u5de5\u5355\u751f\u6210\u771f\u5b9e\u77e5\u8bc6\u8349\u7a3f\uff0c\u6b63\u5728\u8fdb\u5165\u7f16\u8f91\u9875\u3002'
         await loadLinkedKnowledgeArticles()
         const query = getKnowledgeDraftRedirectQuery(options?.origin)
+        if (requestId !== knowledgeDraftRequestId) {
+          return
+        }
         await router.push(`/knowledge/articles/${article.id}/edit${query}`)
         return
       } catch (error) {
         const result = resolveTicketDetailFallback(error, '知识草稿生成失败，请稍后重试。')
+        if (requestId !== knowledgeDraftRequestId) {
+          return
+        }
         if (result.mode === 'show-error') {
           topErrorMessage.value = result.message
           topErrorTraceId.value = result.traceId
@@ -861,11 +875,16 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
       }
     }
 
+    if (requestId !== knowledgeDraftRequestId) {
+      return
+    }
     saveKnowledgeDraftSeed(buildKnowledgeDraftFromTicket(ticket.value, options))
     const query = getKnowledgeDraftRedirectQuery(options?.origin)
     await router.push(`/knowledge/articles/create${query}`)
   } finally {
-    knowledgeDraftSubmitting.value = false
+    if (requestId === knowledgeDraftRequestId) {
+      knowledgeDraftSubmitting.value = false
+    }
   }
 }
 
@@ -1051,6 +1070,7 @@ async function loadAssignableUsers() {
 
 async function loadTicket() {
   const requestId = ++ticketLoadRequestId
+  knowledgeDraftRequestId += 1
   remoteTicket.value = null
   remoteSourceKnowledgeArticles.value = []
   linkedKnowledgeArticles.value = []
