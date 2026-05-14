@@ -384,9 +384,9 @@ VALUES
 
 INSERT INTO `sys_user` (`id`, `username`, `password`, `nickname`, `real_name`, `email`, `phone`, `avatar`, `status`, `dept_id`, `last_login_time`, `create_by`, `update_by`, `deleted`)
 VALUES
-  (1, 'admin', '$2a$10$.Xu8WvGNQjOiIXCMlhrfPeuGHaJn9fR4dYc1qbF8Dsy8wQk6vL/iG', '系统管理员', '系统管理员', 'admin@docflow.ai', '13800000000', NULL, 1, 1, NULL, 1, 1, 0),
-  (2, 'support01', '$2a$10$gkmFHkbo2aEveBED3K9mxOEhe83qbdyJ59L5rQARRhwwcU/zg3lQC', '支持小李', '李晓安', 'support01@docflow.ai', '13800000001', NULL, 1, 2, NULL, 1, 1, 0),
-  (3, 'user01', '$2a$10$gkmFHkbo2aEveBED3K9mxOEhe83qbdyJ59L5rQARRhwwcU/zg3lQC', '业务小王', '王晨', 'user01@docflow.ai', '13800000002', NULL, 1, 3, NULL, 1, 1, 0);
+  (1, 'admin', '$2a$10$Ccx5k.0RYMV26CfnyJXrK.iMj5Msknu0FPAeCSWXkeuxGKoMSdPrS', '系统管理员', '系统管理员', 'admin@docflow.ai', '13800000000', NULL, 1, 1, NULL, 1, 1, 0),
+  (2, 'support01', '$2a$10$Ccx5k.0RYMV26CfnyJXrK.iMj5Msknu0FPAeCSWXkeuxGKoMSdPrS', '支持小李', '李晓安', 'support01@docflow.ai', '13800000001', NULL, 1, 2, NULL, 1, 1, 0),
+  (3, 'user01', '$2a$10$Ccx5k.0RYMV26CfnyJXrK.iMj5Msknu0FPAeCSWXkeuxGKoMSdPrS', '业务小王', '王晨', 'user01@docflow.ai', '13800000002', NULL, 1, 3, NULL, 1, 1, 0);
 
 INSERT INTO `sys_role` (`id`, `role_name`, `role_code`, `description`, `status`, `create_by`, `update_by`, `deleted`)
 VALUES

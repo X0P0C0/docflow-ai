@@ -52,13 +52,13 @@ class AuthControllerTest {
         response.setToken("test-token");
         response.setExpireSeconds(7200L);
 
-        when(authService.login(eq("admin"), eq("123456"))).thenReturn(response);
+        when(authService.login(eq("admin"), eq("password"))).thenReturn(response);
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(java.util.Map.of(
                                 "username", "admin",
-                                "password", "123456"
+                                "password", "password"
                         ))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
