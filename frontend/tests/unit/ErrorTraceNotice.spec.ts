@@ -61,4 +61,29 @@ describe('ErrorTraceNotice', () => {
 
     expect(wrapper.get('button').text()).toContain('trace-copy-ok')
   })
+
+  it('clears the copied state when the trace id changes', async () => {
+    vi.useFakeTimers()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+
+    const wrapper = mount(ErrorTraceNotice, {
+      props: {
+        message: '工单详情加载失败，请稍后重试。',
+        traceId: 'trace-copy-old',
+      },
+    })
+
+    await wrapper.get('button').trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('button').text()).toBe('已复制追踪号')
+
+    await wrapper.setProps({ traceId: 'trace-copy-new' })
+
+    expect(wrapper.get('button').text()).toContain('trace-copy-new')
+    expect(wrapper.get('button').text()).not.toBe('已复制追踪号')
+  })
 })

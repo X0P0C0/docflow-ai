@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<{
   message: string
@@ -30,6 +30,13 @@ const wrapperClass = computed(() => (
     ? 'error-trace error-trace-inline'
     : 'state-box state-warning error-trace'
 ))
+
+watch(
+  () => props.traceId,
+  () => {
+    copied.value = false
+  },
+)
 
 async function copyTraceId() {
   if (!props.traceId) {
