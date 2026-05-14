@@ -945,6 +945,48 @@ describe('TicketDetailView', () => {
     expect(wrapper.text()).toContain('这张工单已经处理完成，适合继续沉淀知识文章。')
   })
 
+  it('ignores a stale status-update result after navigating to another ticket', async () => {
+    let resolveStatusUpdate: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
+    fetchTicketDetail
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 101,
+        title: '第一张工单',
+      }))
+      .mockResolvedValueOnce(createTicketDetailFixture({
+        id: 202,
+        title: '第二张工单',
+      }))
+    fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
+    updateTicketStatus.mockImplementation(() => new Promise((resolve) => {
+      resolveStatusUpdate = resolve as typeof resolveStatusUpdate
+    }))
+
+    const wrapper = await mountTicketDetailView()
+    const statusForm = wrapper.findAll('form.ticket-form')[2]
+    await statusForm.find('select').setValue('3')
+    await statusForm.find('textarea').setValue('准备标记为已解决')
+    await statusForm.trigger('submit.prevent')
+
+    assignRouteState(route, {
+      path: '/tickets/202',
+      params: { id: '202' },
+      query: {},
+      fullPath: '/tickets/202',
+    })
+    await flushPromises()
+
+    resolveStatusUpdate?.(createTicketDetailFixture({
+      id: 101,
+      title: '第一张工单',
+      status: 3,
+      statusLabel: '已解决',
+    }))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('第二张工单')
+    expect(wrapper.text()).not.toContain('工单状态已更新')
+  })
+
   it('blocks status updates when transition permission is unavailable and skips assignee loading when assignment is disabled', async () => {
     authzState.canAssignTickets = false
     authzState.canTransitionTickets = false

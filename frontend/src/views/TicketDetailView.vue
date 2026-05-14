@@ -603,6 +603,7 @@ const recommendedKnowledgeSort = ref<'default' | 'title'>('default')
 const activeSourceKnowledgeStatus = ref<'all' | 'published' | 'draft' | 'archived' | 'local'>('all')
 let ticketLoadRequestId = 0
 let knowledgeDraftRequestId = 0
+let statusUpdateRequestId = 0
 
 const commentForm = ref({
   content: '',
@@ -1071,6 +1072,7 @@ async function loadAssignableUsers() {
 async function loadTicket() {
   const requestId = ++ticketLoadRequestId
   knowledgeDraftRequestId += 1
+  statusUpdateRequestId += 1
   remoteTicket.value = null
   remoteSourceKnowledgeArticles.value = []
   linkedKnowledgeArticles.value = []
@@ -1217,6 +1219,7 @@ async function submitStatusUpdate() {
     && !linkedKnowledgeArticles.value.length
     && window.confirm('\u5de5\u5355\u4f1a\u88ab\u5173\u95ed\u3002\u8981\u4e0d\u8981\u5728\u5173\u95ed\u540e\u7acb\u523b\u751f\u6210\u4e00\u7bc7\u77e5\u8bc6\u6c89\u6dc0\u8349\u7a3f\uff1f')
   const closeRemark = statusForm.value.remark.trim()
+  const requestId = ++statusUpdateRequestId
 
   statusSubmitting.value = true
   statusError.value = ''
@@ -1225,7 +1228,11 @@ async function submitStatusUpdate() {
   try {
     const localTicket = getLocalTicket(id)
     if (localTicket) {
-      remoteTicket.value = updateLocalTicketStatus(localTicket, statusForm.value.status, statusForm.value.remark.trim())
+      const nextTicket = updateLocalTicketStatus(localTicket, statusForm.value.status, statusForm.value.remark.trim())
+      if (requestId !== statusUpdateRequestId) {
+        return
+      }
+      remoteTicket.value = nextTicket
       topErrorMessage.value = ''
       topErrorTraceId.value = ''
       remoteSourceKnowledgeArticles.value = []
@@ -1246,6 +1253,9 @@ async function submitStatusUpdate() {
       status: statusForm.value.status,
       remark: statusForm.value.remark.trim(),
     })
+    if (requestId !== statusUpdateRequestId) {
+      return
+    }
     remoteTicket.value = formatTicketDetailItem(data)
     topErrorMessage.value = ''
     topErrorTraceId.value = ''
@@ -1260,15 +1270,20 @@ async function submitStatusUpdate() {
         origin: 'ticket-close',
         closeRemark,
       })
+      }
+    } catch (error) {
+      if (requestId !== statusUpdateRequestId) {
+        return
+      }
+      const result = getApiErrorDisplay(error, '状态更新失败')
+      statusError.value = result.message
+      statusErrorTraceId.value = result.traceId
+    } finally {
+      if (requestId === statusUpdateRequestId) {
+        statusSubmitting.value = false
+      }
     }
-  } catch (error) {
-    const result = getApiErrorDisplay(error, '状态更新失败')
-    statusError.value = result.message
-    statusErrorTraceId.value = result.traceId
-  } finally {
-    statusSubmitting.value = false
   }
-}
 
 async function submitAssignment() {
   const id = Number(route.params.id)
