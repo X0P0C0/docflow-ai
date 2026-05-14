@@ -304,6 +304,9 @@ async function loadInitialArticle() {
 
   const localDraft = getKnowledgeDraft(id)
   if (localDraft) {
+    if (route.query.from === 'ticket' || route.query.from === 'ticket-close') {
+      consumeKnowledgeDraftSeed()
+    }
     editingLocalDraft.value = true
     syncForm(localDraft)
     sourceTicket.value = localDraft.sourceTicket || null
@@ -312,12 +315,21 @@ async function loadInitialArticle() {
 
   try {
     const article = attachArticleSourceTicket(await fetchKnowledgeArticleDetail(id))
+    if (route.query.from === 'ticket' || route.query.from === 'ticket-close') {
+      consumeKnowledgeDraftSeed()
+    }
     editingLocalDraft.value = false
     syncForm(article)
     sourceTicket.value = article.sourceTicket || null
   } catch (error) {
     console.error(error)
     const result = resolveKnowledgeEditorLoadFailure(error)
+    if (result.mode === 'fallback-local') {
+      applyTicketSeed()
+      if (sourceTicket.value) {
+        return
+      }
+    }
     feedbackMessage.value = result.message
     feedbackTraceId.value = result.traceId
   }

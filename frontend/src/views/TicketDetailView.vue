@@ -826,17 +826,18 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
     return
   }
 
-  if (!isDemoMode()) {
-    try {
-      const article = await createTicketKnowledgeDraft(ticket.value.id, {
-        origin: options?.origin,
-        closeRemark: options?.closeRemark,
-      })
-      successMessage.value = '\u5df2\u57fa\u4e8e\u5f53\u524d\u5de5\u5355\u751f\u6210\u771f\u5b9e\u77e5\u8bc6\u8349\u7a3f\uff0c\u6b63\u5728\u8fdb\u5165\u7f16\u8f91\u9875\u3002'
-      await loadLinkedKnowledgeArticles()
-      const query = getKnowledgeDraftRedirectQuery(options?.origin)
-      await router.push(`/knowledge/articles/${article.id}/edit${query}`)
-      return
+    if (!isDemoMode()) {
+      try {
+        const article = await createTicketKnowledgeDraft(ticket.value.id, {
+          origin: options?.origin,
+          closeRemark: options?.closeRemark,
+        })
+        saveKnowledgeDraftSeed(buildKnowledgeDraftFromTicket(ticket.value, options))
+        successMessage.value = '\u5df2\u57fa\u4e8e\u5f53\u524d\u5de5\u5355\u751f\u6210\u771f\u5b9e\u77e5\u8bc6\u8349\u7a3f\uff0c\u6b63\u5728\u8fdb\u5165\u7f16\u8f91\u9875\u3002'
+        await loadLinkedKnowledgeArticles()
+        const query = getKnowledgeDraftRedirectQuery(options?.origin)
+        await router.push(`/knowledge/articles/${article.id}/edit${query}`)
+        return
     } catch (error) {
       const result = resolveTicketDetailFallback(error, '知识草稿生成失败，请稍后重试。')
       if (result.mode === 'show-error') {

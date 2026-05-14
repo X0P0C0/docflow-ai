@@ -171,6 +171,37 @@ describe('KnowledgeArticleEditorView', () => {
     expect(listKnowledgeDrafts()).toHaveLength(0)
   })
 
+  it('reuses the ticket seed in edit mode when the remote draft cannot be loaded', async () => {
+    saveKnowledgeDraftSeed({
+      title: '支付回调失败处理复盘',
+      summary: '从工单沉淀入口带过来的摘要。',
+      content: '一、问题现象\n支付回调失败。\n\n六、结论与预防\n待补充。',
+      categoryId: 3,
+      sourceTicketId: 701,
+      sourceTicketNo: 'TK-701',
+      sourceTicketTitle: '支付回调失败',
+      origin: 'ticket-close',
+      closeRemark: '业务已确认恢复。',
+      ticketStatus: '已关闭',
+    })
+    assignRouteState(route, {
+      path: '/knowledge/articles/68/edit',
+      params: { id: '68' },
+      query: { from: 'ticket-close' },
+    })
+    fetchKnowledgeArticleDetail.mockRejectedValue(Object.assign(new Error('Bad Gateway'), {
+      status: 503,
+      traceId: 'trace-load-503',
+    }))
+
+    const wrapper = await mountKnowledgeArticleEditorView()
+
+    expect((wrapper.find('input[type="text"]').element as HTMLInputElement).value).toBe('支付回调失败处理复盘')
+    expect(wrapper.text()).toContain('工单 TK-701 已关闭，已经帮你带出沉淀草稿和关闭备注。')
+    expect(wrapper.text()).toContain('来源工单：TK-701 · 支付回调失败')
+    expect(consumeKnowledgeDraftSeed()).toBeNull()
+  })
+
   it('falls back to a local draft for 5xx save failures', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(24680)
     createKnowledgeArticle.mockRejectedValue(Object.assign(new Error('服务暂时不可用'), {

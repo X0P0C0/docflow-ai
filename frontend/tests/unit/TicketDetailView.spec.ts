@@ -296,6 +296,7 @@ describe('TicketDetailView', () => {
     await remarkInput.setValue('已确认回调恢复，关闭工单并沉淀处理经验。')
     await statusForm.trigger('submit.prevent')
     await flushPromises()
+    const seed = consumeKnowledgeDraftSeed()
 
     expect(updateTicketStatus).toHaveBeenCalledTimes(1)
     expect(updateTicketStatus).toHaveBeenCalledWith(101, {
@@ -307,6 +308,9 @@ describe('TicketDetailView', () => {
       origin: 'ticket-close',
       closeRemark: '已确认回调恢复，关闭工单并沉淀处理经验。',
     })
+    expect(seed?.sourceTicketId).toBe(101)
+    expect(seed?.origin).toBe('ticket-close')
+    expect(seed?.closeRemark).toBe('已确认回调恢复，关闭工单并沉淀处理经验。')
     expect(wrapper.text()).toContain('已基于当前工单生成真实知识草稿，正在进入编辑页。')
     expect(push).toHaveBeenCalledWith('/knowledge/articles/501/edit?from=ticket-close')
   })
