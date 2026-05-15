@@ -15,6 +15,16 @@
   --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
   --panel-bg: rgba(255, 255, 255, 0.78);
   --panel-border: rgba(255, 255, 255, 0.82);
+  --el-color-primary: #2563eb;
+  --el-border-radius-base: 14px;
+  --el-border-radius-round: 999px;
+  --el-font-size-base: 14px;
+  --el-box-shadow-light: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --el-fill-color-light: rgba(248, 250, 252, 0.9);
+  --el-fill-color-blank: rgba(255, 255, 255, 0.92);
+  --el-border-color-light: rgba(148, 163, 184, 0.2);
+  --el-text-color-regular: #0f172a;
+  --el-text-color-secondary: #64748b;
 }
 
 * {
@@ -31,6 +41,56 @@ body,
 body {
   min-height: 100vh;
   background-attachment: fixed;
+}
+
+body .el-card,
+body .el-alert,
+body .el-table,
+body .el-input__wrapper,
+body .el-select__wrapper {
+  box-shadow: none;
+}
+
+body .el-card {
+  border-radius: 24px;
+}
+
+body .el-card.is-hover-shadow:hover {
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+body .el-button {
+  min-height: 40px;
+  font-weight: 600;
+}
+
+body .el-button--primary {
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.18);
+}
+
+body .el-input__wrapper,
+body .el-select__wrapper,
+body .el-textarea__inner {
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
+}
+
+body .el-radio-group {
+  flex-wrap: wrap;
+}
+
+body .el-radio-button__inner {
+  min-height: 40px;
+  padding-inline: 16px;
+  font-weight: 600;
+}
+
+body .el-table {
+  --el-table-border-color: rgba(148, 163, 184, 0.18);
+  --el-table-header-bg-color: rgba(248, 250, 252, 0.9);
+  --el-table-row-hover-bg-color: rgba(239, 246, 255, 0.78);
+  border-radius: 18px;
+  overflow: hidden;
 }
 
 input,

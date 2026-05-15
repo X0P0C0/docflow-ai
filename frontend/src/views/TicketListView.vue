@@ -5,188 +5,318 @@
     <main class="main-content">
       <AppTopbar />
 
-      <section class="panel ticket-workspace-hero">
-        <div class="ticket-workspace-copy">
-          <span class="hero-tag">Ticket Workspace</span>
-          <h2>把待办、流转和知识沉淀收进同一张处理台。</h2>
-          <p>这一页先收敛成统一的后台工作台骨架，后面继续补批量动作、排序和更细的团队协作能力。</p>
-          <div class="ticket-workspace-actions">
-            <button class="ghost-button" type="button" @click="toggleFilters">
-              {{ showFilters ? '收起筛选' : '筛选工单' }}
-            </button>
-            <button class="primary-button" type="button" @click="navigateTo('/tickets/create')">新建工单</button>
-          </div>
-        </div>
-
-        <div class="ticket-workspace-stats">
-          <div class="ticket-stat-card">
-            <span class="muted">当前工单</span>
-            <strong>{{ tickets.length }}</strong>
-            <span>当前工作台可见的工单总数</span>
-          </div>
-          <div class="ticket-stat-card">
-            <span class="muted">待处理</span>
-            <strong>{{ processingCount }}</strong>
-            <span>优先关注新建、处理中和排查中的事项</span>
-          </div>
-          <div class="ticket-stat-card">
-            <span class="muted">本地工作流</span>
-            <strong>{{ localTicketCount }}</strong>
-            <span>接口不可用时仍可继续本地记录</span>
-          </div>
-          <div class="ticket-stat-card">
-            <span class="muted">待沉淀知识</span>
-            <strong>{{ knowledgeGapCount }}</strong>
-            <span>已闭环但还未沉淀成知识的入口</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel ticket-toolbar-panel">
-        <div class="state-box ticket-scope-banner">
-          {{ ticketScopeMessage }}
-        </div>
-
-        <div class="ticket-toolbar-row">
-          <div class="ticket-toolbar-group">
-            <span class="ticket-toolbar-label">快捷视角</span>
-            <div class="ticket-quick-filters">
-              <button
-                v-for="filter in quickFilterOptions"
-                :key="filter.value"
-                class="chip quick-filter-chip"
-                :class="activeQuickFilter === filter.value ? 'chip-blue active-chip' : 'chip-default'"
-                type="button"
-                @click="activeQuickFilter = filter.value"
-              >
-                {{ filter.label }}
-              </button>
+      <section class="ticket-page">
+        <section class="ticket-hero">
+          <div class="ticket-hero__copy">
+            <el-tag effect="plain" round type="primary">Ticket Workspace</el-tag>
+            <div class="ticket-hero__heading">
+              <h2>工单工作台</h2>
+              <p>
+                把待处理、跟进中、已解决和待沉淀知识的工单放在同一张工作台里，
+                用统一筛选和更清晰的列表结构来管理日常协作。
+              </p>
+            </div>
+            <div class="ticket-hero__actions">
+              <el-button plain @click="toggleFilters">
+                {{ showFilters ? '收起筛选' : '展开筛选' }}
+              </el-button>
+              <el-button type="primary" @click="navigateTo('/tickets/create')">
+                新建工单
+              </el-button>
             </div>
           </div>
 
-          <div class="ticket-toolbar-group ticket-toolbar-group-end">
-            <span class="ticket-toolbar-label">展示方式</span>
-            <div class="ticket-view-toggle">
-              <button
-                class="ghost-button"
-                :class="{ 'toggle-active': viewMode === 'board' }"
-                type="button"
-                @click="viewMode = 'board'"
-              >
-                卡片视图
-              </button>
-              <button
-                class="ghost-button"
-                :class="{ 'toggle-active': viewMode === 'compact' }"
-                type="button"
-                @click="viewMode = 'compact'"
-              >
-                紧凑视图
-              </button>
-            </div>
+          <div class="ticket-stats">
+            <el-card
+              v-for="stat in statCards"
+              :key="stat.label"
+              shadow="hover"
+              class="ticket-stat-card"
+            >
+              <span class="ticket-stat-card__label">{{ stat.label }}</span>
+              <strong>{{ stat.value }}</strong>
+              <p>{{ stat.description }}</p>
+            </el-card>
           </div>
-        </div>
+        </section>
 
-        <form v-if="showFilters" class="ticket-filter-bar" @submit.prevent="handleSearch">
-          <input
-            v-model="filters.keyword"
-            class="field-control"
-            type="text"
-            placeholder="搜索工单标题、编号或描述"
-          />
-          <select v-model="filters.status" class="field-control">
-            <option value="">全部状态</option>
-            <option value="1">新建</option>
-            <option value="2">处理中</option>
-            <option value="3">已解决</option>
-            <option value="4">已关闭</option>
-          </select>
-          <select v-model="filters.priority" class="field-control">
-            <option value="">全部优先级</option>
-            <option value="4">P1 · 紧急</option>
-            <option value="3">P2 · 高优先级</option>
-            <option value="2">P3 · 普通</option>
-            <option value="1">P4 · 低优先级</option>
-          </select>
-          <select v-model="filters.type" class="field-control">
-            <option value="">全部类型</option>
-            <option value="INCIDENT">故障事件</option>
-            <option value="TASK">处理任务</option>
-            <option value="QUESTION">问题咨询</option>
-          </select>
-          <div class="filter-actions">
-            <button class="ghost-button" type="button" @click="resetFilters">重置</button>
-            <button class="primary-button" type="submit">应用筛选</button>
-          </div>
-        </form>
-      </section>
+        <el-card shadow="never" class="ticket-toolbar-card">
+          <div class="ticket-toolbar-card__content">
+            <el-alert
+              :closable="false"
+              type="info"
+              show-icon
+              class="ticket-scope-alert"
+              :title="ticketScopeMessage"
+            />
 
-      <section class="panel">
-        <div class="panel-head ticket-list-head">
-          <div>
-            <h3>工单中心</h3>
-            <p>把优先级、负责人、状态变化和知识沉淀状态放进同一张列表里处理。</p>
-          </div>
-          <span class="chip chip-blue">Visible {{ displayedTickets.length }}</span>
-        </div>
-
-        <div class="ticket-filter-summary">
-          <span>当前结果：{{ displayedTickets.length }}</span>
-          <span>全部工单：{{ tickets.length }}</span>
-          <span>待处理：{{ processingCount }}</span>
-          <span>待沉淀：{{ knowledgeGapCount }}</span>
-          <span v-if="loading">正在拉取最新列表...</span>
-          <ErrorTraceNotice
-            v-else-if="errorMessage"
-            inline
-            :message="`${errorMessage}${usedFallbackData ? '，已回退到本地演示数据' : ''}`"
-            :trace-id="errorTraceId"
-          />
-        </div>
-
-        <div v-if="displayedTickets.length && viewMode === 'board'" class="ticket-board">
-          <RouterLink v-for="ticket in displayedTickets" :key="ticket.id" class="ticket-board-item" :to="`/tickets/${ticket.id}`">
-            <div class="ticket-board-head">
-              <div>
-                <strong>{{ ticket.title }}</strong>
-                <p>{{ ticket.ticketNo }} · {{ ticket.assignee }}</p>
+            <div class="ticket-toolbar">
+              <div class="ticket-toolbar__group">
+                <span class="ticket-toolbar__label">快速筛选</span>
+                <el-radio-group v-model="activeQuickFilter" class="ticket-filter-switch">
+                  <el-radio-button
+                    v-for="filter in quickFilterOptions"
+                    :key="filter.value"
+                    :value="filter.value"
+                  >
+                    {{ filter.label }}
+                  </el-radio-button>
+                </el-radio-group>
               </div>
-              <span class="chip" :class="ticket.priorityClass">{{ ticket.priorityLevel }}</span>
+
+              <div class="ticket-toolbar__group ticket-toolbar__group--end">
+                <span class="ticket-toolbar__label">展示模式</span>
+                <el-radio-group v-model="viewMode">
+                  <el-radio-button value="board">看板视图</el-radio-button>
+                  <el-radio-button value="compact">表格视图</el-radio-button>
+                </el-radio-group>
+              </div>
             </div>
-            <p class="ticket-board-content">{{ ticket.content }}</p>
-            <div class="ticket-board-meta">
-              <span class="chip" :class="statusChipClass(ticket.status)">{{ ticket.status }}</span>
-              <span>提交人：{{ ticket.submitter }}</span>
-              <span>更新时间：{{ ticket.updatedAt }}</span>
-              <span v-if="ticket.linkedKnowledgeArticleCount" class="chip chip-blue">已沉淀 {{ ticket.linkedKnowledgeArticleCount }} 篇</span>
-              <span v-else-if="needsKnowledgeCapture(ticket)" class="chip chip-orange">待沉淀知识</span>
-              <span v-if="'source' in ticket && ticket.source === 'local'" class="chip chip-orange">本地工作流</span>
+
+            <el-form
+              v-if="showFilters"
+              class="ticket-filter-form"
+              label-position="top"
+              @submit.prevent="handleSearch"
+            >
+              <div class="ticket-filter-form__grid">
+                <el-form-item label="关键词" class="ticket-filter-form__item ticket-filter-form__item--wide">
+                  <el-input
+                    v-model="filters.keyword"
+                    clearable
+                    placeholder="按工单标题、编号或内容搜索"
+                    @keyup.enter="handleSearch"
+                  />
+                </el-form-item>
+
+                <el-form-item label="状态" class="ticket-filter-form__item">
+                  <el-select v-model="filters.status" clearable placeholder="全部状态">
+                    <el-option
+                      v-for="option in statusOptions"
+                      :key="option.value"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                  </el-select>
+                </el-form-item>
+
+                <el-form-item label="优先级" class="ticket-filter-form__item">
+                  <el-select v-model="filters.priority" clearable placeholder="全部优先级">
+                    <el-option
+                      v-for="option in priorityOptions"
+                      :key="option.value"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                  </el-select>
+                </el-form-item>
+
+                <el-form-item label="类型" class="ticket-filter-form__item">
+                  <el-select v-model="filters.type" clearable placeholder="全部类型">
+                    <el-option
+                      v-for="option in typeOptions"
+                      :key="option.value"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                  </el-select>
+                </el-form-item>
+
+                <div class="ticket-filter-form__actions">
+                  <el-button @click="resetFilters">重置</el-button>
+                  <el-button type="primary" native-type="submit">应用筛选</el-button>
+                </div>
+              </div>
+            </el-form>
+          </div>
+        </el-card>
+
+        <el-card shadow="never" class="ticket-list-card">
+          <div class="ticket-list-card__head">
+            <div>
+              <h3>工单列表</h3>
+              <p>用统一的列表骨架查看当前可见工单，并在看板与表格之间切换。</p>
             </div>
-            <div class="ticket-board-tags">
-              <span v-for="tag in ticket.tags" :key="tag" class="chip chip-blue">{{ tag }}</span>
+            <el-tag type="primary" effect="light" round>可见 {{ displayedTickets.length }}</el-tag>
+          </div>
+
+          <div class="ticket-summary">
+            <el-tag effect="plain" round>已显示 {{ displayedTickets.length }} 条</el-tag>
+            <el-tag effect="plain" round>全部 {{ tickets.length }} 条</el-tag>
+            <el-tag effect="plain" round type="warning">待处理 {{ processingCount }}</el-tag>
+            <el-tag effect="plain" round type="danger">待沉淀 {{ knowledgeGapCount }}</el-tag>
+            <el-tag v-if="localTicketCount" effect="plain" round type="info">本地草稿 {{ localTicketCount }}</el-tag>
+            <el-tag v-if="loading" effect="light" round type="info">正在加载...</el-tag>
+            <ErrorTraceNotice
+              v-else-if="errorMessage"
+              inline
+              :message="`${errorMessage}${usedFallbackData ? '，当前展示的是可用兜底数据。' : ''}`"
+              :trace-id="errorTraceId"
+            />
+          </div>
+
+          <div v-if="displayedTickets.length">
+            <div v-if="viewMode === 'board'" class="ticket-board">
+              <RouterLink
+                v-for="ticket in displayedTickets"
+                :key="ticket.id"
+                class="ticket-board-link"
+                :to="`/tickets/${ticket.id}`"
+              >
+                <el-card shadow="hover" class="ticket-board-card">
+                  <div class="ticket-board-card__head">
+                    <div>
+                      <strong>{{ ticket.title }}</strong>
+                      <p>{{ ticket.ticketNo }} · {{ ticket.assignee || '待分配' }}</p>
+                    </div>
+                    <el-tag :type="priorityTagType(ticketPriorityLabel(ticket))" effect="light" round>
+                      {{ ticketPriorityLabel(ticket) }}
+                    </el-tag>
+                  </div>
+
+                  <p class="ticket-board-card__content">{{ ticket.content }}</p>
+
+                  <div class="ticket-board-card__meta">
+                    <el-tag :type="statusTagType(ticket.status)" effect="light" round>
+                      {{ ticket.status }}
+                    </el-tag>
+                    <span>提交人 {{ ticket.submitter }}</span>
+                    <span>更新于 {{ ticket.updatedAt }}</span>
+                  </div>
+
+                  <div class="ticket-board-card__tags">
+                    <el-tag
+                      v-for="tag in ticket.tags"
+                      :key="tag"
+                      effect="plain"
+                      round
+                    >
+                      {{ tag }}
+                    </el-tag>
+                    <el-tag
+                      v-if="ticket.linkedKnowledgeArticleCount"
+                      effect="plain"
+                      round
+                      type="primary"
+                    >
+                      已关联知识 {{ ticket.linkedKnowledgeArticleCount }} 篇
+                    </el-tag>
+                    <el-tag
+                      v-else-if="needsKnowledgeCapture(ticket)"
+                      effect="plain"
+                      round
+                      type="danger"
+                    >
+                      待沉淀知识
+                    </el-tag>
+                    <el-tag
+                      v-if="ticket.source === 'local'"
+                      effect="plain"
+                      round
+                      type="warning"
+                    >
+                      本地草稿
+                    </el-tag>
+                  </div>
+
+                  <div v-if="ticket.latestLinkedKnowledgeArticle" class="ticket-board-card__knowledge">
+                    <span>最新关联知识</span>
+                    <strong>{{ ticket.latestLinkedKnowledgeArticle.title }}</strong>
+                    <p>
+                      {{ ticket.latestLinkedKnowledgeArticle.status }}
+                      · {{ ticket.latestLinkedKnowledgeArticle.updatedAt }}
+                    </p>
+                  </div>
+                </el-card>
+              </RouterLink>
             </div>
-            <div v-if="ticket.latestLinkedKnowledgeArticle" class="ticket-knowledge-preview">
-              <span class="muted">最近沉淀</span>
-              <strong>{{ ticket.latestLinkedKnowledgeArticle.title }}</strong>
-              <p>{{ ticket.latestLinkedKnowledgeArticle.status }} · {{ ticket.latestLinkedKnowledgeArticle.updatedAt }}</p>
-            </div>
-          </RouterLink>
-        </div>
-        <div v-else-if="displayedTickets.length && viewMode === 'compact'" class="ticket-compact-list">
-          <RouterLink v-for="ticket in displayedTickets" :key="ticket.id" class="ticket-compact-item" :to="`/tickets/${ticket.id}`">
-            <div class="ticket-compact-main">
-              <strong>{{ ticket.title }}</strong>
-              <p>{{ ticket.ticketNo }} · {{ ticket.content }}</p>
-            </div>
-            <div class="ticket-compact-side">
-              <span class="chip" :class="ticket.priorityClass">{{ ticket.priorityLevel }}</span>
-              <span class="chip" :class="statusChipClass(ticket.status)">{{ ticket.status }}</span>
-              <span v-if="ticket.linkedKnowledgeArticleCount" class="chip chip-blue">知识 {{ ticket.linkedKnowledgeArticleCount }}</span>
-              <span v-else-if="needsKnowledgeCapture(ticket)" class="chip chip-orange">待沉淀</span>
-            </div>
-          </RouterLink>
-        </div>
-        <div v-else class="state-box">当前筛选条件下没有匹配的工单。</div>
+
+            <el-table
+              v-else
+              :data="displayedTickets"
+              stripe
+              class="ticket-table"
+              @row-click="handleRowClick"
+            >
+              <el-table-column label="工单" min-width="280">
+                <template #default="{ row }">
+                  <div class="ticket-table-cell">
+                    <strong>{{ row.title }}</strong>
+                    <p>{{ row.ticketNo }} · {{ row.content }}</p>
+                  </div>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="状态" width="140">
+                <template #default="{ row }">
+                  <el-tag :type="statusTagType(row.status)" effect="light" round>
+                    {{ row.status }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="优先级" width="120">
+                <template #default="{ row }">
+                    <el-tag :type="priorityTagType(ticketPriorityLabel(row))" effect="light" round>
+                      {{ ticketPriorityLabel(row) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="负责人" width="160">
+                <template #default="{ row }">
+                  {{ row.assignee || '待分配' }}
+                </template>
+              </el-table-column>
+
+              <el-table-column label="知识沉淀" min-width="180">
+                <template #default="{ row }">
+                  <el-tag
+                    v-if="row.linkedKnowledgeArticleCount"
+                    type="primary"
+                    effect="plain"
+                    round
+                  >
+                    已关联 {{ row.linkedKnowledgeArticleCount }} 篇
+                  </el-tag>
+                  <el-tag
+                    v-else-if="needsKnowledgeCapture(row)"
+                    type="danger"
+                    effect="plain"
+                    round
+                  >
+                    待沉淀知识
+                  </el-tag>
+                  <el-tag
+                    v-else-if="row.source === 'local'"
+                    type="warning"
+                    effect="plain"
+                    round
+                  >
+                    本地草稿
+                  </el-tag>
+                  <span v-else class="ticket-table-muted">暂无</span>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="更新时间" width="180">
+                <template #default="{ row }">
+                  {{ row.updatedAt }}
+                </template>
+              </el-table-column>
+
+              <el-table-column label="操作" width="120" fixed="right">
+                <template #default="{ row }">
+                  <el-button link type="primary" @click.stop="navigateTo(`/tickets/${row.id}`)">
+                    查看详情
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+
+          <el-empty v-else description="暂无符合条件的工单" />
+        </el-card>
       </section>
     </main>
   </div>
@@ -209,6 +339,9 @@ import { resolveListLoadFailure } from '../utils/listLoadFailure'
 import { countArticlesBySourceTicket } from '../utils/knowledgeSourceTicket'
 import { formatTicketListItem } from '../utils/ticketPresentation'
 
+type QuickFilter = 'all' | 'urgent' | 'mine' | 'resolved' | 'knowledge-gap' | 'local'
+type ViewMode = 'board' | 'compact'
+
 const router = useRouter()
 const route = useRoute()
 const tickets = ref<TicketItem[]>(fallbackTickets)
@@ -221,40 +354,80 @@ let ticketLoadRequestId = 0
 let skipNextRouteDrivenLoad = false
 let skipNextQuickFilterRefresh = false
 let skipNextViewModeRefresh = false
+
 const filters = reactive({
   keyword: '',
   status: '',
   priority: '',
   type: '',
 })
-const activeQuickFilter = ref<'all' | 'urgent' | 'mine' | 'resolved' | 'knowledge-gap' | 'local'>('all')
-const viewMode = ref<'board' | 'compact'>('board')
+
+const activeQuickFilter = ref<QuickFilter>('all')
+const viewMode = ref<ViewMode>('board')
+
 const canSeeAllTickets = computed(() => canViewAllTickets())
 const currentUserId = computed(() => authState.user?.id ?? null)
-const currentUserName = computed(() => authState.user?.nickname || authState.user?.realName || authState.user?.username || '当前用户')
+const currentUserName = computed(() => (
+  authState.user?.nickname
+  || authState.user?.realName
+  || authState.user?.username
+  || '当前用户'
+))
 
-const processingCount = computed(() => tickets.value.filter((item) => ['新建', '处理中', '排查中'].includes(item.status)).length)
-const localTicketCount = computed(() => tickets.value.filter((item) => 'source' in item && item.source === 'local').length)
-const knowledgeGapCount = computed(() => tickets.value.filter((item) => needsKnowledgeCapture(item)).length)
+const statusOptions = [
+  { value: '1', label: '待处理' },
+  { value: '2', label: '处理中' },
+  { value: '3', label: '已解决' },
+  { value: '4', label: '已关闭' },
+]
+
+const priorityOptions = [
+  { value: '4', label: 'P1 紧急' },
+  { value: '3', label: 'P2 较高' },
+  { value: '2', label: 'P3 普通' },
+  { value: '1', label: 'P4 低优先级' },
+]
+
+const typeOptions = [
+  { value: 'INCIDENT', label: '故障事件' },
+  { value: 'TASK', label: '任务处理' },
+  { value: 'QUESTION', label: '咨询问题' },
+]
+
+const processingCount = computed(() => (
+  tickets.value.filter((item) => ['待处理', '处理中', '待确认'].includes(item.status)).length
+))
+
+const localTicketCount = computed(() => (
+  tickets.value.filter((item) => item.source === 'local').length
+))
+
+const knowledgeGapCount = computed(() => (
+  tickets.value.filter((item) => needsKnowledgeCapture(item)).length
+))
+
 const ticketScopeMessage = computed(() => buildTicketListScopeMessage({
   canViewAllTickets: canSeeAllTickets.value,
 }))
+
 const quickFilters = [
-  { value: 'all', label: '全部' },
+  { value: 'all', label: '全部工单' },
   { value: 'urgent', label: '高优先级' },
-  { value: 'mine', label: '待我处理' },
+  { value: 'mine', label: '与我相关' },
   { value: 'resolved', label: '已解决' },
   { value: 'knowledge-gap', label: '待沉淀知识' },
-  { value: 'local', label: '本地工单' },
-] as const
+  { value: 'local', label: '本地草稿' },
+] as const satisfies ReadonlyArray<{ value: QuickFilter; label: string }>
+
 const quickFilterOptions = computed(() => quickFilters.map((item) => (
   item.value === 'mine'
     ? {
         ...item,
-        label: canSeeAllTickets.value ? '待我处理' : '我的工单',
+        label: canSeeAllTickets.value ? '与我相关' : '我提交的工单',
       }
     : item
 )))
+
 const displayedTickets = computed(() => {
   if (activeQuickFilter.value === 'urgent') {
     return tickets.value.filter((item) => item.priorityLevel === 'P1' || item.priorityLevel === 'P2')
@@ -274,12 +447,37 @@ const displayedTickets = computed(() => {
   return tickets.value
 })
 
+const statCards = computed(() => [
+  {
+    label: '当前工单总数',
+    value: tickets.value.length,
+    description: '当前权限范围内可见的全部工单规模。',
+  },
+  {
+    label: '待处理队列',
+    value: processingCount.value,
+    description: '仍需跟进、处理或确认的工单数量。',
+  },
+  {
+    label: '本地草稿',
+    value: localTicketCount.value,
+    description: '仅保存在本地工作流里的临时工单数据。',
+  },
+  {
+    label: '待沉淀知识',
+    value: knowledgeGapCount.value,
+    description: '已解决或已关闭但还没有知识沉淀的工单。',
+  },
+])
+
 function isMyTicket(ticket: TicketItem) {
   const currentId = currentUserId.value
   const currentName = currentUserName.value
+
   if (canSeeAllTickets.value) {
     return ticket.assigneeUserId === currentId || ticket.assignee === currentName
   }
+
   return ticket.submitUserId === currentId
     || ticket.submitter === currentName
     || ticket.assigneeUserId === currentId
@@ -321,14 +519,31 @@ async function syncKnowledgeArticleCounts(items: TicketItem[]) {
   })
 }
 
-function statusChipClass(status: string) {
+function statusTagType(status: string) {
   if (status === '已解决') {
-    return 'chip-green'
+    return 'success'
   }
   if (status === '已关闭') {
-    return 'chip-blue'
+    return 'info'
   }
-  return 'chip-orange'
+  return 'warning'
+}
+
+function priorityTagType(priorityLevel: string) {
+  if (priorityLevel === 'P1') {
+    return 'danger'
+  }
+  if (priorityLevel === 'P2') {
+    return 'warning'
+  }
+  if (priorityLevel === 'P3') {
+    return 'primary'
+  }
+  return 'info'
+}
+
+function ticketPriorityLabel(ticket: TicketItem) {
+  return ticket.priorityLevel || ticket.priority || '未分级'
 }
 
 function toggleFilters() {
@@ -342,16 +557,22 @@ function navigateTo(path: string) {
   router.push(path)
 }
 
+function handleRowClick(row: TicketItem) {
+  navigateTo(`/tickets/${row.id}`)
+}
+
 function syncFiltersFromRoute() {
   filters.keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
   filters.status = typeof route.query.status === 'string' ? route.query.status : ''
   filters.priority = typeof route.query.priority === 'string' ? route.query.priority : ''
   filters.type = typeof route.query.type === 'string' ? route.query.type : ''
+
   skipNextQuickFilterRefresh = true
   activeQuickFilter.value = typeof route.query.quickFilter === 'string'
     && quickFilters.some((item) => item.value === route.query.quickFilter)
-      ? route.query.quickFilter as typeof activeQuickFilter.value
+      ? route.query.quickFilter as QuickFilter
       : 'all'
+
   skipNextViewModeRefresh = true
   viewMode.value = route.query.viewMode === 'compact' ? 'compact' : 'board'
 }
@@ -394,6 +615,7 @@ async function loadTickets() {
   errorMessage.value = ''
   errorTraceId.value = ''
   usedFallbackData.value = false
+
   try {
     const data = await fetchTickets({
       keyword: filters.keyword.trim() || undefined,
@@ -401,18 +623,22 @@ async function loadTickets() {
       priority: filters.priority ? Number(filters.priority) : undefined,
       type: filters.type || undefined,
     })
+
     if (requestId !== ticketLoadRequestId) {
       return
     }
+
     await syncKnowledgeArticleCounts(mergeTickets(data.map(formatTicketListItem as (ticket: TicketApiItem) => TicketItem)))
   } catch (error) {
     if (requestId !== ticketLoadRequestId) {
       return
     }
+
     const result = resolveListLoadFailure(error, {
-      networkFallbackMessage: '筛选接口暂时不可用',
-      defaultMessage: '工单列表加载失败，请稍后重试。',
+      networkFallbackMessage: '工单列表暂时不可用，已切换为可用兜底数据。',
+      defaultMessage: '工单列表加载失败，请稍后重试或联系管理员。',
     })
+
     await syncKnowledgeArticleCounts(result.shouldUseFallbackData ? mergeTickets(fallbackTickets) : listLocalTickets())
     usedFallbackData.value = result.shouldUseFallbackData
     errorMessage.value = result.message
@@ -461,253 +687,293 @@ watch(
 </script>
 
 <style scoped>
-.ticket-workspace-hero {
+.ticket-page {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-  gap: 1.25rem;
+  gap: 20px;
+}
+
+.ticket-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 20px;
   align-items: stretch;
 }
 
-.ticket-workspace-copy {
+.ticket-hero__copy,
+.ticket-toolbar-card__content {
   display: grid;
-  gap: 1rem;
-  align-content: start;
+  gap: 16px;
 }
 
-.ticket-workspace-copy h2 {
+.ticket-hero__copy {
+  padding: 28px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.ticket-hero__heading {
+  display: grid;
+  gap: 12px;
+}
+
+.ticket-hero__heading h2 {
   margin: 0;
-  max-width: 11ch;
-  font-size: 2.4rem;
-  line-height: 1.06;
+  font-size: 38px;
+  line-height: 1.08;
   letter-spacing: -0.04em;
 }
 
-.ticket-workspace-copy p {
+.ticket-hero__heading p {
   margin: 0;
-  color: #64748b;
-  line-height: 1.8;
+  max-width: 56ch;
+  color: var(--text-muted);
+  line-height: 1.85;
 }
 
-.ticket-workspace-actions {
+.ticket-hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
-.ticket-workspace-stats {
+.ticket-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 14px;
 }
 
 .ticket-stat-card {
+  height: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.ticket-stat-card :deep(.el-card__body) {
   display: grid;
-  gap: 0.45rem;
-  padding: 1rem 1.05rem;
-  border-radius: 18px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(248, 250, 252, 0.84);
+  gap: 8px;
+}
+
+.ticket-stat-card__label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .ticket-stat-card strong {
-  font-size: 1.8rem;
+  font-size: 32px;
   letter-spacing: -0.04em;
 }
 
-.ticket-stat-card span:last-child {
-  color: #64748b;
-  line-height: 1.65;
+.ticket-stat-card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.75;
 }
 
-.ticket-toolbar-panel {
-  display: grid;
-  gap: 1rem;
+.ticket-toolbar-card,
+.ticket-list-card {
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.82);
 }
 
-.ticket-toolbar-row {
+.ticket-scope-alert {
+  border-radius: 16px;
+}
+
+.ticket-toolbar {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-.ticket-toolbar-group {
+.ticket-toolbar__group {
   display: grid;
-  gap: 0.55rem;
+  gap: 10px;
 }
 
-.ticket-toolbar-group-end {
+.ticket-toolbar__group--end {
   justify-items: end;
 }
 
-.ticket-toolbar-label {
-  font-size: 0.78rem;
+.ticket-toolbar__label {
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-soft);
 }
 
-.ticket-filter-bar {
-  display: grid;
-  grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)) auto;
-  gap: 0.75rem;
-}
-
-.ticket-filter-summary {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-  color: #64748b;
-  font-size: 0.92rem;
-}
-
-.field-control {
-  width: 100%;
-  padding: 0.8rem 0.95rem;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
-  color: #0f172a;
-  font: inherit;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.field-control:focus {
-  outline: none;
-  border-color: rgba(37, 99, 235, 0.36);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
-}
-
-.filter-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.ticket-quick-filters,
-.ticket-view-toggle {
+.ticket-filter-switch {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
 }
 
-.quick-filter-chip {
-  border: 0;
-  cursor: pointer;
+.ticket-filter-form {
+  padding-top: 4px;
 }
 
-.chip-default {
-  color: #475569;
-  background: rgba(148, 163, 184, 0.14);
-}
-
-.active-chip,
-.toggle-active {
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
-}
-
-.ticket-list-head {
-  margin-bottom: 0.9rem;
-}
-
-.ticket-compact-list {
+.ticket-filter-form__grid {
   display: grid;
-  gap: 0.85rem;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
 }
 
-.ticket-compact-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem;
-  align-items: center;
-  padding: 1rem 1.1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.92);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+.ticket-filter-form__item {
+  margin-bottom: 0;
 }
 
-.ticket-compact-item:hover {
-  transform: translateY(-2px);
-  border-color: rgba(37, 99, 235, 0.18);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+.ticket-filter-form__item--wide {
+  grid-column: span 1;
 }
 
-.ticket-compact-main strong,
-.ticket-compact-main p {
-  display: block;
-  margin: 0;
-}
-
-.ticket-compact-main p {
-  margin-top: 0.45rem;
-  color: #64748b;
-  line-height: 1.7;
-}
-
-.ticket-compact-side {
+.ticket-filter-form__actions {
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
   justify-content: flex-end;
+  padding-bottom: 2px;
 }
 
-.ticket-knowledge-preview {
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+.ticket-list-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-.ticket-knowledge-preview strong,
-.ticket-knowledge-preview p {
+.ticket-list-card__head h3 {
+  margin: 0 0 6px;
+}
+
+.ticket-list-card__head p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+.ticket-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.ticket-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ticket-board-link {
   display: block;
-  margin: 0.2rem 0 0;
 }
 
-.ticket-knowledge-preview p {
-  color: #64748b;
+.ticket-board-card {
+  height: 100%;
 }
 
-@media (max-width: 1100px) {
-  .ticket-workspace-hero,
-  .ticket-workspace-stats {
+.ticket-board-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ticket-board-card__head strong,
+.ticket-board-card__knowledge strong,
+.ticket-table-cell strong {
+  display: block;
+}
+
+.ticket-board-card__head p,
+.ticket-board-card__content,
+.ticket-board-card__knowledge p,
+.ticket-table-cell p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+.ticket-board-card__content {
+  margin-top: 14px;
+}
+
+.ticket-board-card__meta,
+.ticket-board-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.ticket-board-card__knowledge {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.ticket-board-card__knowledge span {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ticket-table {
+  width: 100%;
+}
+
+.ticket-table-cell {
+  display: grid;
+  gap: 6px;
+}
+
+.ticket-table-muted {
+  color: var(--text-soft);
+}
+
+@media (max-width: 1240px) {
+  .ticket-hero,
+  .ticket-board {
     grid-template-columns: 1fr;
   }
 
-  .ticket-filter-bar {
+  .ticket-filter-form__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 720px) {
-  .ticket-workspace-copy h2 {
-    font-size: 2rem;
+@media (max-width: 760px) {
+  .ticket-hero__copy {
+    padding: 24px;
   }
 
-  .ticket-toolbar-group-end {
+  .ticket-hero__heading h2 {
+    font-size: 30px;
+  }
+
+  .ticket-stats,
+  .ticket-filter-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-toolbar__group--end {
     justify-items: start;
   }
 
-  .ticket-filter-bar {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-actions,
-  .ticket-view-toggle {
-    flex-wrap: wrap;
-  }
-
-  .ticket-compact-item {
-    grid-template-columns: 1fr;
-  }
-
-  .ticket-compact-side {
+  .ticket-filter-form__actions,
+  .ticket-list-card__head {
     justify-content: flex-start;
   }
 }
