@@ -61,12 +61,23 @@ if exist "%NODE_MARKER%" (
 if "%NEED_REINSTALL%"=="1" (
   echo [DocFlow AI] Refreshing frontend dependencies for Node %NODE_VERSION%...
   echo [DocFlow AI] This is expected the first time you switch this project to Node %NODE_VERSION%.
-  echo [DocFlow AI] Closing possible old frontend processes...
-  taskkill /f /im esbuild.exe >nul 2>nul
-  taskkill /f /im node.exe >nul 2>nul
-  timeout /t 1 /nobreak >nul
-  if exist "%FRONTEND_DIR%\node_modules" rmdir /s /q "%FRONTEND_DIR%\node_modules"
-  if exist "%FRONTEND_DIR%\package-lock.json" del /f /q "%FRONTEND_DIR%\package-lock.json"
+  echo [DocFlow AI] Please make sure the old frontend process is already closed before reinstalling dependencies.
+  if exist "%FRONTEND_DIR%\node_modules" (
+    rmdir /s /q "%FRONTEND_DIR%\node_modules"
+    if exist "%FRONTEND_DIR%\node_modules" (
+      echo [DocFlow AI] Failed to remove frontend\node_modules.
+      echo [DocFlow AI] Close the old frontend window manually, then run this script again.
+      exit /b 1
+    )
+  )
+  if exist "%FRONTEND_DIR%\package-lock.json" (
+    del /f /q "%FRONTEND_DIR%\package-lock.json"
+    if exist "%FRONTEND_DIR%\package-lock.json" (
+      echo [DocFlow AI] Failed to remove frontend\package-lock.json.
+      echo [DocFlow AI] Close the old frontend window manually, then run this script again.
+      exit /b 1
+    )
+  )
   cd /d "%FRONTEND_DIR%"
   call npm install
   if errorlevel 1 exit /b 1
