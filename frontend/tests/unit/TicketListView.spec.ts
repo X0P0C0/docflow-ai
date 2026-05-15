@@ -444,4 +444,38 @@ describe('TicketListView', () => {
 
     expect(push).not.toHaveBeenCalled()
   })
+
+  it('keeps the latest ticket list result when an older request resolves later', async () => {
+    let resolveFirstLoad: ((value: TicketApiItem[]) => void) | null = null
+    fetchTickets
+      .mockImplementationOnce(() => new Promise((resolve) => {
+        resolveFirstLoad = resolve as (value: TicketApiItem[]) => void
+      }))
+      .mockResolvedValueOnce([
+        createTicketListItemFixture({
+          id: 902,
+          ticketNo: 'TK-902',
+          title: '第二轮最新工单列表结果',
+        }),
+      ])
+
+    const wrapper = await mountView()
+
+    route.query = { quickFilter: 'urgent' }
+    route.fullPath = '/tickets?quickFilter=urgent'
+    await flushPromises()
+
+    resolveFirstLoad?.([
+      createTicketListItemFixture({
+        id: 903,
+        ticketNo: 'TK-903',
+        title: '过期工单列表结果',
+      }),
+    ])
+    await flushPromises()
+
+    expect(fetchTickets).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('第二轮最新工单列表结果')
+    expect(wrapper.text()).not.toContain('过期工单列表结果')
+  })
 })
