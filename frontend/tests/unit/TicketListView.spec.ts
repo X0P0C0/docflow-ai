@@ -87,7 +87,14 @@ describe('TicketListView', () => {
   })
 
   async function mountView() {
-    const wrapper = mount(TicketListView)
+    const wrapper = mount(TicketListView, {
+      global: {
+        stubs: {
+          AppSidebar: true,
+          AppTopbar: true,
+        },
+      },
+    })
     await flushPromises()
     return wrapper
   }
