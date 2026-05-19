@@ -1,5 +1,6 @@
 <template>
-  <div class="detail-page">
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
+    <div class="detail-page">
     <header class="detail-topbar">
       <RouterLink class="back-link" to="/tickets">返回工单中心</RouterLink>
       <div class="detail-topbar-actions">
@@ -35,6 +36,10 @@
 
           <ErrorTraceNotice v-if="topErrorMessage" :message="topErrorMessage" :trace-id="topErrorTraceId" />
           <div v-else-if="successMessage" class="state-box">{{ successMessage }}</div>
+          <div class="state-box detail-runtime-banner" :class="{ 'state-warning': isDemoMode() || isLocalTicket || isFallbackTicketData }">
+            <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+            <p>{{ runtimeDataSourceMessage }}</p>
+          </div>
 
           <div class="detail-meta">
             <span>提交人：{{ ticket.submitter }}</span>
@@ -61,16 +66,16 @@
             </div>
           </div>
 
-          <div class="ticket-insight-strip">
-            <div class="insight-card">
+          <div class="ticket-insight-strip workspace-insight-grid">
+            <div class="insight-card workspace-insight-card">
               <span class="muted">推荐下一步</span>
               <strong>{{ nextActionTitle }}</strong>
             </div>
-            <div class="insight-card">
+            <div class="insight-card workspace-insight-card">
               <span class="muted">协作健康度</span>
               <strong>{{ collaborationHealth }}</strong>
             </div>
-            <div class="insight-card">
+            <div class="insight-card workspace-insight-card">
               <span class="muted">知识关联度</span>
               <strong>{{ ticket.linkedKnowledgeArticleCount || relatedArticles.length }} 篇</strong>
             </div>
@@ -410,14 +415,14 @@
                 <strong>来源沉淀</strong>
                 <div class="knowledge-group-tools">
                   <span>{{ sourceKnowledgeArticles.length }} 篇</span>
-                  <select v-model="sourceKnowledgeSort" class="knowledge-sort-select">
+                  <select v-model="sourceKnowledgeSort" class="knowledge-sort-select workspace-sort-select">
                     <option value="latest">按最近更新</option>
                     <option value="status">按状态</option>
                     <option value="title">按标题</option>
                   </select>
                 </div>
               </div>
-              <div class="knowledge-filter-chips">
+              <div class="knowledge-filter-chips workspace-chip-filters">
                 <button
                   v-for="filter in sourceKnowledgeStatusFilters"
                   :key="filter.value"
@@ -432,14 +437,14 @@
               <RouterLink
                 v-for="article in sourceKnowledgeArticles"
                 :key="`linked-${article.id}`"
-                class="mini-item related-link"
+                class="mini-item related-link workspace-link-card"
                 :to="`/knowledge/articles/${article.id}`"
               >
-                <div class="related-link-main">
+                <div class="related-link-main workspace-link-main">
                   <strong>{{ article.title }}</strong>
                   <span>{{ article.metric }}</span>
                 </div>
-                <div class="knowledge-badges">
+                <div class="knowledge-badges workspace-badge-row">
                   <span class="chip" :class="article.statusTone">{{ article.statusLabel }}</span>
                 </div>
               </RouterLink>
@@ -455,7 +460,7 @@
                 <strong>相似推荐</strong>
                 <div class="knowledge-group-tools">
                   <span>{{ recommendedKnowledgeArticles.length }} 篇</span>
-                  <select v-model="recommendedKnowledgeSort" class="knowledge-sort-select">
+                  <select v-model="recommendedKnowledgeSort" class="knowledge-sort-select workspace-sort-select">
                     <option value="default">按推荐优先</option>
                     <option value="title">按标题</option>
                   </select>
@@ -464,7 +469,7 @@
               <RouterLink
                 v-for="article in recommendedKnowledgeArticles"
                 :key="`related-${article.id}`"
-                class="mini-item related-link"
+                class="mini-item related-link workspace-link-card"
                 :to="`/knowledge/articles/${article.id}`"
               >
                 <span>{{ article.title }}</span>
@@ -506,9 +511,10 @@
     </main>
 
     <section v-else class="panel">
-      <div class="state-box state-warning">没有找到对应工单。</div>
+      <div class="state-box state-warning">{{ topErrorMessage || '没有找到对应工单。' }}</div>
     </section>
-  </div>
+    </div>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
@@ -529,7 +535,8 @@ import {
   buildTicketPermissionSummary,
   buildTicketSuggestedActions,
 } from '../access-policy'
-import { fallbackArticles, tickets as fallbackTickets } from '../mock/dashboard'
+import AppShell from '../components/layout/AppShell.vue'
+import { fallbackArticles, manageNav, tickets as fallbackTickets, workspaceNav } from '../mock/dashboard'
 import { listKnowledgeDrafts } from '../mock/knowledgeDrafts'
 import {
   appendLocalComment,
@@ -552,7 +559,8 @@ import { getApiErrorDisplay } from '../utils/apiErrorDisplay'
 import { resolveTicketDetailFallback } from '../utils/ticketDetailFailure'
 import { buildKnowledgeDraftFromTicket, saveKnowledgeDraftSeed } from '../utils/knowledgeFromTicket'
 import { attachArticleSourceTicket } from '../utils/knowledgeSourceTicket'
-import { isDemoMode } from '../utils/runtimeMode'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
+import { consumeAiReplyDraftSeed } from '../utils/aiReplySeed'
 import { formatDateText, formatTicketDetailItem, toKnowledgeArticleStatusText, toStatusText } from '../utils/ticketPresentation'
 
 const route = useRoute()
@@ -576,6 +584,7 @@ const assigneeOptions = ref<TicketAssigneeOption[]>([])
 const successMessage = ref('')
 const topErrorMessage = ref('')
 const topErrorTraceId = ref('')
+const lastLoadedTicketRouteKey = ref('')
 const activeCommentFilter = ref<'all' | 'public' | 'internal'>('all')
 const linkedKnowledgeArticles = ref<Array<{
   id: number
@@ -624,22 +633,22 @@ const assignForm = ref({
 })
 
 const statusOptions = [
-  { value: 1, label: '\u65b0\u5efa' },
-  { value: 2, label: '\u5904\u7406\u4e2d' },
-  { value: 3, label: '\u5df2\u89e3\u51b3' },
-  { value: 4, label: '\u5df2\u5173\u95ed' },
+  { value: 1, label: '新建' },
+  { value: 2, label: '处理中' },
+  { value: 3, label: '已解决' },
+  { value: 4, label: '已关闭' },
 ]
 const commentFilters = [
-  { value: 'all', label: '\u5168\u90e8\u8bc4\u8bba' },
-  { value: 'public', label: '\u5bf9\u5916\u53ef\u89c1' },
-  { value: 'internal', label: '\u5185\u90e8\u5907\u6ce8' },
+  { value: 'all', label: '全部评论' },
+  { value: 'public', label: '对外可见' },
+  { value: 'internal', label: '内部备注' },
 ] as const
 const sourceKnowledgeStatusFilters = [
-  { value: 'all', label: '\u5168\u90e8' },
-  { value: 'published', label: '\u5df2\u53d1\u5e03' },
-  { value: 'draft', label: '\u8349\u7a3f' },
-  { value: 'archived', label: '\u5df2\u5f52\u6863' },
-  { value: 'local', label: '\u672c\u5730\u8349\u7a3f' },
+  { value: 'all', label: '全部' },
+  { value: 'published', label: '已发布' },
+  { value: 'draft', label: '草稿' },
+  { value: 'archived', label: '已归档' },
+  { value: 'local', label: '本地草稿' },
 ] as const
 
 const canManageKnowledge = computed(() => canManageKnowledgeArticles())
@@ -650,6 +659,14 @@ const canOperateCurrentTicket = computed(() => canAssignCurrentTicket.value || c
 const currentUserId = computed(() => authState.user?.id ?? null)
 const currentUserName = computed(() => authState.user?.nickname || authState.user?.realName || authState.user?.username || '当前用户')
 const isLocalTicket = computed(() => !!ticket.value && 'source' in ticket.value && ticket.value.source === 'local')
+const isFallbackTicketData = computed(() => !remoteTicket.value && !!ticket.value && !isLocalTicket.value)
+const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeDataSourceMessage = computed(() => getRuntimeDataSourceMessage({
+  usedFallbackData: isFallbackTicketData.value,
+  subject: '工单详情',
+  localOnlyLabel: isLocalTicket.value ? '工单草稿' : '',
+}))
 const currentTicketStatusValue = computed(() => {
   if (!ticket.value?.status) {
     return null
@@ -670,7 +687,7 @@ const hasLinkedKnowledgeArticles = computed(() => linkedKnowledgeArticles.value.
 const hasKnowledgeContext = computed(() => hasLinkedKnowledgeArticles.value || relatedArticles.value.length > 0)
 const hasTicketOwner = computed(() => {
   const assignee = ticket.value?.assignee?.trim()
-  return !!assignee && assignee !== '\u5f85\u5206\u914d'
+  return !!assignee && assignee !== '待分配'
 })
 const hasCollaborationContext = computed(() => {
   const commentCount = ticket.value?.comments?.length ?? 0
@@ -678,9 +695,9 @@ const hasCollaborationContext = computed(() => {
   return commentCount > 0 || timelineCount > 0
 })
 const actionChecklist = computed(() => ([
-  { key: 'owner', label: '\u786e\u8ba4\u5f53\u524d\u5904\u7406\u4eba', done: hasTicketOwner.value },
-  { key: 'context', label: '\u8865\u9f50\u6392\u67e5\u4e0a\u4e0b\u6587', done: hasCollaborationContext.value },
-  { key: 'kb', label: '\u67e5\u9605\u5173\u8054\u77e5\u8bc6\u6587\u7ae0', done: hasKnowledgeContext.value },
+  { key: 'owner', label: '确认当前处理人', done: hasTicketOwner.value },
+  { key: 'context', label: '补齐排查上下文', done: hasCollaborationContext.value },
+  { key: 'kb', label: '查阅关联知识文章', done: hasKnowledgeContext.value },
 ]))
 const primaryLinkedKnowledgeArticle = computed(() => (
   linkedKnowledgeArticles.value
@@ -689,27 +706,27 @@ const primaryLinkedKnowledgeArticle = computed(() => (
 ))
 const knowledgePromptTitle = computed(() => (
   hasLinkedKnowledgeArticles.value
-    ? '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6c89\u6dc0\u8fc7\u77e5\u8bc6\u6587\u7ae0\u3002'
-    : '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u5904\u7406\u5b8c\u6210\uff0c\u9002\u5408\u7ee7\u7eed\u6c89\u6dc0\u77e5\u8bc6\u6587\u7ae0\u3002'
+    ? '这张工单已经沉淀过知识文章。'
+    : '这张工单已经处理完成，适合继续沉淀知识文章。'
 ))
 const knowledgePromptDescription = computed(() => (
   hasLinkedKnowledgeArticles.value
-    ? '\u4f60\u53ef\u4ee5\u7ee7\u7eed\u8865\u5145\u65b0\u7684\u5904\u7406\u89c6\u89d2\uff0c\u6216\u8005\u56de\u770b\u5df2\u6709\u6587\u7ae0\u3002'
-    : '\u5efa\u8bae\u628a\u6839\u56e0\u3001\u6392\u67e5\u8def\u5f84\u548c\u9884\u9632\u52a8\u4f5c\u6574\u7406\u6210\u6807\u51c6\u6587\u6863\uff0c\u65b9\u4fbf\u540e\u7eed\u590d\u7528\u3002'
+    ? '你可以继续补充新的处理视角，或者回看已有文章。'
+    : '建议把根因、排查路径和预防动作整理成标准文档，方便后续复用。'
 ))
 const knowledgePrimaryActionLabel = computed(() => (
-  hasLinkedKnowledgeArticles.value ? '\u7ee7\u7eed\u6c89\u6dc0' : '\u751f\u6210\u77e5\u8bc6\u8349\u7a3f'
+  hasLinkedKnowledgeArticles.value ? '继续沉淀' : '生成知识草稿'
 ))
 const knowledgeWorkbenchStatusTitle = computed(() => (
-  hasLinkedKnowledgeArticles.value ? `\u5df2\u5173\u8054 ${linkedKnowledgeArticles.value.length} \u7bc7` : '\u5c1a\u672a\u6c89\u6dc0'
+  hasLinkedKnowledgeArticles.value ? `已关联 ${linkedKnowledgeArticles.value.length} 篇` : '尚未沉淀'
 ))
 const knowledgeWorkbenchDescription = computed(() => (
   canCreateKnowledgeFromTicket.value
-    ? '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u9002\u5408\u7ee7\u7eed\u6c89\u6dc0\u77e5\u8bc6\u6587\u7ae0\u3002'
-    : '\u5148\u5b8c\u6210\u5904\u7406\u6d41\u8f6c\uff0c\u518d\u628a\u7ecf\u9a8c\u6574\u7406\u6210\u77e5\u8bc6\u3002'
+    ? '这张工单已经适合继续沉淀知识文章。'
+    : '先完成处理流转，再把经验整理成知识。'
 ))
 const knowledgeWorkbenchActionTitle = computed(() => (
-  hasLinkedKnowledgeArticles.value ? '\u7ee7\u7eed\u8865\u5145\u5df2\u6709\u6c89\u6dc0' : '\u751f\u6210\u7b2c\u4e00\u7bc7\u6c89\u6dc0\u8349\u7a3f'
+  hasLinkedKnowledgeArticles.value ? '继续补充已有沉淀' : '生成第一篇沉淀草稿'
 ))
 const visibleCommentFilters = computed(() => canUseInternalComments.value
   ? commentFilters
@@ -779,12 +796,12 @@ const recommendedKnowledgeArticles = computed(() => {
 })
 const nextActionTitle = computed(() => {
   if (currentTicketStatusValue.value === 1) {
-    return '\u5c3d\u5feb\u786e\u8ba4\u5904\u7406\u4eba\u5e76\u8865\u9f50\u4e0a\u4e0b\u6587'
+    return '尽快确认处理人并补齐上下文'
   }
   if (currentTicketStatusValue.value === 2) {
-    return '\u8865\u5145\u6700\u65b0\u8bc4\u8bba\u5e76\u540c\u6b65\u5173\u8054\u77e5\u8bc6'
+    return '补充最新评论并同步关联知识'
   }
-  return '\u786e\u8ba4\u662f\u5426\u9700\u8981\u7ee7\u7eed\u6c89\u6dc0\u77e5\u8bc6\u6587\u7ae0'
+  return '确认是否需要继续沉淀知识文章'
 })
 
 const collaborationHealth = computed(() => {
@@ -835,8 +852,8 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
     const existingDraft = latestDraftKnowledgeArticle.value
     if (existingDraft) {
       successMessage.value = existingDraft.statusKey === 'local'
-        ? '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u672c\u5730\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
-        : '\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u6709\u771f\u5b9e\u8349\u7a3f\uff0c\u6b63\u5728\u7ee7\u7eed\u7f16\u8f91\u3002'
+        ? '这张工单已经有本地草稿，正在继续编辑。'
+        : '这张工单已经有真实草稿，正在继续编辑。'
       const query = getKnowledgeDraftRedirectQuery(options?.origin)
       const targetPath = `/knowledge/articles/${existingDraft.id}/edit${query}`
       if (requestId !== knowledgeDraftRequestId) {
@@ -856,7 +873,7 @@ async function createKnowledgeDraft(options?: { origin?: 'manual' | 'ticket-clos
           return
         }
         saveKnowledgeDraftSeed(buildKnowledgeDraftFromTicket(ticket.value, options))
-        successMessage.value = '\u5df2\u57fa\u4e8e\u5f53\u524d\u5de5\u5355\u751f\u6210\u771f\u5b9e\u77e5\u8bc6\u8349\u7a3f\uff0c\u6b63\u5728\u8fdb\u5165\u7f16\u8f91\u9875\u3002'
+        successMessage.value = '已基于当前工单生成真实知识草稿，正在进入编辑页。'
         await loadLinkedKnowledgeArticles()
         const query = getKnowledgeDraftRedirectQuery(options?.origin)
         if (requestId !== knowledgeDraftRequestId) {
@@ -942,20 +959,20 @@ function getKnowledgeDraftRedirectQuery(origin?: 'manual' | 'ticket-close') {
 }
 
 function buildCommentSuccessMessage(isLocal: boolean) {
-  return isLocal ? '\u8bc4\u8bba\u5df2\u5199\u5165\u672c\u5730\u5de5\u4f5c\u6d41\u3002' : '\u8bc4\u8bba\u5df2\u63d0\u4ea4\u3002'
+  return isLocal ? '评论已写入本地工作流。' : '评论已提交，已补充到当前工单。'
 }
 
 function buildAssignmentSuccessMessage(isLocal: boolean) {
-  return isLocal ? '\u5904\u7406\u4eba\u5df2\u5199\u5165\u672c\u5730\u5de5\u4f5c\u6d41\u3002' : '\u5904\u7406\u4eba\u5df2\u66f4\u65b0\u3002'
+  return isLocal ? '处理人已写入本地工作流。' : '处理人已更新。'
 }
 
 function buildStatusSuccessMessage(status: number, isLocal: boolean) {
   if (status >= 3) {
     return isLocal
-      ? '\u72b6\u6001\u5df2\u66f4\u65b0\uff0c\u672c\u5730\u5de5\u5355\u5df2\u7ecf\u9002\u5408\u6c89\u6dc0\u77e5\u8bc6\u6587\u7ae0\u3002'
-      : '\u72b6\u6001\u5df2\u66f4\u65b0\uff0c\u8fd9\u5f20\u5de5\u5355\u5df2\u7ecf\u9002\u5408\u7ee7\u7eed\u6c89\u6dc0\u77e5\u8bc6\u6587\u7ae0\u3002'
+      ? '状态已更新，本地工单已经适合沉淀知识文章。'
+      : '状态已更新，这张工单已经适合继续沉淀知识文章。'
   }
-  return isLocal ? '\u72b6\u6001\u5df2\u66f4\u65b0\u5230\u672c\u5730\u5de5\u4f5c\u6d41\u3002' : '\u72b6\u6001\u5df2\u66f4\u65b0\u3002'
+  return isLocal ? '状态已更新到本地工作流。' : '状态已更新。'
 }
 
 function mapRemoteSourceKnowledgeArticles(data: TicketDetailApiItem | null) {
@@ -996,10 +1013,10 @@ async function loadLinkedKnowledgeArticles() {
     .map((item) => ({
       id: item.id,
       title: item.title,
-      metric: buildKnowledgeArticleMetric('\u672c\u5730\u8349\u7a3f', item.sourceTicket?.ticketNo, ticket.value?.id),
+      metric: buildKnowledgeArticleMetric('本地草稿', item.sourceTicket?.ticketNo, ticket.value?.id),
       statusRank: 2,
       updatedAt: formatDateText(item.updateTime || item.createTime),
-      statusLabel: '\u672c\u5730\u8349\u7a3f',
+      statusLabel: '本地草稿',
       statusTone: 'chip-orange',
       statusKey: 'local' as const,
     }))
@@ -1038,6 +1055,7 @@ function resetTransientDetailState() {
 }
 
 function syncRouteFeedbackMessage() {
+  // 创建页跳回详情页时，会把“刚刚创建成功”的反馈放在 query 里带回来。
   successMessage.value = route.query.localCreated === '1'
     ? '工单已保存到本地工作流，后续可以继续评论、指派和改状态。'
     : route.query.created === '1'
@@ -1072,6 +1090,9 @@ async function loadAssignableUsers() {
 }
 
 async function loadTicket() {
+  lastLoadedTicketRouteKey.value = `${route.path}:${String(route.params.id)}`
+  // 每次重新加载详情页时，都生成一份新的请求序号。
+  // 后面如果旧请求慢一步回来，就会被 requestId 守卫挡掉，避免覆盖新页面状态。
   const requestId = ++ticketLoadRequestId
   knowledgeDraftRequestId += 1
   statusUpdateRequestId += 1
@@ -1153,7 +1174,7 @@ async function submitComment() {
     return
   }
   if (!content) {
-    commentError.value = '\u8bf7\u5148\u8f93\u5165\u8bc4\u8bba\u5185\u5bb9'
+    commentError.value = '请先输入评论内容'
     commentErrorTraceId.value = ''
     return
   }
@@ -1166,6 +1187,7 @@ async function submitComment() {
   try {
     const localTicket = getLocalTicket(id)
     if (localTicket) {
+      // 本地工单不走后端，直接在本地工作流里追加评论，保持演示闭环。
       const nextTicket = appendLocalComment(localTicket, {
         content,
         commentType,
@@ -1234,7 +1256,7 @@ async function submitStatusUpdate() {
   const shouldSuggestKnowledgeCapture = statusForm.value.status === 4
     && canManageKnowledge.value
     && !linkedKnowledgeArticles.value.length
-    && window.confirm('\u5de5\u5355\u4f1a\u88ab\u5173\u95ed\u3002\u8981\u4e0d\u8981\u5728\u5173\u95ed\u540e\u7acb\u523b\u751f\u6210\u4e00\u7bc7\u77e5\u8bc6\u6c89\u6dc0\u8349\u7a3f\uff1f')
+    && window.confirm('工单会被关闭。要不要在关闭后立刻生成一篇知识沉淀草稿？')
   const closeRemark = statusForm.value.remark.trim()
   const requestId = ++statusUpdateRequestId
 
@@ -1245,6 +1267,7 @@ async function submitStatusUpdate() {
   try {
     const localTicket = getLocalTicket(id)
     if (localTicket) {
+      // 本地工单和真实工单共用一套页面动作，只是落地目标不同。
       const nextTicket = updateLocalTicketStatus(localTicket, statusForm.value.status, statusForm.value.remark.trim())
       if (requestId !== statusUpdateRequestId) {
         return
@@ -1257,7 +1280,7 @@ async function submitStatusUpdate() {
       syncStatusForm()
       successMessage.value = buildStatusSuccessMessage(statusForm.value.status, true)
       await loadLinkedKnowledgeArticles()
-      if (requestId !== statusUpdateRequestId) {
+      if (requestId !== statusUpdateRequestId || Number(route.params.id) !== id) {
         return
       }
       if (shouldSuggestKnowledgeCapture) {
@@ -1285,7 +1308,7 @@ async function submitStatusUpdate() {
     syncAssignForm(data)
     successMessage.value = buildStatusSuccessMessage(statusForm.value.status, false)
     await loadLinkedKnowledgeArticles()
-    if (requestId !== statusUpdateRequestId) {
+    if (requestId !== statusUpdateRequestId || Number(route.params.id) !== id) {
       return
     }
     if (shouldSuggestKnowledgeCapture) {
@@ -1322,7 +1345,7 @@ async function submitAssignment() {
     return
   }
   if (!assignForm.value.assigneeUserId) {
-    assignError.value = '\u8bf7\u5148\u9009\u62e9\u5904\u7406\u4eba'
+    assignError.value = '请先选择处理人'
     assignErrorTraceId.value = ''
     return
   }
@@ -1335,7 +1358,8 @@ async function submitAssignment() {
   try {
     const localTicket = getLocalTicket(id)
     if (localTicket) {
-      const assigneeName = assigneeOptions.value.find((item) => item.id === assignForm.value.assigneeUserId)?.displayName || '\u5df2\u6307\u6d3e\u6210\u5458'
+      // fallback 模式下没有真实用户写回，这里用前端可选项模拟“已指派”结果。
+      const assigneeName = assigneeOptions.value.find((item) => item.id === assignForm.value.assigneeUserId)?.displayName || '已指派成员'
       const nextTicket = assignLocalTicket(localTicket, assigneeName, assignForm.value.remark.trim(), assignForm.value.assigneeUserId)
       if (requestId !== assignmentRequestId) {
         return
@@ -1383,8 +1407,28 @@ async function focusCommentInput() {
   commentInputRef.value?.focus()
 }
 
+async function applyAiReplySeed() {
+  if (route.query.prefillReply !== '1') {
+    return
+  }
+  if (!ticket.value) {
+    return
+  }
+
+  const seed = consumeAiReplyDraftSeed()
+  if (!seed || seed.ticketId !== ticket.value.id) {
+    return
+  }
+
+  commentForm.value.content = seed.content
+  commentForm.value.commentType = canUseInternalComments.value ? seed.commentType : 1
+  commentForm.value.internal = canUseInternalComments.value ? seed.internal : false
+  successMessage.value = 'AI reply draft has been loaded into the comment box. You can refine it before sending.'
+  await focusCommentInput()
+}
+
 async function focusKnowledgeContext() {
-  if (route.query.fromKnowledge !== '1') {
+  if (route.query.fromKnowledge !== '1' && route.query.fromAiCenter !== '1') {
     highlightedSection.value = null
     return
   }
@@ -1414,33 +1458,134 @@ onMounted(async () => {
   }
   await loadAssignableUsers()
   await loadTicket()
+  await applyAiReplySeed()
   await focusKnowledgeContext()
 })
 
 watch(
-  () => route.params.id,
+  () => ticket.value?.id,
   async () => {
-    await loadTicket()
-    await focusKnowledgeContext()
+    await applyAiReplySeed()
   },
 )
 
 watch(
   () => route.fullPath,
   async () => {
+    const nextRouteKey = `${route.path}:${String(route.params.id)}`
     syncRouteFeedbackMessage()
+    if (nextRouteKey !== lastLoadedTicketRouteKey.value) {
+      await loadAssignableUsers()
+      await loadTicket()
+    }
+    await applyAiReplySeed()
     await focusKnowledgeContext()
   },
 )
 </script>
 
 <style scoped>
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 16px;
+}
+
+.detail-main,
+.detail-side {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-topbar {
+  margin-bottom: 16px;
+}
+
+.detail-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.detail-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detail-title {
+  margin: 14px 0 10px;
+  font-size: 32px;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.detail-summary {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #475569;
+}
+
+.detail-runtime-banner {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.detail-runtime-banner strong,
+.detail-runtime-banner p {
+  margin: 0;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  color: #64748b;
+  font-size: 13px;
+}
+
+.ticket-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ticket-overview-card,
+.insight-card,
+.knowledge-workbench-card,
+.timeline-card,
+.comment-card {
+  border-radius: 14px;
+}
+
+.ticket-overview-card {
+  padding: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #f8fafc;
+}
+
+.ticket-overview-card strong {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.ticket-overview-card p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
 .ticket-form {
-  margin-top: 1.25rem;
-  padding: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  background: rgba(248, 250, 252, 0.78);
+  margin-top: 1rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  background: #f8fafc;
 }
 
 .form-grid {
@@ -1464,17 +1609,26 @@ watch(
 
 .field-control {
   width: 100%;
-  padding: 0.8rem 0.95rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 12px;
+  min-height: 2.6rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
   background: #fff;
   color: #0f172a;
   font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.field-control:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .field-textarea {
   resize: vertical;
   min-height: 108px;
+  line-height: 1.7;
 }
 
 .checkbox-field {
@@ -1519,14 +1673,14 @@ watch(
 }
 
 .section-highlight {
-  padding: 0.6rem;
-  border-radius: 18px;
-  background: rgba(239, 246, 255, 0.62);
+  padding: 0.5rem;
+  border-radius: 14px;
+  background: rgba(239, 246, 255, 0.72);
 }
 
 .context-card-highlight {
   border-color: rgba(37, 99, 235, 0.2);
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.08);
   background: rgba(239, 246, 255, 0.8);
 }
 
@@ -1551,21 +1705,6 @@ watch(
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.knowledge-filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.knowledge-sort-select {
-  padding: 0.35rem 0.6rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 10px;
-  background: #fff;
-  color: #475569;
-  font: inherit;
 }
 
 .quick-filter-chip {
@@ -1633,9 +1772,8 @@ watch(
 
 .knowledge-workbench-card {
   padding: 0.95rem 1rem;
-  border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: #f8fafc;
 }
 
 .knowledge-workbench-card strong,
@@ -1665,24 +1803,7 @@ watch(
   text-decoration: none;
 }
 
-.ticket-insight-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 1rem;
-}
-
-.insight-card {
-  padding: 0.95rem 1rem;
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.88);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.insight-card strong {
-  display: block;
-  margin-top: 0.4rem;
-}
+.ticket-insight-strip { margin-top: 14px; }
 
 .timeline-highlight {
   border-color: rgba(37, 99, 235, 0.18);
@@ -1694,9 +1815,9 @@ watch(
   align-items: center;
   gap: 0.75rem;
   padding: 0.85rem 0.95rem;
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.82);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.95);
   color: #334155;
 }
 
@@ -1710,39 +1831,16 @@ watch(
   margin-bottom: 0;
 }
 
-.related-link {
-  display: grid;
-  gap: 0.55rem;
-  border-radius: 14px;
-  padding: 0.85rem 0.95rem;
-  transition: background 180ms ease, transform 180ms ease;
-}
-
-.related-link:hover {
-  background: rgba(37, 99, 235, 0.06);
-  transform: translateX(2px);
-}
-
-.related-link-main {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.related-link-main strong {
-  color: #0f172a;
-}
-
-.knowledge-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
 .knowledge-empty-hint {
   color: #64748b;
 }
 
 @media (max-width: 900px) {
+  .detail-layout,
+  .ticket-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -1761,8 +1859,5 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .ticket-insight-strip {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

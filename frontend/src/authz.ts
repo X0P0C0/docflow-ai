@@ -11,6 +11,8 @@ import {
   TICKET_OPERATOR_ROLE_CODES,
 } from './auth-constants'
 
+// authz.ts 的职责是把“当前登录用户拥有什么”翻译成前端可直接消费的布尔能力判断。
+// 它不替代后端鉴权，只负责页面、按钮和交互层的可见性控制。
 export function hasCapability(capability: string) {
   const currentCapabilities = authState.user?.capabilities || []
   return currentCapabilities.includes(capability)
@@ -31,6 +33,8 @@ export function hasAnyRole(roles: string[]) {
 }
 
 export function canManageKnowledgeArticles() {
+  // 优先信任后端返回的 capabilities，同时保留 role / permission 兜底，
+  // 这样前后端协议演进时页面不会因为单一字段缺失而全部失效。
   return hasCapability(CAPABILITY_CODES.KNOWLEDGE_MANAGE)
     || hasAnyPermission(KNOWLEDGE_MANAGER_PERMISSION_CODES)
     || hasAnyRole(KNOWLEDGE_MANAGER_ROLE_CODES)
@@ -69,6 +73,8 @@ export function canManageSystem() {
 }
 
 export function canAccessCapability(capability?: string | null) {
+  // 这里把 capability code 收口成统一分发入口，
+  // route 守卫和页面按钮都不需要自己维护一份映射规则。
   if (!capability) {
     return true
   }
@@ -100,5 +106,6 @@ export function canAccessCapability(capability?: string | null) {
 }
 
 export function canAccessRoute(target: string) {
+  // 路由层只关心“这个地址需要什么能力”，具体怎么算权限交给 canAccessCapability。
   return canAccessCapability(getRouteRequiredCapability(target))
 }

@@ -21,6 +21,7 @@ export interface LoginResponse {
   user: CurrentUser
 }
 
+// 这份 demoUsers 不是为了替代后端，而是为了在后端不可用时仍能跑通关键页面和权限分支。
 const demoUsers: Record<string, CurrentUser> = {
   admin: {
     id: 1,
@@ -91,14 +92,17 @@ const demoUsers: Record<string, CurrentUser> = {
 }
 
 export function login(payload: { username: string; password: string }) {
+  // 真正的登录始终优先走后端接口；是否回退到 demo 会话，由调用方按错误类型决定。
   return post<LoginResponse>('/api/auth/login', payload, { skipAuth: true })
 }
 
 export function fetchCurrentUser() {
+  // /me 是前端恢复会话时的唯一真实来源。
   return get<CurrentUser>('/api/auth/me')
 }
 
 export function createDemoSession(username: string, password: string): LoginResponse | null {
+  // 只有匹配演示账号时才签发本地 demo token，避免把任意输入都误当成可登录状态。
   if (password !== 'password') {
     return null
   }
@@ -116,5 +120,6 @@ export function createDemoSession(username: string, password: string): LoginResp
 }
 
 export function isDemoToken(token: string) {
+  // 运行模式判断大量依赖这个约定，因此 demo token 前缀要保持稳定。
   return token.startsWith('demo-token:')
 }

@@ -1,5 +1,6 @@
 <template>
-  <div class="detail-page">
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
+    <div class="detail-page">
     <header class="detail-topbar">
       <RouterLink class="back-link" to="/knowledge/articles">返回知识库</RouterLink>
       <div class="detail-topbar-actions">
@@ -43,6 +44,11 @@
             {{ article.summary || '这篇文章暂时还没有摘要，后面可以把 AI 摘要能力真正接进来。' }}
           </p>
 
+          <div class="state-box detail-runtime-banner" :class="{ 'state-warning': isDemoMode() || isLocalArticle }">
+            <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+            <p>{{ runtimeDataSourceMessage }}</p>
+          </div>
+
           <div class="detail-meta">
             <span>作者 ID：{{ article.authorUserId }}</span>
             <span>分类：{{ categoryText(article.categoryId) }}</span>
@@ -71,16 +77,16 @@
             </div>
           </div>
 
-          <div class="ticket-insight-strip">
-            <div class="insight-card">
+          <div class="ticket-insight-strip workspace-insight-grid">
+            <div class="insight-card workspace-insight-card">
               <span class="muted">阅读时长</span>
               <strong>{{ readingMinutes }} 分钟</strong>
             </div>
-            <div class="insight-card">
+            <div class="insight-card workspace-insight-card">
               <span class="muted">核心段落</span>
               <strong>{{ articleParagraphs.length }} 段</strong>
             </div>
-            <div class="insight-card">
+            <div class="insight-card workspace-insight-card">
               <span class="muted">适用场景</span>
               <strong>{{ articleScenario }}</strong>
             </div>
@@ -254,7 +260,7 @@
             </div>
           </div>
           <div class="related-toolbar">
-            <div class="knowledge-filter-chips">
+            <div class="knowledge-filter-chips workspace-chip-filters">
               <button
                 v-for="filter in relatedSourceFilters"
                 :key="filter.value"
@@ -266,7 +272,7 @@
                 {{ filter.label }}
               </button>
             </div>
-            <select v-model="relatedSortMode" class="knowledge-sort-select">
+            <select v-model="relatedSortMode" class="knowledge-sort-select workspace-sort-select">
               <option value="match">按匹配优先</option>
               <option value="title">按标题</option>
               <option value="status">按状态</option>
@@ -276,14 +282,14 @@
             <RouterLink
               v-for="item in relatedArticles"
               :key="item.id"
-              class="mini-item related-link"
+              class="mini-item related-link workspace-link-card"
               :to="`/knowledge/articles/${item.id}`"
             >
-              <div class="related-link-main">
+              <div class="related-link-main workspace-link-main">
                 <strong>{{ item.title }}</strong>
                 <span>{{ item.metric }}</span>
               </div>
-              <div v-if="item.reasons.length" class="related-reasons">
+              <div v-if="item.reasons.length" class="related-reasons workspace-badge-row">
                 <span
                   v-for="reason in item.reasons"
                   :key="`${item.id}-${reason}`"
@@ -300,7 +306,8 @@
         </article>
       </aside>
     </main>
-  </div>
+    </div>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
@@ -309,6 +316,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { fetchTicketDetail } from '../api/ticket'
 import { canManageKnowledgeArticles } from '../authz'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
+import AppShell from '../components/layout/AppShell.vue'
 import {
   archiveKnowledgeArticle,
   deleteKnowledgeArticle,
@@ -316,13 +324,14 @@ import {
   fetchKnowledgeArticleDetail,
   restoreKnowledgeArticleVersion,
 } from '../api/knowledge'
+import { fallbackArticles, manageNav, workspaceNav } from '../mock/dashboard'
 import { getKnowledgeDraft, removeKnowledgeDraft, updateKnowledgeDraftStatus } from '../mock/knowledgeDrafts'
 import { getLocalTicket } from '../mock/ticketWorkspace'
-import { fallbackArticles } from '../mock/dashboard'
 import type { KnowledgeArticleApiItem, KnowledgeArticleDraft, TicketItem } from '../types/dashboard'
 import { getApiErrorDisplay } from '../utils/apiErrorDisplay'
 import { attachArticleSourceTicket, saveArticleSourceTicket } from '../utils/knowledgeSourceTicket'
 import { formatTicketDetailItem } from '../utils/ticketPresentation'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
 
 const route = useRoute()
 const router = useRouter()
@@ -345,6 +354,14 @@ const relatedSortMode = ref<'match' | 'title' | 'status'>('match')
 const activeRelatedSourceFilter = ref<'all' | 'ticket-linked' | 'same-category'>('all')
 let articleLoadRequestId = 0
 let articleActionRequestId = 0
+const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
+const isLocalArticle = computed(() => !!article.value && 'source' in article.value && article.value.source === 'local')
+const runtimeDataSourceMessage = computed(() => getRuntimeDataSourceMessage({
+  usedFallbackData: false,
+  subject: '文章详情',
+  localOnlyLabel: isLocalArticle.value ? '知识草稿' : '',
+}))
 const sourceCommentPreview = computed(() => sourceTicketPreview.value?.comments?.slice(0, 2) || [])
 const sourceTimelinePreview = computed(() => sourceTicketPreview.value?.timeline?.slice(0, 3) || [])
 const relatedSourceFilters = [
@@ -582,7 +599,17 @@ async function loadSourceTicketSummary(requestId = articleLoadRequestId) {
     if (requestId !== articleLoadRequestId) {
       return
     }
-    sourceTicketPreview.value = localTicket
+    sourceTicketPreview.value = {
+      ...localTicket,
+      knowledgeContextSummary: {
+        status: localTicket.status,
+        assignee: localTicket.assignee || '待分配',
+        commentCount: localTicket.comments?.length || 0,
+        timelineCount: localTicket.timeline?.length || 0,
+        latestTimelineTitle: localTicket.timeline?.[0]?.title,
+        latestTimelineAt: localTicket.timeline?.[0]?.createdAt,
+      },
+    }
     return
   }
 
@@ -856,23 +883,17 @@ watch(
 </script>
 
 <style scoped>
-.ticket-insight-strip {
+.ticket-insight-strip { margin-bottom: 1.25rem; }
+
+.detail-runtime-banner {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 1.25rem;
+  gap: 6px;
+  margin-bottom: 1rem;
 }
 
-.insight-card {
-  padding: 0.95rem 1rem;
-  border-radius: 16px;
-  background: rgba(248, 250, 252, 0.88);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.insight-card strong {
-  display: block;
-  margin-top: 0.4rem;
+.detail-runtime-banner strong,
+.detail-runtime-banner p {
+  margin: 0;
 }
 
 .knowledge-outline {
@@ -923,34 +944,6 @@ watch(
   border-radius: 18px;
   background: rgba(239, 246, 255, 0.82);
   border: 1px solid rgba(37, 99, 235, 0.12);
-}
-
-.related-link {
-  display: grid;
-  gap: 0.6rem;
-  border-radius: 14px;
-  padding: 0.85rem 0.95rem;
-  transition: background 180ms ease, transform 180ms ease;
-}
-
-.related-link:hover {
-  background: rgba(37, 99, 235, 0.06);
-  transform: translateX(2px);
-}
-
-.related-link-main {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.related-link-main strong {
-  color: #0f172a;
-}
-
-.related-reasons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
 }
 
 .related-reason-chip {
@@ -1033,21 +1026,6 @@ watch(
   margin-bottom: 1rem;
 }
 
-.knowledge-filter-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.knowledge-sort-select {
-  padding: 0.4rem 0.65rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 10px;
-  background: #fff;
-  color: #475569;
-  font: inherit;
-}
-
 .panel-divider {
   height: 1px;
   margin-bottom: 1rem;
@@ -1097,10 +1075,6 @@ watch(
 }
 
 @media (max-width: 900px) {
-  .ticket-insight-strip {
-    grid-template-columns: 1fr;
-  }
-
   .version-item {
     align-items: start;
   }

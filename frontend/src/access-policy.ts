@@ -1,5 +1,9 @@
 import { CAPABILITY_CODES } from './capability-constants'
 
+// access-policy.ts 负责“产品表达层”：
+// 1. 定义哪些路由需要什么能力
+// 2. 根据能力状态生成页面文案、提示语和展示卡片
+// 它不直接读用户状态，只接收外部传入的布尔结果，保持可测试和可复用。
 export const ROUTE_CAPABILITY_REQUIREMENTS: Record<string, string> = {
   '/knowledge/articles/create': CAPABILITY_CODES.KNOWLEDGE_MANAGE,
   '/knowledge/articles/:id/edit': CAPABILITY_CODES.KNOWLEDGE_MANAGE,
@@ -36,6 +40,7 @@ export const CAPABILITY_PRESENTATION = [
 ] as const
 
 export function getRouteRequiredCapability(target: string) {
+  // 这里做的是“静态路由 -> 所需能力”的映射，不承担动态用户判断。
   return ROUTE_CAPABILITY_REQUIREMENTS[target] || null
 }
 
@@ -62,6 +67,8 @@ export function buildProfileCapabilitySummaries(options: {
   canViewAllTickets: boolean
   canManageKnowledge: boolean
 }) {
+  // 这类 buildXxx 函数的目标是把权限状态翻译成“用户能看懂的产品语言”，
+  // 避免各页面散落着重复且不一致的说明文案。
   return {
     roleSummary: options.canOperateTickets
       ? '当前身份偏向处理侧，可以继续验证工单指派、状态流转和知识沉淀。'
@@ -213,6 +220,8 @@ export function buildDashboardMetricsCopy(options: {
   canViewAllTickets: boolean
   canManageKnowledge: boolean
 }) {
+  // 同一套 dashboard 指标会根据角色视角切换解释口径：
+  // 处理侧强调队列、流转、沉淀；提单侧强调跟进、反馈、回查。
   const ticketMetric = options.canViewAllTickets
     ? {
         tag: '总工单',
@@ -348,6 +357,7 @@ export function buildSidebarBadgeMap(options: {
   canAccessAiCenter: boolean
   canManageSystem: boolean
 }) {
+  // 侧边导航 badge 也是一种能力提示，让用户在进页面前就知道入口语义。
   return {
     '/knowledge/articles': options.canManageKnowledge ? 'Edit' : 'Read',
     '/ai-center': options.canAccessAiCenter ? 'AI' : 'Locked',

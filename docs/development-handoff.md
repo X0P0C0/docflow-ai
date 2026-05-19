@@ -1,487 +1,282 @@
-# DocFlow AI 开发接力文档
+# DocFlow AI 开发交接文档
 
-## 1. 这份文档的作用
+## 1. 文档目的
 
-这份文档是给“新对话 / 新接力开发者 / 后续 AI 协作”准备的。
+这份文档用于帮助后续维护者快速接手 `DocFlow AI`。
 
-它的目标是：
+适用对象：
 
-- 让新对话快速理解当前项目状态
-- 避免每次开新对话都从头讲背景
-- 让 AI 能按统一方向持续开发
-- 尽量减少上下文丢失带来的重复沟通成本
+- 新接手仓库的开发者
+- 继续推进本项目的后续 AI / 编码助手会话
+- 需要快速了解当前实现状态的人
 
-一句话理解：
+建议和下列文档配合阅读：
 
-`这是 DocFlow AI 项目的接力开发说明书。`
+- [README.md](D:\java\project\docflow-ai\README.md)
+- [frontend-delivery-demo-guide.md](D:\java\project\docflow-ai\docs\frontend-delivery-demo-guide.md)
+- [frontend-project-closeout.md](D:\java\project\docflow-ai\docs\frontend-project-closeout.md)
+- [goal-execution-roadmap.md](D:\java\project\docflow-ai\docs\goal-execution-roadmap.md)
+- [runtime-modes.md](D:\java\project\docflow-ai\docs\runtime-modes.md)
 
----
+## 2. 项目概览
 
-## 2. 项目基础信息
+`DocFlow AI` 是一个面向内部协同场景的全栈项目，当前围绕三条线展开：
 
-### 2.1 项目名称
+- 工单工作流
+- 知识库工作流
+- AI 辅助工作台
 
-`DocFlow AI`
+当前技术栈：
 
-### 2.2 项目定位
+- 前端：Vue 3、TypeScript、Vite、Vue Router
+- 后端：Java 17、Spring Boot 3、MyBatis-Plus、MySQL 8、Redis
 
-一个面向团队内部协作的：
+仓库根目录：
 
-- AI 知识库系统
-- 工单协同系统
-- 前后端分离全栈项目
+- `D:\java\project\docflow-ai`
 
-### 2.3 当前项目目标
+## 3. 本地环境
 
-这个项目的目标不是单纯做一个练手 demo，而是做一个：
+前端：
 
-- 可用于求职展示的旗舰项目
-- 可覆盖 Java 面试高频知识点的代表作
-- 可持续扩展的产品化系统
+- 推荐 Node：`20.x`
+- 工作目录：`D:\java\project\docflow-ai\frontend`
 
----
+后端：
 
-## 3. 当前技术栈
+- 必须使用 JDK：`17`
+- 工作目录：`D:\java\project\docflow-ai\backend`
 
-### 3.1 前端
+数据库：
 
-- Vue 3
-- TypeScript
-- Vite
-- Vue Router
+- 默认库名：`docflow_ai`
+- 初始化脚本：[sql/init.sql](D:\java\project\docflow-ai\sql\init.sql)
 
-### 3.2 后端
+## 4. 启动方式
 
-- Java 17
-- Spring Boot 3
-- MyBatis-Plus
-- MySQL 8
-- Redis
-- Spring Security
+后端：
 
-### 3.3 本地环境说明
-
-#### Java
-
-旧项目环境仍然可能使用 JDK 8，但本项目后端必须使用：
-
-`D:\develop\java\jdk-17`
-
-#### Node
-
-本项目前端当前应优先使用：
-
-`C:\Program Files\nodejs`
-
-推荐版本：
-
-- Node.js 20
-
-如果终端默认仍指向旧 Node，可在当前命令里临时切 PATH。
-
----
-
-## 4. 关键文档位置
-
-新对话接手前，建议优先阅读这些文档：
-
-- 项目路线图：`D:\java\project\docflow-ai\docs\project-roadmap.md`
-- 项目立项：`D:\java\project\docflow-ai\docs\project-init.md`
-- UI 风格方案：`D:\java\project\docflow-ai\docs\ui-design-plan.md`
-- 数据库设计：`D:\java\project\docflow-ai\docs\database-design-v1.md`
-- 开发总大纲：`D:\java\project\docflow-ai\docs\development-outline.md`
-- 当前接力文档：`D:\java\project\docflow-ai\docs\development-handoff.md`
-- 运行模式说明：`D:\java\project\docflow-ai\docs\runtime-modes.md`
-
----
-
-## 5. 当前目录结构
-
-项目根目录：
-
-`D:\java\project\docflow-ai`
-
-主要结构：
-
-```text
-D:\java\project\docflow-ai
-├─ frontend
-├─ backend
-├─ docs
-├─ sql
-└─ assets
+```bash
+cd backend
+mvn spring-boot:run
 ```
 
-说明：
+前端：
 
-- `frontend`：前端工程
-- `backend`：后端工程
-- `docs`：项目文档
-- `sql`：数据库初始化脚本
-- `assets`：静态原型和后续素材
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
----
+实际后端端口：
 
-## 6. 已完成的内容
+- `http://127.0.0.1:8081`
 
-以下内容截至当前对话已经完成。
-
-### 6.1 文档层
-
-已完成：
-
-- 项目路线图
-- 项目立项文档
-- UI 风格方案
-- 数据库设计第一版
-- 开发接力文档
-
-### 6.2 数据库层
-
-已完成：
-
-- 初始化 SQL 文件编写
-- 本地 MySQL 已执行初始化脚本
-
-SQL 文件位置：
-
-`D:\java\project\docflow-ai\sql\init.sql`
-
-数据库名称：
-
-`docflow_ai`
-
-### 6.3 后端层
-
-已完成：
-
-- Spring Boot 后端骨架搭建
-- 基础配置文件
-- 统一返回体
-- 全局异常处理
-- JWT 认证骨架
-- 登录接口
-- 当前用户接口
-- 健康检查接口
-
-已完成模块：
-
-- 知识文章列表接口
-- 知识文章详情接口
-- 工单列表接口
-- 工单详情接口
-- 工单评论数据并入详情接口
-- 工单处理记录细化并入详情接口
-- 工单评论写入接口
-- 工单状态更新接口
-- 工单指派处理人接口
-- 新建工单接口
-- 工单列表筛选接口
-
-### 6.4 前端层
-
-已完成：
-
-- Vue 3 前端骨架搭建
-- 首页产品化样式落地
-- 页面拆组件
-- 路由系统接入
-- 登录页
-- 路由守卫
-- token 持久化与恢复逻辑
-
-已完成页面：
-
-- 登录页
-- 控制台首页
-- 知识文章列表页
-- 知识文章详情页
-- 工单列表页
-- 工单详情页
-- 工单详情页评论区与处理记录区细化
-- 工单详情页评论提交表单
-- 工单详情页状态流转表单
-- 工单详情页处理人指派表单
-- 新建工单页
-- 工单列表筛选表单
-
-### 6.5 联调层
-
-已完成：
-
-- 知识文章接口联调
-- 工单接口联调
-- Vite 代理到后端 `/api`
-
----
-
-## 7. 当前真实可用接口
-
-后端本地地址：
-
-`http://127.0.0.1:8080`
-
-当前真实接口：
-
-- 健康检查：`GET /api/health`
-- 登录：`POST /api/auth/login`
-- 当前用户：`GET /api/auth/me`
-- 知识文章列表：`GET /api/knowledge/articles`
-- 知识文章详情：`GET /api/knowledge/articles/{id}`
-- 工单列表：`GET /api/tickets`
-- 新建工单：`POST /api/tickets`
-- 工单详情：`GET /api/tickets/{id}`
-- 可分配处理人列表：`GET /api/tickets/assignees`
-- 新增工单评论：`POST /api/tickets/{id}/comments`
-- 更新工单状态：`POST /api/tickets/{id}/status`
-- 指派处理人：`POST /api/tickets/{id}/assignee`
-
----
-
-## 8. 当前可访问页面
-
-前端本地地址通常为：
+常见前端开发地址：
 
 - `http://127.0.0.1:5173`
-- 如果端口被占用，也可能是 `5174`
 
-当前页面：
+如果前端端口被占用，Vite 也可能切到 `5174` 等附近端口。
+
+## 5. 初始化账号
+
+- `admin / password`
+- `support01 / password`
+- `user01 / password`
 
-- 登录页：`/login`
-- 首页：`/dashboard`
-- 知识文章列表：`/knowledge/articles`
-- 知识文章详情：`/knowledge/articles/1`
-- 工单列表：`/tickets`
-- 工单详情：`/tickets/1`
+如需完整演示或做主要路径验证，优先使用 `admin`。
+
+## 6. 当前前端状态
+
+前端已经进入可交付状态，不再是早期原型阶段。
+
+已完成的基础层：
+
+- 统一 `AppShell`、侧边导航和顶部区域
+- 登录、鉴权持久化、路由守卫、能力限制跳转
+- 真实后端模式与 demo fallback 模式区分
+- 主要业务页统一为管理后台式结构
+- 单测基线已恢复并通过
+- 交付、演示、收尾文档已补齐
+
+已完成的主要页面：
+
+- `/login`
+- `/dashboard`
+- `/tickets`
+- `/tickets/create`
+- `/tickets/:id`
+- `/knowledge/articles`
+- `/knowledge/articles/create`
+- `/knowledge/articles/:id`
+- `/knowledge/articles/:id/edit`
+- `/ai-center`
+- `/notifications`
+- `/profile`
+- `/settings`
 
-例如：
+当前最清晰的前端主流程：
 
-- `http://127.0.0.1:5173/login`
-- `http://127.0.0.1:5173/dashboard`
-- `http://127.0.0.1:5173/knowledge/articles`
-- `http://127.0.0.1:5173/knowledge/articles/1`
-- `http://127.0.0.1:5173/tickets`
-- `http://127.0.0.1:5173/tickets/1`
+1. 登录
+2. 进入 Dashboard
+3. 进入工单列表和工单详情
+4. 在工单上下文中处理问题
+5. 从工单进入知识创建 / 编辑
+6. 查看知识详情与来源上下文
+7. 查看 AI Center 工作台概览
 
----
+## 7. 当前后端状态
 
-## 9. 当前前后端关键文件
+后端已具备的基础能力：
 
-### 9.1 后端关键文件
+- 健康检查
+- 登录
+- 当前用户查询
+- JWT 鉴权基础
+- 工单列表 / 详情 / 创建 / 评论 / 状态 / 指派接口
+- 知识文章列表 / 详情接口
 
-- 启动类：`D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\DocflowAiBackendApplication.java`
-- 配置文件：`D:\java\project\docflow-ai\backend\src\main\resources\application.yml`
-- 健康检查：`D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\controller\HealthController.java`
+已知接口示例：
 
-认证模块：
+- `GET /api/health`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/tickets`
+- `POST /api/tickets`
+- `GET /api/tickets/{id}`
+- `POST /api/tickets/{id}/comments`
+- `POST /api/tickets/{id}/status`
+- `POST /api/tickets/{id}/assignee`
+- `GET /api/knowledge/articles`
+- `GET /api/knowledge/articles/{id}`
 
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\auth\controller\AuthController.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\auth\service\impl\AuthServiceImpl.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\auth\security\JwtAuthenticationFilter.java`
+## 8. 当前路由参考
 
-知识库模块：
+核心路由：
 
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\knowledge\controller\KnowledgeArticleController.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\knowledge\service\impl\KnowledgeArticleServiceImpl.java`
+- `/login`
+- `/dashboard`
+- `/tickets`
+- `/tickets/create`
+- `/tickets/:id`
+- `/knowledge/articles`
+- `/knowledge/articles/create`
+- `/knowledge/articles/:id`
+- `/knowledge/articles/:id/edit`
+- `/ai-center`
 
-工单模块：
+次级路由：
 
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\ticket\controller\TicketController.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\ticket\service\impl\TicketServiceImpl.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\ticket\dto\TicketCommentResponse.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\ticket\entity\TicketComment.java`
-- `D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\ticket\mapper\TicketCommentMapper.java`
+- `/notifications`
+- `/profile`
+- `/settings`
 
-### 9.2 前端关键文件
+## 9. 关键文件
 
-- 应用入口：`D:\java\project\docflow-ai\frontend\src\App.vue`
-- 前端入口：`D:\java\project\docflow-ai\frontend\src\main.ts`
-- 路由：`D:\java\project\docflow-ai\frontend\src\router\index.ts`
-- 全局样式：`D:\java\project\docflow-ai\frontend\src\style.css`
+前端应用结构：
 
-认证相关：
+- [frontend/src/main.ts](D:\java\project\docflow-ai\frontend\src\main.ts)
+- [frontend/src/App.vue](D:\java\project\docflow-ai\frontend\src\App.vue)
+- [frontend/src/router/index.ts](D:\java\project\docflow-ai\frontend\src\router\index.ts)
+- [frontend/src/style.css](D:\java\project\docflow-ai\frontend\src\style.css)
 
-- `D:\java\project\docflow-ai\frontend\src\views\LoginView.vue`
-- `D:\java\project\docflow-ai\frontend\src\auth.ts`
-- `D:\java\project\docflow-ai\frontend\src\api\auth.ts`
+前端核心页面：
 
-首页：
+- [frontend/src/views/LoginView.vue](D:\java\project\docflow-ai\frontend\src\views\LoginView.vue)
+- [frontend/src/views/DashboardView.vue](D:\java\project\docflow-ai\frontend\src\views\DashboardView.vue)
+- [frontend/src/views/TicketListView.vue](D:\java\project\docflow-ai\frontend\src\views\TicketListView.vue)
+- [frontend/src/views/TicketCreateView.vue](D:\java\project\docflow-ai\frontend\src\views\TicketCreateView.vue)
+- [frontend/src/views/TicketDetailView.vue](D:\java\project\docflow-ai\frontend\src\views\TicketDetailView.vue)
+- [frontend/src/views/KnowledgeArticleListView.vue](D:\java\project\docflow-ai\frontend\src\views\KnowledgeArticleListView.vue)
+- [frontend/src/views/KnowledgeArticleEditorView.vue](D:\java\project\docflow-ai\frontend\src\views\KnowledgeArticleEditorView.vue)
+- [frontend/src/views/KnowledgeArticleDetailView.vue](D:\java\project\docflow-ai\frontend\src\views\KnowledgeArticleDetailView.vue)
+- [frontend/src/views/AiCenterView.vue](D:\java\project\docflow-ai\frontend\src\views\AiCenterView.vue)
 
-- `D:\java\project\docflow-ai\frontend\src\views\DashboardView.vue`
+前端 API / 鉴权辅助：
 
-知识库相关：
+- [frontend/src/auth.ts](D:\java\project\docflow-ai\frontend\src\auth.ts)
+- [frontend/src/api/auth.ts](D:\java\project\docflow-ai\frontend\src\api\auth.ts)
+- [frontend/src/api/ticket.ts](D:\java\project\docflow-ai\frontend\src\api\ticket.ts)
+- [frontend/src/api/knowledge.ts](D:\java\project\docflow-ai\frontend\src\api\knowledge.ts)
 
-- `D:\java\project\docflow-ai\frontend\src\api\knowledge.ts`
-- `D:\java\project\docflow-ai\frontend\src\views\KnowledgeArticleListView.vue`
-- `D:\java\project\docflow-ai\frontend\src\views\KnowledgeArticleDetailView.vue`
+前端回归基线：
 
-工单相关：
+- [frontend/tests/unit](D:\java\project\docflow-ai\frontend\tests\unit)
 
-- `D:\java\project\docflow-ai\frontend\src\api\ticket.ts`
-- `D:\java\project\docflow-ai\frontend\src\views\TicketListView.vue`
-- `D:\java\project\docflow-ai\frontend\src\views\TicketDetailView.vue`
+后端入口：
 
----
+- [backend/src/main/resources/application.yml](D:\java\project\docflow-ai\backend\src\main\resources\application.yml)
+- [backend/src/main/java/com/docflow/ai/DocflowAiBackendApplication.java](D:\java\project\docflow-ai\backend\src\main\java\com\docflow\ai\DocflowAiBackendApplication.java)
 
-## 10. 当前哪些是真实数据，哪些还是 mock
+## 10. 运行模式
 
-### 10.1 已接真实接口
+当前项目同时支持：
 
-- 登录页当前用户恢复
-- 首页知识文章列表
-- 知识文章列表页
-- 知识文章详情页
-- 首页工单列表
-- 工单列表页
-- 工单详情页
-- 工单详情页评论区与处理时间线
+- 真实后端模式
+- demo fallback 模式
 
-### 10.2 仍然保留 mock 兜底的数据
+理解方式：
 
-前端目前采用的是：
+- 只要真实 API 可用，就优先走真实接口
+- 为了保证演示连续性，部分前端流程仍保留 fallback 行为
 
-`真实接口优先，失败时回退到本地 mock`
+在排查模式相关问题前，建议先读 [runtime-modes.md](D:\java\project\docflow-ai\docs\runtime-modes.md)。
 
-补充说明：
+## 11. 验证基线
 
-- 演示模式、联调模式、真实业务模式的边界，见 `D:\java\project\docflow-ai\docs\runtime-modes.md`
+前端：
 
-这样做的目的：
-
-- 保证开发时页面不会空白
-- 保证后端临时没启动时前端仍可展示
-- 提高开发连贯性
-
-但长期来看，应逐步把主要页面都改成真实接口驱动。
-
----
-
-## 11. 当前已知问题
-
-### 11.1 中文响应乱码
-
-现象：
-
-通过 `PowerShell Invoke-WebRequest` 查看接口时，中文会显示乱码。
-
-说明：
-
-这不一定代表前端页面里一定乱码，更多是当前命令行编码显示问题。
-
-后续建议：
-
-- 检查后端统一响应编码
-- 检查前端页面实际显示
-- 必要时补 `produces = "application/json;charset=UTF-8"` 或统一编码配置
-
-### 11.2 登录与权限骨架已接入，但权限菜单仍未完整
-
-目前已经完成：
-
-- 登录接口
-- 当前用户接口
-- JWT 校验骨架
-- 路由守卫
-- 退出登录
-- token 持久化与恢复
-
-后续仍需补：
-
-- 基于角色的菜单控制
-- 当前用户信息展示完善
-- 页面级权限差异化
-
-### 11.3 工单主线已进入可写阶段，但闭环仍未完整
-
-目前已经完成：
-
-- 工单评论数据展示
-- 工单处理记录时间线展示
-- 工单详情页信息分区细化
-- 工单评论写入
-- 工单状态流转
-- 工单指派处理人
-- 新建工单
-- 工单列表筛选
-
-后续仍需补：
-
-- 附件上传
-
-### 11.4 Redis 业务能力还未真正接入
-
-当前 Redis 仍主要停留在配置阶段。
-
-后续应补：
-
-- 缓存知识文章
-- 热点数据缓存
-- 登录态 / 验证码
-- 缓存问题场景设计
-
----
-
-## 12. 推荐的下一步开发顺序
-
-接力开发时，建议优先按下面顺序推进：
-
-1. 基础布局壳与菜单权限
-2. 用户模块
-3. Redis 实战接入
-4. AI 摘要与 AI 建议能力接入
-5. 通知模块
-
-如果只选一个最优先的下一步：
-
-`优先做用户模块基础信息展示与菜单权限`
-
-原因：
-
-- 评论写入、状态流转、处理人指派、新建工单、列表筛选已经接上
-- 下一步最该补的是“不同身份进入系统后看到什么、能做什么”
-- 这样项目就会从功能演示进一步走向真实产品权限模型
-
----
-
-## 13. 新对话如何快速接力
-
-下次开新对话时，推荐直接把下面这句话发给新的 AI：
-
-```text
-请先阅读 D:\java\project\docflow-ai\docs\development-handoff.md，再继续作为 DocFlow AI 项目的接力开发助手。当前项目根目录是 D:\java\project\docflow-ai，请优先基于已有文档、已有代码和当前开发进度继续推进，不要重新做一套新方案。
+```bash
+cd frontend
+npm run test:unit
+npm run build
 ```
 
-如果你希望它更明确一点，也可以发这个版本：
+当前收尾时点，这两条命令都已通过。
 
-```text
-请先阅读：
-1. D:\java\project\docflow-ai\docs\development-handoff.md
-2. D:\java\project\docflow-ai\docs\development-outline.md
-3. D:\java\project\docflow-ai\docs\project-roadmap.md
-4. D:\java\project\docflow-ai\docs\project-init.md
-5. D:\java\project\docflow-ai\docs\ui-design-plan.md
-6. D:\java\project\docflow-ai\docs\database-design-v1.md
+## 12. 剩余但不阻塞的工作
 
-然后继续接力开发 D:\java\project\docflow-ai。
-要求：保持现有技术栈、现有 UI 风格和现有开发节奏，不要重做项目方向。
-```
+这些项不阻塞当前交付，但值得继续推进：
 
----
+- 构建产物体积优化与拆包
+- 继续清理剩余重复的 view 级 CSS
+- 为次级路由接入更深的真实后端覆盖
+- 在现有 AI Center 壳层上增加更真实的 AI 行为
+- 继续产品化 notifications / profile / settings
 
-## 14. 对接力开发的硬性要求
+## 13. 建议阅读顺序
 
-后续新对话 / 新 AI 接手时，应该遵守这些规则：
+如果后续有人继续接手，建议按这个顺序阅读：
 
-- 不要推翻现有项目方向
-- 不要改成别的技术栈
-- 不要重新做一套 UI 风格
-- 优先基于现有结构继续推进
-- 改动前先看 `development-handoff.md`
-- 文件路径尽量继续使用绝对路径说明
-- 优先保持“真实接口优先，mock 兜底”的开发方式
+1. [README.md](D:\java\project\docflow-ai\README.md)
+2. [frontend-delivery-demo-guide.md](D:\java\project\docflow-ai\docs\frontend-delivery-demo-guide.md)
+3. [frontend-project-closeout.md](D:\java\project\docflow-ai\docs\frontend-project-closeout.md)
+4. [goal-execution-roadmap.md](D:\java\project\docflow-ai\docs\goal-execution-roadmap.md)
+5. [runtime-modes.md](D:\java\project\docflow-ai\docs\runtime-modes.md)
+6. [integration-verification-2026-05-19.md](D:\java\project\docflow-ai\docs\integration-verification-2026-05-19.md)
 
----
+## 14. 一句话状态
 
-## 15. 当前一句话总结
+`DocFlow AI 前端已经成为一个结构统一、可测试、可演示、可继续维护的管理台前端，当前重点已从基础重构转向优化、深化和增量演进。`
+## 15. AI claim freshness configuration
 
-`DocFlow AI 已完成项目立项、UI 定调、数据库落地、登录与 JWT 基础骨架、知识文章列表/详情主线，以及工单创建、评论写入、状态流转、处理人指派和列表筛选闭环；下一阶段应优先补菜单权限、用户模块和 Redis 场景。`
+The AI workspace claim freshness window is now backend-configurable.
+
+- Source config: [application.yml](D:/java/project/docflow-ai/backend/src/main/resources/application.yml)
+- Property key: `app.ai.claim-stale-after`
+- Environment variable override: `DOCFLOW_AI_CLAIM_STALE_AFTER`
+- Default: `2h`
+
+Behavior summary:
+
+- The backend derives `lastActivityAt` from the claim time plus real handling activity, such as operator comments, status or assignment records, and linked knowledge updates.
+- The backend returns `claimFreshness` as `fresh` or `stale` based on the configured `app.ai.claim-stale-after` window.
+- The frontend AI Center consumes the backend freshness value directly and shows a neutral state when that field is unavailable.
+
+Common override examples:
+
+- `45m`
+- `90m`
+- `2h`
+- `4h`

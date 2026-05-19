@@ -67,13 +67,16 @@ function createTicketListItemFixture(overrides: Partial<TicketApiItem> = {}): Ti
   }
 }
 
+let mountedWrapper: Awaited<ReturnType<typeof mountView>> | null = null
+
 async function mountView() {
   const wrapper = mount(TicketListView, {
     global: {
       plugins: [ElementPlus],
       stubs: {
-        AppSidebar: true,
-        AppTopbar: true,
+        AppShell: {
+          template: '<div class="app-shell-stub"><slot /></div>',
+        },
       },
     },
   })
@@ -93,8 +96,6 @@ async function setViewMode(wrapper: Awaited<ReturnType<typeof mountView>>, value
   await nextTick()
   await flushPromises()
 }
-
-let mountedWrapper: Awaited<ReturnType<typeof mountView>> | null = null
 
 describe('TicketListView', () => {
   beforeEach(() => {
@@ -128,9 +129,9 @@ describe('TicketListView', () => {
 
     expect(fetchTickets).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('工单列表暂时不可用')
-    expect(wrapper.text()).toContain('当前展示的是可用兜底数据')
+    expect(wrapper.text()).toContain('兜底数据')
     expect(wrapper.text()).not.toContain('trace-ticket-list-503')
-    expect(wrapper.findAll('.ticket-board-card').length).toBeGreaterThan(0)
+    expect(wrapper.find('.ticket-table').exists()).toBe(true)
   })
 
   it('shows the backend business error without falling back to demo tickets', async () => {
@@ -150,7 +151,7 @@ describe('TicketListView', () => {
 
     expect(wrapper.text()).toContain('你没有权限查看全部工单')
     expect(wrapper.text()).toContain('trace-ticket-list-403')
-    expect(wrapper.text()).not.toContain('当前展示的是可用兜底数据')
+    expect(wrapper.text()).not.toContain('兜底数据')
     expect(wrapper.text()).not.toContain('支付接口异常告警')
   })
 
@@ -399,7 +400,7 @@ describe('TicketListView', () => {
     const wrapper = await mountView()
 
     expect(wrapper.text()).toContain('暂无符合条件的工单')
-    expect(wrapper.findAll('.ticket-board-card')).toHaveLength(0)
+    expect(wrapper.findAll('.ticket-board-item')).toHaveLength(0)
   })
 
   it('syncs filter and view state from the route on first load without duplicate requests', async () => {

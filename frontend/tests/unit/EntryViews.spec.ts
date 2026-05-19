@@ -16,6 +16,10 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+  }),
   RouterLink: {
     name: 'RouterLink',
     props: ['to'],

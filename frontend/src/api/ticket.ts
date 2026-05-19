@@ -1,6 +1,8 @@
 import { get, post } from './http'
 import type { KnowledgeArticleApiItem } from '../types/dashboard'
 
+// 这里定义的是“前端视角下的工单协议模型”。
+// 它尽量贴近后端返回结构，让页面层少做重复转换。
 export interface TicketApiItem {
   id: number
   ticketNo: string
@@ -30,6 +32,7 @@ export interface TicketApiItem {
 }
 
 export interface TicketDetailApiItem extends TicketApiItem {
+  // 详情接口不是再查一次列表字段，而是在列表基础上补齐时间线、评论和知识关联。
   sourceKnowledgeArticles: Array<{
     id: number
     title: string
@@ -106,6 +109,7 @@ export interface TicketQueryParams {
 }
 
 export function fetchTickets(params?: TicketQueryParams) {
+  // 列表查询统一在这里把筛选条件翻译成 query string，页面层不直接手拼 URL。
   const query = new URLSearchParams()
   if (params?.keyword) {
     query.set('keyword', params.keyword)
@@ -127,6 +131,7 @@ export function fetchTickets(params?: TicketQueryParams) {
 }
 
 export function fetchTicketDetail(id: number) {
+  // 详情页依赖的是聚合接口，而不是页面自己并发请求评论、时间线和相关文章。
   return get<TicketDetailApiItem>(`/api/tickets/${id}`)
 }
 
@@ -147,9 +152,11 @@ export function assignTicket(id: number, payload: AssignTicketPayload) {
 }
 
 export function createTicket(payload: CreateTicketPayload) {
+  // 新建接口直接返回详情结构，方便创建后立刻跳详情页。
   return post<TicketDetailApiItem>('/api/tickets', payload)
 }
 
 export function createTicketKnowledgeDraft(id: number, payload: CreateTicketKnowledgeDraftPayload = {}) {
+  // 这是“工单 -> 知识草稿”的跨模块入口，返回值已经切换成知识文章模型。
   return post<KnowledgeArticleApiItem>(`/api/tickets/${id}/knowledge-draft`, payload)
 }

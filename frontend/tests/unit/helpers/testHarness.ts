@@ -1,6 +1,8 @@
+import { getSafeLocalStorage, getSafeSessionStorage } from '../../../src/utils/safeStorage'
+
 export function resetWebStorage() {
-  localStorage.clear()
-  sessionStorage.clear()
+  getSafeLocalStorage().clear()
+  getSafeSessionStorage().clear()
 }
 
 export function assignRouteState<T extends Record<string, unknown>>(route: T, patch: Partial<T>) {

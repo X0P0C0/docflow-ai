@@ -1,105 +1,94 @@
 <template>
-  <div class="app-shell">
-    <AppSidebar :workspace-nav="workspaceNav" :manage-nav="manageNav" />
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
+    <section class="knowledge-editor-page workspace-page">
+      <el-card shadow="never" class="editor-header-card workspace-card">
+        <div class="editor-header workspace-header">
+          <div class="editor-header__main workspace-header-main">
+            <div class="editor-header__title workspace-title">
+              <h2>{{ isEditMode ? '继续完善知识文章' : '新建知识文章' }}</h2>
+              <p>
+                当前优先保持真实保存链路可用；当后端暂时不可用时，仍会自动回退到本地草稿，避免内容丢失。
+              </p>
+            </div>
+            <div class="editor-header__actions workspace-actions">
+              <el-button class="ghost-button" :disabled="submitting" @click="saveArticle(0)">保存草稿</el-button>
+              <el-button class="primary-button" type="primary" :disabled="submitting" @click="saveArticle(1)">
+                {{ submitting ? '保存中...' : '发布文章' }}
+              </el-button>
+            </div>
+          </div>
 
-    <main class="main-content">
-      <AppTopbar />
-
-      <section class="panel editor-hero">
-        <div>
-          <span class="hero-tag">{{ isEditMode ? 'Article Editor' : 'Knowledge Draft' }}</span>
-          <h2>{{ isEditMode ? '继续打磨知识文章，让内容更适合被复用。' : '把经验沉淀成团队能持续复用的标准文档。' }}</h2>
-          <p>
-            现在会优先保存到真实接口；如果后端暂时不可用，仍然会自动回退到本地草稿流，保证内容不会丢。
-          </p>
-        </div>
-        <div class="hero-stats">
-          <div class="stat-row">
-            <div>
-              <p>编辑状态</p>
-              <strong>{{ form.status === 1 ? '已发布' : '草稿中' }}</strong>
+          <div class="editor-stats workspace-stats">
+            <div
+              v-for="stat in statCards"
+              :key="stat.label"
+              class="editor-stat workspace-stat"
+            >
+              <span class="editor-stat__label workspace-stat-label">{{ stat.label }}</span>
+              <strong>{{ stat.value }}</strong>
+              <p>{{ stat.description }}</p>
             </div>
-            <span class="chip" :class="form.status === 1 ? 'chip-green' : 'chip-blue'">{{ draftLabel }}</span>
           </div>
-          <div class="stat-row">
-            <div>
-              <p>内容字数</p>
-              <strong>{{ contentLength }}</strong>
-            </div>
-            <span class="chip chip-orange">Words</span>
-          </div>
-          <div class="stat-row">
-            <div>
-              <p>摘要状态</p>
-              <strong>{{ form.summary ? '已填写' : '待完善' }}</strong>
-            </div>
-            <span class="chip chip-blue">Summary</span>
-          </div>
-          <div class="stat-row">
-            <div>
-              <p>完成度</p>
-              <strong>{{ completionRate }}%</strong>
-            </div>
-            <span class="chip chip-green">Progress</span>
+          <div class="state-box editor-runtime-banner" :class="{ 'state-warning': isDemoMode() || editingLocalDraft }">
+            <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+            <p>{{ runtimeDataSourceMessage }}</p>
           </div>
         </div>
-      </section>
+      </el-card>
 
       <section class="editor-layout">
-        <section class="panel editor-main">
-          <div class="panel-head">
-            <div>
-              <h3>{{ isEditMode ? '编辑文章' : '新建文章' }}</h3>
-              <p>当前已支持真实保存和发布，后面再继续补富文本和附件能力。</p>
-            </div>
-            <div class="detail-topbar-actions">
-              <button class="ghost-button" type="button" :disabled="submitting" @click="saveArticle(0)">保存草稿</button>
-              <button class="primary-button" type="button" :disabled="submitting" @click="saveArticle(1)">
-                {{ submitting ? '保存中...' : '发布文章' }}
-              </button>
+        <el-card shadow="never" class="editor-main-card workspace-card">
+          <div class="editor-main-card__head workspace-section-head workspace-section-head-spaced">
+            <div class="workspace-section-title">
+              <h3>{{ isEditMode ? '编辑内容' : '填写内容' }}</h3>
+              <p>把标题、摘要、正文和分类收进同一套后台表单结构，便于后续继续扩展附件、富文本和协作字段。</p>
             </div>
           </div>
 
-          <form class="editor-form" @submit.prevent="saveArticle(form.status)">
-            <label class="filter-field">
-              <span>文章标题</span>
-              <input v-model.trim="form.title" type="text" placeholder="例如：支付回调失败排查手册" />
-            </label>
+          <el-form class="editor-form workspace-filter-form" label-position="top" @submit.prevent="saveArticle(form.status)">
+            <el-form-item label="文章标题" class="editor-form__item">
+              <el-input
+                v-model.trim="form.title"
+                placeholder="例如：支付回调失败排查手册"
+              />
+            </el-form-item>
 
-            <div class="editor-grid">
-              <label class="filter-field">
-                <span>文章分类</span>
-                <select v-model="form.categoryId">
-                  <option :value="1">系统使用指南</option>
-                  <option :value="2">故障排查</option>
-                  <option :value="3">支付与订单</option>
-                </select>
-              </label>
+            <div class="editor-form__grid">
+              <el-form-item label="文章分类" class="editor-form__item">
+                <el-select v-model="form.categoryId" placeholder="请选择分类">
+                  <el-option :value="1" label="系统使用指南" />
+                  <el-option :value="2" label="故障排查" />
+                  <el-option :value="3" label="支付与订单" />
+                </el-select>
+              </el-form-item>
 
-              <label class="filter-field">
-                <span>发布状态</span>
-                <select v-model="form.status">
-                  <option :value="0">草稿</option>
-                  <option :value="1">已发布</option>
-                </select>
-              </label>
+              <el-form-item label="发布状态" class="editor-form__item">
+                <el-select v-model="form.status" placeholder="请选择状态">
+                  <el-option :value="0" label="草稿" />
+                  <el-option :value="1" label="已发布" />
+                </el-select>
+              </el-form-item>
             </div>
 
-            <label class="filter-field">
-              <span>文章摘要</span>
-              <textarea v-model.trim="form.summary" rows="4" placeholder="用 2 到 3 句话说明这篇文章能解决什么问题" />
-            </label>
+            <el-form-item label="文章摘要" class="editor-form__item">
+              <el-input
+                v-model.trim="form.summary"
+                type="textarea"
+                :rows="4"
+                placeholder="用 2 到 3 句话说明这篇文章能解决什么问题"
+              />
+            </el-form-item>
 
-            <label class="filter-field">
-              <span>正文内容</span>
-              <textarea
+            <el-form-item label="正文内容" class="editor-form__item">
+              <el-input
                 v-model.trim="form.content"
                 class="editor-textarea"
-                rows="14"
-                placeholder="建议写清楚问题现象、排查步骤、关键日志和结论。"
+                type="textarea"
+                :rows="14"
+                placeholder="建议写清楚问题现象、排查步骤、关键日志和最终结论。"
               />
-            </label>
-          </form>
+            </el-form-item>
+          </el-form>
 
           <ErrorTraceNotice v-if="feedbackMessage" :message="feedbackMessage" :trace-id="feedbackTraceId" />
 
@@ -108,18 +97,18 @@
               <span class="editor-progress-fill" :style="{ width: `${completionRate}%` }"></span>
             </div>
             <div class="editor-progress-meta">
-              <span>标题、摘要、正文和分类越完整，预览效果越接近真实内容后台。</span>
+              <span>标题、摘要、正文和分类越完整，预览效果越接近真实知识后台。</span>
               <strong>{{ completionRate }}%</strong>
             </div>
           </div>
-        </section>
+        </el-card>
 
-        <aside class="detail-side">
+        <aside class="editor-side">
           <article class="panel panel-dark">
             <div class="panel-head panel-head-dark">
               <div>
                 <h3>实时预览</h3>
-                <p>一边写，一边看信息结构是否清楚。</p>
+                <p>一边写，一边确认信息结构是否足够清晰。</p>
               </div>
             </div>
             <div class="editor-preview">
@@ -129,7 +118,7 @@
               </div>
               <span class="chip chip-blue">{{ categoryLabel }}</span>
               <h3>{{ form.title || '未命名文章' }}</h3>
-              <p>{{ form.summary || '摘要会显示在这里，建议尽量写成一句话就能理解价值。' }}</p>
+              <p>{{ form.summary || '摘要会显示在这里，建议尽量写成一眼就能理解价值的一段描述。' }}</p>
               <div class="mini-list dark-list">
                 <div class="mini-item"><span>状态</span><span>{{ form.status === 1 ? '已发布' : '草稿' }}</span></div>
                 <div class="mini-item"><span>作者</span><span>{{ authorName }}</span></div>
@@ -151,7 +140,7 @@
               <div class="mini-item"><span>沉淀入口</span><span>{{ route.query.from === 'ticket-close' ? '关单后沉淀' : '处理中沉淀' }}</span></div>
             </div>
             <div v-else class="mini-list">
-              <div class="mini-item"><span>当前没有绑定来源工单，更适合写通用操作指南或平台说明。</span></div>
+              <div class="mini-item"><span>当前没有绑定来源工单，更适合编写通用操作指南或平台说明。</span></div>
             </div>
           </article>
 
@@ -203,15 +192,14 @@
           </article>
         </aside>
       </section>
-    </main>
-  </div>
+    </section>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppSidebar from '../components/layout/AppSidebar.vue'
-import AppTopbar from '../components/layout/AppTopbar.vue'
+import AppShell from '../components/layout/AppShell.vue'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
 import { authState } from '../auth'
 import { canManageKnowledgeArticles } from '../authz'
@@ -222,7 +210,7 @@ import { resolveKnowledgeEditorLoadFailure, resolveKnowledgeEditorSaveFailure } 
 import { consumeKnowledgeDraftSeed } from '../utils/knowledgeFromTicket'
 import type { KnowledgeSourceTicketLink } from '../utils/knowledgeSourceTicket'
 import { attachArticleSourceTicket, saveArticleSourceTicket } from '../utils/knowledgeSourceTicket'
-import { isDemoMode } from '../utils/runtimeMode'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
 
 const route = useRoute()
 const router = useRouter()
@@ -243,11 +231,17 @@ const editingLocalDraft = ref(false)
 let editorLoadRequestId = 0
 let editorSaveRequestId = 0
 const isEditMode = computed(() => route.path.includes('/edit'))
-const canManage = computed(() => canManageKnowledgeArticles())
 const sourceTicket = ref<KnowledgeSourceTicketLink | null>(null)
+const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeDataSourceMessage = computed(() => getRuntimeDataSourceMessage({
+  usedFallbackData: false,
+  subject: isEditMode.value ? '知识编辑' : '新建知识文章',
+  localOnlyLabel: '本地知识草稿',
+}))
 const contentLength = computed(() => form.content.replace(/\s/g, '').length)
 const sourceTicketBannerTitle = computed(() =>
-  route.query.from === 'ticket-close' ? '已根据关闭工单生成沉淀草稿' : '这篇文章来自工单沉淀',
+  route.query.from === 'ticket-close' ? '已根据关单工单生成沉淀草稿' : '这篇文章来自工单沉淀',
 )
 const completionRate = computed(() => {
   let score = 0
@@ -261,7 +255,7 @@ const publishChecklist = computed(() => [
   {
     label: '问题现象写清楚',
     done: form.title.trim().length >= 8,
-    tip: '标题最好能直接点出故障或业务场景，而不是只写笼统问题。',
+    tip: '标题最好能直接点出故障或业务场景，而不是只写系统问题。',
   },
   {
     label: '摘要能独立说明价值',
@@ -289,7 +283,29 @@ const categoryLabel = computed(() => {
   if (form.categoryId === 2) return '故障排查'
   return '支付与订单'
 })
-const draftLabel = computed(() => (isEditMode.value ? 'Editing' : 'Creating'))
+const draftLabel = computed(() => (isEditMode.value ? '编辑中' : '创建中'))
+const statCards = computed(() => [
+  {
+    label: '编辑状态',
+    value: form.status === 1 ? '已发布' : '草稿中',
+    description: draftLabel.value,
+  },
+  {
+    label: '内容字数',
+    value: contentLength.value,
+    description: '正文当前长度',
+  },
+  {
+    label: '摘要状态',
+    value: form.summary ? '已填写' : '待完善',
+    description: '影响列表与详情预览',
+  },
+  {
+    label: '完成度',
+    value: `${completionRate.value}%`,
+    description: '基于标题、摘要、正文和分类估算',
+  },
+])
 
 function resetEditorState() {
   editorSaveRequestId += 1
@@ -309,11 +325,11 @@ function resetEditorState() {
 async function loadInitialArticle() {
   const requestId = ++editorLoadRequestId
   resetEditorState()
-  if (!canManage.value) {
-      feedbackMessage.value = '当前账号只有阅读权限，不能新建或编辑知识文章。'
-      feedbackTraceId.value = ''
-      return
-    }
+  if (!canManageKnowledgeArticles()) {
+    feedbackMessage.value = '当前账号只有阅读权限，不能新建或编辑知识文章。'
+    feedbackTraceId.value = ''
+    return
+  }
 
   const id = Number(route.params.id)
   if (!id) {
@@ -424,7 +440,7 @@ async function saveArticle(status: number) {
   if (submitting.value) {
     return
   }
-  if (!canManage.value) {
+  if (!canManageKnowledgeArticles()) {
     feedbackMessage.value = '当前账号只有阅读权限，不能保存知识文章。'
     feedbackTraceId.value = ''
     return
@@ -511,7 +527,7 @@ onMounted(() => {
 })
 
 watch(
-  () => route.fullPath,
+  () => [route.path, route.params.id, JSON.stringify(route.query), route.fullPath],
   () => {
     loadInitialArticle()
   },
@@ -519,6 +535,39 @@ watch(
 </script>
 
 <style scoped>
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.95fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.editor-runtime-banner {
+  display: grid;
+  gap: 6px;
+  margin-top: 1rem;
+}
+
+.editor-runtime-banner strong,
+.editor-runtime-banner p {
+  margin: 0;
+}
+
+.editor-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.editor-form__item {
+  margin-bottom: 0;
+}
+
+.editor-side {
+  display: grid;
+  gap: 16px;
+}
+
 .editor-progress {
   display: grid;
   gap: 0.75rem;
@@ -614,5 +663,23 @@ watch(
   align-items: center;
   justify-content: space-between;
   margin-top: 1rem;
+}
+
+@media (max-width: 1240px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 840px) {
+  .editor-form__grid,
+  .editor-progress-meta {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .editor-progress-meta {
+    gap: 0.5rem;
+  }
 }
 </style>

@@ -23,10 +23,12 @@ describe('api wrappers', () => {
     }))
 
     const authApi = await import('../../src/api/auth')
+    const aiApi = await import('../../src/api/ai')
     const knowledgeApi = await import('../../src/api/knowledge')
     const ticketApi = await import('../../src/api/ticket')
 
     return {
+      aiApi,
       authApi,
       knowledgeApi,
       ticketApi,
@@ -100,6 +102,16 @@ describe('api wrappers', () => {
     expect(post).toHaveBeenCalledWith('/api/knowledge/articles/88/versions/3/restore')
     expect(post).toHaveBeenCalledWith('/api/knowledge/articles/88/archive')
     expect(del).toHaveBeenCalledWith('/api/knowledge/articles/88')
+  })
+
+  it('builds AI workspace endpoints correctly', async () => {
+    const { aiApi, get } = await loadApiModules()
+
+    await aiApi.fetchAiWorkspace()
+    await aiApi.fetchAiReplyDraft(701)
+
+    expect(get).toHaveBeenCalledWith('/api/ai/workspace')
+    expect(get).toHaveBeenCalledWith('/api/ai/workspace/reply-drafts/701')
   })
 
   it('builds ticket API list filters and mutation endpoints correctly', async () => {

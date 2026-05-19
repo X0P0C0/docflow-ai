@@ -1,183 +1,208 @@
 <template>
-  <div class="app-shell">
-    <AppSidebar :workspace-nav="workspaceNav" :manage-nav="manageNav" />
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
+    <section class="knowledge-page workspace-page">
+      <el-card shadow="never" class="knowledge-header-card workspace-card">
+        <div class="knowledge-header workspace-header">
+          <div class="knowledge-header__main workspace-header-main">
+            <div class="knowledge-header__title workspace-title">
+              <h2>{{ knowledgeHeroCopy.title }}</h2>
+              <p>{{ knowledgeHeroCopy.description }}</p>
+            </div>
+            <div class="knowledge-header__actions workspace-actions">
+              <el-button @click="toggleFilters">
+                {{ showFilters ? '收起筛选' : '展开筛选' }}
+              </el-button>
+              <el-button
+                v-if="canManage"
+                type="primary"
+                @click="navigateTo('/knowledge/articles/create')"
+              >
+                {{ knowledgeHeroCopy.ctaLabel }}
+              </el-button>
+            </div>
+          </div>
 
-    <main class="main-content">
-      <AppTopbar />
-
-      <section class="panel knowledge-hero">
-        <div>
-          <span class="hero-tag">Knowledge Base</span>
-          <h2>{{ knowledgeHeroCopy.title }}</h2>
-          <p>{{ knowledgeHeroCopy.description }}</p>
+          <div class="knowledge-stats workspace-stats">
+            <div
+              v-for="stat in statCards"
+              :key="stat.label"
+              class="knowledge-stat workspace-stat"
+            >
+              <span class="knowledge-stat__label workspace-stat-label">{{ stat.label }}</span>
+              <strong>{{ stat.value }}</strong>
+              <p>{{ stat.description }}</p>
+            </div>
+          </div>
         </div>
-        <div class="hero-stats">
-          <div class="stat-row">
-            <div>
-              <p>当前结果</p>
-              <strong>{{ filteredCount }}</strong>
-            </div>
-            <span class="chip chip-blue">Articles</span>
+      </el-card>
+
+      <el-card shadow="never" class="knowledge-filter-card workspace-card">
+        <div class="knowledge-filter-card__head workspace-section-head">
+          <div class="workspace-section-title">
+            <h3>查询条件</h3>
+            <p>统一管理关键字、来源工单、分类和发布状态，保持和工单列表一致的后台筛选节奏。</p>
           </div>
-          <div class="stat-row">
-            <div>
-              <p>已发布</p>
-              <strong>{{ publishedCount }}</strong>
-            </div>
-            <span class="chip chip-green">Live</span>
-          </div>
-          <div class="stat-row">
-            <div>
-              <p>分类数</p>
-              <strong>{{ categoryOptions.length - 1 }}</strong>
-            </div>
-            <span class="chip chip-orange">Catalog</span>
+          <div class="knowledge-filter-card__mode workspace-section-mode">
+            <span>显示模式</span>
+            <el-segmented
+              v-model="viewMode"
+              :options="viewModeOptions"
+            />
           </div>
         </div>
-      </section>
 
-      <section class="panel knowledge-toolbar">
-        <div v-if="authNotice" class="state-box state-warning source-filter-banner">
+        <div v-if="authNotice" class="state-box state-warning knowledge-filter-banner">
           {{ authNotice }}
         </div>
-        <div v-if="filters.sourceTicketNo" class="state-box source-filter-banner">
+        <div class="state-box knowledge-runtime-banner" :class="{ 'state-warning': isDemoMode() || usedFallbackData }">
+          <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+          <p>{{ runtimeDataSourceMessage }}</p>
+        </div>
+        <div v-if="filters.sourceTicketNo" class="state-box knowledge-filter-banner">
           <span>当前正在按来源工单筛选：</span>
           <strong>{{ filters.sourceTicketNo }}</strong>
-          <button class="ghost-button" type="button" @click="clearSourceTicketFilter">清除</button>
+          <el-button text type="primary" @click="clearSourceTicketFilter">清除</el-button>
         </div>
-        <form class="filter-grid" @submit.prevent="handleSearch">
-          <label class="filter-field filter-field-wide">
-            <span>关键词</span>
-            <input v-model.trim="filters.keyword" type="text" placeholder="搜索标题或摘要" />
-          </label>
 
-          <label class="filter-field">
-            <span>来源工单号</span>
-            <input v-model.trim="filters.sourceTicketNo" type="text" placeholder="例如 INC-20260511" />
-          </label>
+        <el-form
+          v-if="showFilters"
+          class="knowledge-filter-form workspace-filter-form"
+          label-position="top"
+          @submit.prevent="handleSearch"
+        >
+          <div class="knowledge-filter-form__grid">
+            <el-form-item label="关键字" class="knowledge-filter-form__item knowledge-filter-form__item--keyword">
+              <el-input
+                v-model.trim="filters.keyword"
+                clearable
+                placeholder="搜索标题或摘要"
+                @keyup.enter="handleSearch"
+              />
+            </el-form-item>
 
-          <label class="filter-field">
-            <span>分类</span>
-            <select v-model="filters.categoryId">
-              <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
+            <el-form-item label="来源工单号" class="knowledge-filter-form__item">
+              <el-input
+                v-model.trim="filters.sourceTicketNo"
+                clearable
+                placeholder="例如 INC-20260511"
+                @keyup.enter="handleSearch"
+              />
+            </el-form-item>
 
-          <label class="filter-field">
-            <span>状态</span>
-            <select v-model="filters.status">
-              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
+            <el-form-item label="分类" class="knowledge-filter-form__item">
+              <el-select v-model="filters.categoryId" placeholder="全部分类">
+                <el-option
+                  v-for="option in categoryOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </el-form-item>
 
-          <div class="filter-actions">
-            <button class="ghost-button" type="button" @click="handleReset">重置</button>
-            <button class="primary-button" type="submit">应用筛选</button>
+            <el-form-item label="状态" class="knowledge-filter-form__item">
+              <el-select v-model="filters.status" placeholder="全部状态">
+                <el-option
+                  v-for="option in statusOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </el-form-item>
           </div>
-        </form>
-      </section>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
+          <div class="knowledge-filter-form__footer workspace-filter-footer">
+            <div class="knowledge-quick-filters">
+              <span class="knowledge-section-label workspace-section-label">快速筛选</span>
+              <el-radio-group v-model="activeQuickFilter">
+                <el-radio-button
+                  v-for="filter in quickFilters"
+                  :key="filter.value"
+                  :value="filter.value"
+                >
+                  {{ filter.label }}
+                </el-radio-button>
+              </el-radio-group>
+            </div>
+
+            <div class="knowledge-filter-form__actions workspace-filter-actions">
+              <el-button @click="handleReset">重置</el-button>
+              <el-button type="primary" native-type="submit">查询</el-button>
+            </div>
+          </div>
+        </el-form>
+      </el-card>
+
+      <el-card shadow="never" class="knowledge-list-card workspace-card">
+        <div class="knowledge-list-card__head workspace-section-head workspace-section-head-spaced">
+          <div class="knowledge-list-card__title workspace-section-title">
             <h3>知识文章列表</h3>
-            <p>真实接口优先，当前已经和后端列表接口参数联动。</p>
+            <p>共 {{ displayedArticles.length }} 条结果，支持卡片和紧凑列表两种查看方式。</p>
           </div>
-          <button
-            v-if="canManage"
-            class="primary-button"
-            type="button"
-            @click="navigateTo('/knowledge/articles/create')"
-          >
-            {{ knowledgeHeroCopy.ctaLabel }}
-          </button>
-        </div>
-
-        <div class="knowledge-toolbar-row">
-          <div class="ticket-quick-filters">
-            <button
-              v-for="filter in quickFilters"
-              :key="filter.value"
-              class="chip quick-filter-chip"
-              :class="activeQuickFilter === filter.value ? 'chip-blue active-chip' : 'chip-default'"
-              type="button"
-              @click="activeQuickFilter = filter.value"
-            >
-              {{ filter.label }}
-            </button>
-          </div>
-
-          <div class="ticket-view-toggle">
-            <button
-              class="ghost-button"
-              :class="{ 'toggle-active': viewMode === 'grid' }"
-              type="button"
-              @click="viewMode = 'grid'"
-            >
-              卡片视图
-            </button>
-            <button
-              class="ghost-button"
-              :class="{ 'toggle-active': viewMode === 'list' }"
-              type="button"
-              @click="viewMode = 'list'"
-            >
-              列表视图
-            </button>
+          <div class="knowledge-list-card__summary workspace-summary">
+            <el-tag effect="plain" round>全部 {{ articles.length }}</el-tag>
+            <el-tag effect="plain" round type="success">已发布 {{ publishedCount }}</el-tag>
+            <el-tag effect="plain" round type="warning">草稿 {{ draftCount }}</el-tag>
+            <el-tag effect="plain" round type="info">来源关联 {{ sourceLinkedCount }}</el-tag>
+            <el-tag v-if="localDraftCount" effect="plain" round type="warning">本地草稿 {{ localDraftCount }}</el-tag>
+            <el-tag v-if="loading" effect="plain" round type="info">加载中</el-tag>
           </div>
         </div>
 
-        <div v-if="loading" class="state-box">正在拉取知识文章列表...</div>
         <ErrorTraceNotice
-          v-else-if="errorMessage"
+          v-if="errorMessage"
+          class="knowledge-error workspace-error"
+          inline
           :message="`${errorMessage}${usedFallbackData ? '，当前先回退到本地演示数据。' : ''}`"
           :trace-id="errorTraceId"
         />
-        <div v-if="!loading && displayedArticles.length === 0" class="state-box">{{ knowledgeHeroCopy.emptyHint }}</div>
 
-        <div v-else-if="!loading && viewMode === 'grid'" class="knowledge-grid">
+        <div v-if="loading" class="state-box">正在拉取知识文章列表...</div>
+        <div v-else-if="displayedArticles.length === 0" class="state-box">{{ knowledgeHeroCopy.emptyHint }}</div>
+
+        <div v-else-if="viewMode === 'grid'" class="knowledge-grid">
           <RouterLink
             v-for="article in displayedArticles"
             :key="article.id"
-            class="article-card article-link knowledge-card"
+            class="knowledge-card"
             :to="`/knowledge/articles/${article.id}`"
           >
-            <div class="knowledge-card-head">
-              <span class="chip" :class="statusClass(article.status)">{{ statusText(article.status) }}</span>
-              <span class="chip chip-blue">{{ categoryText(article.categoryId) }}</span>
-              <span v-if="'source' in article && article.source === 'local'" class="chip chip-orange">本地草稿</span>
+            <div class="knowledge-card__head">
+              <div class="knowledge-card__chips">
+                <span class="chip" :class="statusClass(article.status)">{{ statusText(article.status) }}</span>
+                <span class="chip chip-blue">{{ categoryText(article.categoryId) }}</span>
+                <span v-if="'source' in article && article.source === 'local'" class="chip chip-orange">本地草稿</span>
+              </div>
+              <span class="knowledge-card__date">{{ formatDate(article.publishTime || article.createTime) }}</span>
             </div>
-            <h4>{{ article.title }}</h4>
+
+            <strong>{{ article.title }}</strong>
             <p>{{ article.summary || article.content.slice(0, 96) }}</p>
-            <div class="article-meta">
+
+            <div class="knowledge-card__meta">
               <span>作者 ID：{{ article.authorUserId }}</span>
-              <span>{{ formatDate(article.publishTime || article.createTime) }}</span>
-            </div>
-            <div v-if="article.sourceTicket" class="article-meta source-meta">
-              <span>来源工单：{{ article.sourceTicket.ticketNo || `#${article.sourceTicket.id}` }}</span>
-              <span>{{ article.sourceTicket.title || '来源处理记录' }}</span>
-            </div>
-            <div class="article-meta">
               <span>浏览 {{ article.viewCount }}</span>
               <span>点赞 {{ article.likeCount }}</span>
               <span>收藏 {{ article.collectCount }}</span>
             </div>
+
+            <div v-if="article.sourceTicket" class="knowledge-card__source">
+              <span>来源工单：{{ article.sourceTicket.ticketNo || `#${article.sourceTicket.id}` }}</span>
+              <span>{{ article.sourceTicket.title || '来源处理记录' }}</span>
+            </div>
           </RouterLink>
         </div>
 
-        <div v-else-if="!loading" class="knowledge-list-view">
+        <div v-else class="knowledge-list-view">
           <RouterLink
             v-for="article in displayedArticles"
             :key="article.id"
             class="knowledge-list-item"
             :to="`/knowledge/articles/${article.id}`"
           >
-            <div class="knowledge-list-main">
-              <div class="knowledge-card-head">
+            <div class="knowledge-list-item__main">
+              <div class="knowledge-card__chips">
                 <span class="chip" :class="statusClass(article.status)">{{ statusText(article.status) }}</span>
                 <span class="chip chip-blue">{{ categoryText(article.categoryId) }}</span>
                 <span v-if="'source' in article && article.source === 'local'" class="chip chip-orange">本地草稿</span>
@@ -185,7 +210,7 @@
               <strong>{{ article.title }}</strong>
               <p>{{ article.summary || article.content.slice(0, 140) }}</p>
             </div>
-            <div class="knowledge-list-side">
+            <div class="knowledge-list-item__side">
               <span>{{ formatDate(article.publishTime || article.createTime) }}</span>
               <span v-if="article.sourceTicket">来源 {{ article.sourceTicket.ticketNo || `#${article.sourceTicket.id}` }}</span>
               <span>浏览 {{ article.viewCount }}</span>
@@ -193,9 +218,9 @@
             </div>
           </RouterLink>
         </div>
-      </section>
-    </main>
-  </div>
+      </el-card>
+    </section>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
@@ -204,18 +229,23 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { buildKnowledgeHeroCopy } from '../access-policy'
 import { canManageKnowledgeArticles } from '../authz'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
-import AppSidebar from '../components/layout/AppSidebar.vue'
-import AppTopbar from '../components/layout/AppTopbar.vue'
+import AppShell from '../components/layout/AppShell.vue'
 import { fetchKnowledgeArticles } from '../api/knowledge'
 import { listKnowledgeDrafts, mergeKnowledgeArticles } from '../mock/knowledgeDrafts'
 import { manageNav, workspaceNav } from '../mock/dashboard'
 import type { KnowledgeArticleApiItem, KnowledgeArticleDraft } from '../types/dashboard'
 import { resolveListLoadFailure } from '../utils/listLoadFailure'
 import { attachArticleSourceTicket } from '../utils/knowledgeSourceTicket'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
+
+type QuickFilter = 'all' | 'published' | 'draft' | 'archived' | 'popular' | 'source-linked' | 'local'
+type ViewMode = 'grid' | 'list'
 
 const router = useRouter()
 const route = useRoute()
 const canManage = computed(() => canManageKnowledgeArticles())
+const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
 const knowledgeHeroCopy = computed(() => buildKnowledgeHeroCopy({
   canManageKnowledge: canManage.value,
 }))
@@ -265,8 +295,9 @@ const filters = reactive({
   categoryId: 'all',
   status: 'all',
 })
-const activeQuickFilter = ref<'all' | 'published' | 'draft' | 'archived' | 'popular' | 'source-linked' | 'local'>('all')
-const viewMode = ref<'grid' | 'list'>('grid')
+const showFilters = ref(true)
+const activeQuickFilter = ref<QuickFilter>('all')
+const viewMode = ref<ViewMode>('grid')
 
 const articles = ref<Array<KnowledgeArticleApiItem | KnowledgeArticleDraft>>([])
 const loading = ref(false)
@@ -277,6 +308,11 @@ let skipNextRouteDrivenLoad = false
 let skipNextQuickFilterRefresh = false
 let skipNextViewModeRefresh = false
 let articleLoadRequestId = 0
+
+const viewModeOptions = [
+  { label: '卡片视图', value: 'grid' },
+  { label: '列表视图', value: 'list' },
+]
 
 const categoryOptions = [
   { value: 'all', label: '全部分类' },
@@ -292,8 +328,6 @@ const statusOptions = [
   { value: '2', label: '已归档' },
 ]
 
-const filteredCount = computed(() => displayedArticles.value.length)
-const publishedCount = computed(() => articles.value.filter((article) => article.status === 1).length)
 const quickFilters = [
   { value: 'all', label: '全部' },
   { value: 'published', label: '已发布' },
@@ -302,7 +336,8 @@ const quickFilters = [
   { value: 'popular', label: '高浏览' },
   { value: 'source-linked', label: '工单沉淀' },
   { value: 'local', label: '本地内容' },
-] as const
+] as const satisfies ReadonlyArray<{ value: QuickFilter; label: string }>
+
 const displayedArticles = computed(() => {
   if (activeQuickFilter.value === 'published') {
     return articles.value.filter((article) => article.status === 1)
@@ -324,6 +359,39 @@ const displayedArticles = computed(() => {
   }
   return articles.value
 })
+
+const publishedCount = computed(() => articles.value.filter((article) => article.status === 1).length)
+const draftCount = computed(() => articles.value.filter((article) => article.status === 0).length)
+const localDraftCount = computed(() => articles.value.filter((article) => 'source' in article && article.source === 'local').length)
+const sourceLinkedCount = computed(() => articles.value.filter((article) => !!article.sourceTicket || !!article.sourceTicketId).length)
+const runtimeDataSourceMessage = computed(() => getRuntimeDataSourceMessage({
+  usedFallbackData: usedFallbackData.value,
+  subject: '知识列表',
+  localOnlyLabel: localDraftCount.value ? '知识草稿' : '',
+}))
+
+const statCards = computed(() => [
+  {
+    label: '当前结果',
+    value: displayedArticles.value.length,
+    description: '筛选条件下可直接查看',
+  },
+  {
+    label: '已发布',
+    value: publishedCount.value,
+    description: '可被团队检索复用',
+  },
+  {
+    label: '本地草稿',
+    value: localDraftCount.value,
+    description: '尚未同步到远端',
+  },
+  {
+    label: '来源关联',
+    value: sourceLinkedCount.value,
+    description: '来自工单沉淀链路',
+  },
+])
 
 function categoryText(categoryId: number | null) {
   if (!categoryId) {
@@ -360,6 +428,10 @@ function navigateTo(path: string) {
   router.push(path)
 }
 
+function toggleFilters() {
+  showFilters.value = !showFilters.value
+}
+
 function syncFiltersFromRoute() {
   filters.keyword = typeof route.query.keyword === 'string' ? route.query.keyword : ''
   filters.sourceTicketNo = typeof route.query.sourceTicketNo === 'string' ? route.query.sourceTicketNo : ''
@@ -368,7 +440,7 @@ function syncFiltersFromRoute() {
   skipNextQuickFilterRefresh = true
   activeQuickFilter.value = typeof route.query.quickFilter === 'string'
     && quickFilters.some((item) => item.value === route.query.quickFilter)
-      ? route.query.quickFilter as typeof activeQuickFilter.value
+      ? route.query.quickFilter as QuickFilter
       : 'all'
   skipNextViewModeRefresh = true
   viewMode.value = route.query.viewMode === 'list' ? 'list' : 'grid'
@@ -488,104 +560,157 @@ watch(
 </script>
 
 <style scoped>
-.knowledge-toolbar-row,
-.ticket-quick-filters,
-.ticket-view-toggle {
+.knowledge-filter-banner {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  margin-top: 16px;
 }
 
-.knowledge-toolbar-row {
+.knowledge-runtime-banner {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.knowledge-runtime-banner strong,
+.knowledge-runtime-banner p {
+  margin: 0;
+}
+
+.knowledge-filter-form__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.knowledge-filter-form__item {
+  margin-bottom: 0;
+}
+
+.knowledge-quick-filters {
+  display: grid;
+  gap: 8px;
+}
+
+.knowledge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.knowledge-card,
+.knowledge-list-item {
+  display: block;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.knowledge-card {
+  padding: 18px;
+}
+
+.knowledge-card:hover,
+.knowledge-list-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.knowledge-card__head,
+.knowledge-card__meta,
+.knowledge-card__source {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
 }
 
-.quick-filter-chip {
-  border: 0;
-  cursor: pointer;
+.knowledge-card__chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.chip-default {
-  color: #475569;
-  background: rgba(148, 163, 184, 0.14);
+.knowledge-card strong,
+.knowledge-list-item__main strong {
+  display: block;
+  margin-top: 14px;
+  color: #0f172a;
 }
 
-.active-chip,
-.toggle-active {
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+.knowledge-card p,
+.knowledge-list-item__main p {
+  margin: 8px 0 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.knowledge-card__date,
+.knowledge-card__meta,
+.knowledge-card__source,
+.knowledge-list-item__side {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.knowledge-card__meta,
+.knowledge-card__source {
+  margin-top: 14px;
 }
 
 .knowledge-list-view {
   display: grid;
-  gap: 0.9rem;
+  gap: 12px;
 }
 
 .knowledge-list-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem;
-  padding: 1rem 1.1rem;
-  border-radius: 20px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.94);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  gap: 16px;
+  padding: 16px 18px;
 }
 
-.knowledge-list-item:hover {
-  transform: translateY(-2px);
-  border-color: rgba(37, 99, 235, 0.18);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-}
-
-.knowledge-list-main {
+.knowledge-list-item__main {
   display: grid;
-  gap: 0.65rem;
+  gap: 8px;
 }
 
-.knowledge-list-main strong,
-.knowledge-list-main p {
-  margin: 0;
-}
-
-.knowledge-list-main p {
-  color: #64748b;
-  line-height: 1.75;
-}
-
-.knowledge-list-side {
+.knowledge-list-item__side {
   display: grid;
-  gap: 0.5rem;
+  gap: 6px;
   justify-items: end;
-  color: #64748b;
-  font-size: 0.92rem;
 }
 
-.source-meta {
-  color: #475569;
-}
-
-.source-filter-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-@media (max-width: 900px) {
-  .knowledge-toolbar-row,
-  .knowledge-list-item {
-    grid-template-columns: 1fr;
+@media (max-width: 1240px) {
+  .knowledge-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .knowledge-list-side {
+  .knowledge-filter-form__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 840px) {
+  .knowledge-list-item {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .knowledge-list-item__side {
     justify-items: start;
   }
 
-  .source-filter-banner {
-    flex-direction: column;
+  .knowledge-grid,
+  .knowledge-filter-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-filter-banner {
     align-items: flex-start;
   }
 }

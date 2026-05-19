@@ -1,12 +1,5 @@
 <template>
-  <div class="app-shell">
-    <AppSidebar :workspace-nav="workspaceNav" :manage-nav="manageNav" />
-
-    <main class="main-content">
-      <AppTopbar />
-      <section v-if="authNotice" class="state-box state-warning">
-        {{ authNotice }}
-      </section>
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav" :notice="authNotice">
       <HeroPanel
         :pending-count="pendingTicketCount"
         :knowledge-coverage="knowledgeCoverage"
@@ -18,6 +11,10 @@
         :primary-action="heroCopy.primaryAction"
         :secondary-action="heroCopy.secondaryAction"
       />
+      <div class="state-box dashboard-runtime-banner" :class="{ 'state-warning': usedTicketFallbackData || usedArticleFallbackData || isDemoMode() }">
+        <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+        <p>{{ runtimeDataSourceMessage }}</p>
+      </div>
       <MetricsGrid :items="dashboardMetrics" />
 
       <section class="content-grid">
@@ -42,8 +39,7 @@
         </div>
         <SidePanels :activities="activities" />
       </section>
-    </main>
-  </div>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
@@ -56,8 +52,7 @@ import {
   buildDashboardTicketPanelCopy,
 } from '../access-policy'
 import { canAccessAiCenter, canManageKnowledgeArticles, canViewAllTickets } from '../authz'
-import AppSidebar from '../components/layout/AppSidebar.vue'
-import AppTopbar from '../components/layout/AppTopbar.vue'
+import AppShell from '../components/layout/AppShell.vue'
 import HeroPanel from '../components/dashboard/HeroPanel.vue'
 import KnowledgePanel from '../components/dashboard/KnowledgePanel.vue'
 import MetricsGrid from '../components/dashboard/MetricsGrid.vue'
@@ -71,7 +66,7 @@ import { listLocalTickets, mergeTickets } from '../mock/ticketWorkspace'
 import type { KnowledgeArticleApiItem, KnowledgeArticleItem, MetricItem, TicketItem } from '../types/dashboard'
 import { resolveListLoadFailure } from '../utils/listLoadFailure'
 import { formatTicketListItem } from '../utils/ticketPresentation'
-import { getRuntimeModeText } from '../utils/runtimeMode'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
 
 const route = useRoute()
 const knowledgeArticles = ref<KnowledgeArticleItem[]>(fallbackArticles)
@@ -81,9 +76,23 @@ const articleErrorTraceId = ref('')
 const dashboardTickets = ref<TicketItem[]>(tickets)
 const ticketErrorMessage = ref('')
 const ticketErrorTraceId = ref('')
+const usedArticleFallbackData = ref(false)
+const usedTicketFallbackData = ref(false)
 let articleLoadRequestId = 0
 let ticketLoadRequestId = 0
 const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeDataSourceMessage = computed(() => {
+  if (usedTicketFallbackData.value || usedArticleFallbackData.value) {
+    return '当前工作台里至少有一部分信息已回退到兜底数据，验收时请优先确认真实接口状态。'
+  }
+
+  return getRuntimeDataSourceMessage({
+    usedFallbackData: false,
+    subject: '工作台',
+    localOnlyLabel: localWorkspaceCount.value ? '草稿内容' : '',
+  })
+})
 const authNotice = computed(() => {
   if (route.query.reason !== 'forbidden') {
     return ''
@@ -171,6 +180,7 @@ async function loadKnowledgeArticles() {
   articleLoading.value = true
   articleErrorMessage.value = ''
   articleErrorTraceId.value = ''
+  usedArticleFallbackData.value = false
 
   try {
     const data = await fetchKnowledgeArticles()
@@ -188,6 +198,7 @@ async function loadKnowledgeArticles() {
     })
     articleErrorMessage.value = result.message
     articleErrorTraceId.value = result.traceId
+    usedArticleFallbackData.value = result.shouldUseFallbackData
     knowledgeArticles.value = result.shouldUseFallbackData
       ? buildFallbackKnowledgeArticles()
       : buildLocalKnowledgeArticles()
@@ -203,6 +214,7 @@ async function loadTickets() {
   const requestId = ++ticketLoadRequestId
   ticketErrorMessage.value = ''
   ticketErrorTraceId.value = ''
+  usedTicketFallbackData.value = false
 
   try {
     const data = await fetchTickets()
@@ -220,6 +232,7 @@ async function loadTickets() {
     })
     ticketErrorMessage.value = result.message
     ticketErrorTraceId.value = result.traceId
+    usedTicketFallbackData.value = result.shouldUseFallbackData
     dashboardTickets.value = result.shouldUseFallbackData
       ? mergeTickets(tickets.length ? tickets : listLocalTickets())
       : listLocalTickets()
@@ -240,3 +253,16 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.dashboard-runtime-banner {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 16px;
+}
+
+.dashboard-runtime-banner strong,
+.dashboard-runtime-banner p {
+  margin: 0;
+}
+</style>

@@ -43,6 +43,13 @@ vi.mock('../../src/authz', () => ({
 
 vi.mock('../../src/utils/runtimeMode', () => ({
   isDemoMode,
+  getRuntimeModeText: () => (isDemoMode() ? 'Demo Mode' : 'Live Mode'),
+  getRuntimeModeHeadline: () => (isDemoMode() ? 'Demo session active' : 'Live backend session active'),
+  getRuntimeDataSourceMessage: ({ subject }: { subject: string }) => (
+    isDemoMode()
+      ? `Demo data is active for ${subject}.`
+      : `Live API data is active for ${subject}.`
+  ),
 }))
 
 describe('KnowledgeArticleEditorView', () => {

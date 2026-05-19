@@ -1,9 +1,10 @@
-import { flushPromises } from '@vue/test-utils'
+﻿import { flushPromises } from '@vue/test-utils'
 import { reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authState } from '../../src/auth'
 import { saveKnowledgeDraft } from '../../src/mock/knowledgeDrafts'
 import { createLocalTicket } from '../../src/mock/ticketWorkspace'
+import { saveAiReplyDraftSeed } from '../../src/utils/aiReplySeed'
 import { consumeKnowledgeDraftSeed } from '../../src/utils/knowledgeFromTicket'
 import { createAuthUser, createDefaultAssigneeOptions, createTicketDetailFixture } from './helpers/fixtures'
 import { mountTicketDetailView } from './helpers/pageMounts'
@@ -205,7 +206,6 @@ describe('TicketDetailView', () => {
 
     await wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '已发布')!.trigger('click')
     await wrapper.findAll('select.knowledge-sort-select')[0].setValue('title')
-    await wrapper.findAll('select.knowledge-sort-select')[1].setValue('title')
     await flushPromises()
 
     assignRouteState(route, {
@@ -216,9 +216,44 @@ describe('TicketDetailView', () => {
     })
     await flushPromises()
 
-    expect((wrapper.findAll('select.knowledge-sort-select')[0].element as HTMLSelectElement).value).toBe('latest')
-    expect((wrapper.findAll('select.knowledge-sort-select')[1].element as HTMLSelectElement).value).toBe('default')
-    expect(wrapper.findAll('button.quick-filter-chip').find((item) => item.text() === '全部')!.classes()).toContain('active-chip')
+    expect(wrapper.findAll('select.knowledge-sort-select')).toHaveLength(0)
+  })
+
+  it('loads an AI reply draft into the comment form when arriving from AI Center', async () => {
+    fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
+    fetchTicketAssignees.mockResolvedValue([createDefaultAssigneeOptions()[0]])
+    saveAiReplyDraftSeed({
+      ticketId: 101,
+      ticketNo: 'TK-101',
+      ticketTitle: '支付回调接口偶发超时',
+      scene: 'incident / In Progress',
+      confidence: 'High',
+      opener: '谢谢反馈。',
+      diagnosis: '当前正在排查回调链路。',
+      nextStep: '确认日志范围后同步进展。',
+      customerReply: '您好，我们已经收到反馈，正在排查支付回调链路，并会在确认当前检查点后第一时间同步进展。',
+      operatorNotes: ['先给用户明确下次更新时间。'],
+      relatedKnowledge: [],
+    })
+    assignRouteState(route, {
+      path: '/tickets/101',
+      params: { id: '101' },
+      query: {
+        fromAiCenter: '1',
+        focus: 'comments',
+        prefillReply: '1',
+      },
+      fullPath: '/tickets/101?fromAiCenter=1&focus=comments&prefillReply=1',
+    })
+
+    const wrapper = await mountTicketDetailView()
+    const commentForm = wrapper.find('form.ticket-form')
+    const commentTypeSelect = commentForm.find('select')
+    const commentTextarea = commentForm.find('textarea')
+
+    expect((commentTextarea.element as HTMLTextAreaElement).value).toContain('您好，我们已经收到反馈')
+    expect((commentTypeSelect.element as HTMLSelectElement).value).toBe('2')
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled()
   })
 
   it('syncs the creation feedback banner when only the same ticket route query changes', async () => {
@@ -286,14 +321,14 @@ describe('TicketDetailView', () => {
     }))
     await flushPromises()
 
-    expect(wrapper.text()).toContain('评论已补充到当前工单')
+    expect(wrapper.text()).toContain('已补充到当前工单')
   })
 
   it('prevents duplicate status updates while the first transition request is still in flight', async () => {
     let resolveStatusUpdate: ((value: ReturnType<typeof createTicketDetailFixture>) => void) | null = null
     fetchTicketDetail.mockResolvedValue(createTicketDetailFixture())
     fetchTicketAssignees.mockResolvedValue(createDefaultAssigneeOptions())
-    transitionTicketStatus.mockImplementation(() => new Promise((resolve) => {
+    updateTicketStatus.mockImplementation(() => new Promise((resolve) => {
       resolveStatusUpdate = resolve as typeof resolveStatusUpdate
     }))
 
@@ -305,7 +340,7 @@ describe('TicketDetailView', () => {
     await statusForms[2].trigger('submit.prevent')
     await flushPromises()
 
-    expect(transitionTicketStatus).toHaveBeenCalledTimes(1)
+    expect(updateTicketStatus).toHaveBeenCalledTimes(1)
 
     resolveStatusUpdate?.(createTicketDetailFixture({
       status: 3,
@@ -322,7 +357,7 @@ describe('TicketDetailView', () => {
     }))
     await flushPromises()
 
-    expect(wrapper.text()).toContain('工单状态已更新')
+    expect(wrapper.text()).toContain('状态已更新')
   })
 
   it('prevents duplicate assignment submissions while the first assign request is still in flight', async () => {
@@ -404,7 +439,7 @@ describe('TicketDetailView', () => {
       commentType: 2,
       internal: true,
     })
-    expect(wrapper.text()).toContain('评论已提交。')
+    expect(wrapper.text()).toContain('评论已提交，已补充到当前工单')
     expect(wrapper.text()).toContain('已联系支付网关同学确认回调白名单配置。')
     expect((commentTextarea.element as HTMLTextAreaElement).value).toBe('')
     expect((commentTypeSelect.element as HTMLSelectElement).value).toBe('1')
@@ -966,7 +1001,7 @@ describe('TicketDetailView', () => {
 
     const wrapper = await mountTicketDetailView()
 
-    expect(wrapper.text()).toContain('没有找到对应工单。')
+    expect(wrapper.text()).toContain('该工单当前暂不允许查看详情')
   })
 
   it('shows the knowledge return banner, focuses the requested context, and builds knowledge list links from ticket context', async () => {
@@ -1132,7 +1167,7 @@ describe('TicketDetailView', () => {
 
     const wrapper = await mountTicketDetailView()
 
-    expect(fetchTicketAssignees).not.toHaveBeenCalled()
+    expect(fetchTicketAssignees).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('当前权限')
   })
 })

@@ -1,9 +1,10 @@
 <template>
-  <div class="detail-page">
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
+    <div class="detail-page">
     <header class="detail-topbar">
       <RouterLink class="back-link" to="/tickets">返回工单中心</RouterLink>
       <div class="detail-topbar-actions">
-        <button class="ghost-button" type="button" :disabled="submitting" @click="resetForm">清空表单</button>
+        <el-button plain :disabled="submitting" @click="resetForm">清空表单</el-button>
       </div>
     </header>
 
@@ -12,67 +13,81 @@
         <div class="panel-head">
           <div>
             <h3>新建工单</h3>
-            <p>从这里正式进入“创建 -> 分配 -> 处理 -> 留痕”的工单主线。</p>
+            <p>从这里正式进入“创建 - 分配 - 处理 - 留痕”的工单主线。</p>
           </div>
           <span class="chip chip-blue">Create Ticket</span>
+        </div>
+
+        <div class="state-box create-runtime-banner" :class="{ 'state-warning': isDemoMode() }">
+          <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+          <p>{{ runtimeDataSourceMessage }}</p>
         </div>
 
         <form class="ticket-form create-form" @submit.prevent="submitTicket">
           <label class="field">
             <span>工单标题</span>
-            <input
+            <el-input
               v-model="form.title"
-              class="field-control"
-              type="text"
+              class="create-input"
               maxlength="200"
               placeholder="例如：支付回调接口偶发超时"
             />
           </label>
 
-          <div class="form-grid form-grid-3">
-            <label class="field">
+          <div class="form-grid form-grid-3 create-select-row">
+            <label class="field create-select-field">
               <span>工单类型</span>
-              <select v-model="form.type" class="field-control">
-                <option v-for="option in typeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <el-select v-model="form.type" class="create-select" placeholder="请选择工单类型">
+                <el-option
+                  v-for="option in typeOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
             </label>
 
-            <label class="field">
+            <label class="field create-select-field">
               <span>工单分类</span>
-              <select v-model="form.categoryId" class="field-control">
-                <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <el-select v-model="form.categoryId" class="create-select" placeholder="请选择工单分类">
+                <el-option
+                  v-for="option in categoryOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
             </label>
 
-            <label class="field">
+            <label class="field create-select-field">
               <span>优先级</span>
-              <select v-model="form.priority" class="field-control">
-                <option v-for="option in priorityOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <el-select v-model="form.priority" class="create-select" placeholder="请选择优先级">
+                <el-option
+                  v-for="option in priorityOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
             </label>
           </div>
 
           <label class="field">
             <span>问题描述</span>
-            <textarea
+            <el-input
               v-model="form.content"
-              class="field-control field-textarea create-textarea"
-              rows="10"
-              placeholder="请尽量写清楚现象、影响范围、复现步骤、期望结果和补充线索"
+              class="create-input create-textarea"
+              type="textarea"
+              :rows="10"
+              placeholder="尽量写清楚现象、影响范围、复现步骤、期望结果和补充线索"
             />
           </label>
 
           <div class="form-actions">
             <ErrorTraceNotice v-if="submitError" inline :message="submitError" :trace-id="submitErrorTraceId" />
-            <button class="primary-button" type="submit" :disabled="submitting">
+            <el-button class="create-submit-button" type="primary" native-type="submit" :loading="submitting">
               {{ submitting ? '提交中...' : '提交工单' }}
-            </button>
+            </el-button>
           </div>
         </form>
       </section>
@@ -86,9 +101,9 @@
             </div>
           </div>
           <div class="mini-list">
-            <div class="mini-item"><span>1.</span><span>标题尽量突出问题现象，不要只写“有问题”</span></div>
-            <div class="mini-item"><span>2.</span><span>描述里补充时间、影响范围、报错信息和复现步骤</span></div>
-            <div class="mini-item"><span>3.</span><span>优先级要和真实业务影响匹配，别把所有单都提成紧急</span></div>
+            <div class="mini-item"><span>1.</span><span>标题尽量突出问题现象，不要只写“有问题”。</span></div>
+            <div class="mini-item"><span>2.</span><span>描述里补充时间、影响范围、报错信息和复现步骤。</span></div>
+            <div class="mini-item"><span>3.</span><span>优先级要和真实业务影响匹配，别把所有单都提成紧急。</span></div>
           </div>
         </article>
 
@@ -105,15 +120,19 @@
         </article>
       </aside>
     </div>
-  </div>
+    </div>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { createTicket } from '../api/ticket'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
+import AppShell from '../components/layout/AppShell.vue'
+import { manageNav, workspaceNav } from '../mock/dashboard'
 import { createLocalTicket } from '../mock/ticketWorkspace'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
 import { resolveTicketSubmissionFailure } from '../utils/ticketSubmission'
 
 const route = useRoute()
@@ -122,6 +141,13 @@ const submitting = ref(false)
 const submitError = ref('')
 const submitErrorTraceId = ref('')
 let submitRequestId = 0
+const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeDataSourceMessage = computed(() => getRuntimeDataSourceMessage({
+  usedFallbackData: false,
+  subject: '新建工单',
+  localOnlyLabel: '本地工单草稿',
+}))
 
 const typeOptions = [
   { value: 'INCIDENT', label: '故障事件' },
@@ -131,14 +157,14 @@ const typeOptions = [
 
 const categoryOptions = [
   { value: 1, label: '系统故障' },
-  { value: 2, label: '账号权限' },
+  { value: 2, label: '处理任务' },
   { value: 3, label: '业务咨询' },
 ]
 
 const priorityOptions = [
   { value: 1, label: 'P4 · 低优先级' },
   { value: 2, label: 'P3 · 普通' },
-  { value: 3, label: 'P2 · 高优先级' },
+  { value: 3, label: 'P2 · 较高' },
   { value: 4, label: 'P1 · 紧急' },
 ]
 
@@ -244,7 +270,17 @@ async function submitTicket() {
 }
 
 .create-form {
-  padding: 1.2rem;
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.create-select-row {
+  align-items: end;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .form-grid {
@@ -270,23 +306,72 @@ async function submitTicket() {
   margin-top: 0;
 }
 
-.field-control {
+.field span {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.create-select-field {
+  margin-top: 0;
+}
+
+.create-input,
+.create-select {
   width: 100%;
-  padding: 0.8rem 0.95rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 12px;
-  background: #fff;
+}
+
+.create-input :deep(.el-input__wrapper) {
+  min-height: 2.75rem;
+  padding-inline: 0.85rem;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.create-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.create-input :deep(.el-input__inner),
+.create-input :deep(.el-textarea__inner) {
+  font-size: 0.92rem;
   color: #0f172a;
-  font: inherit;
 }
 
-.field-textarea {
-  resize: vertical;
-  min-height: 108px;
+.create-textarea :deep(.el-textarea__inner) {
+  min-height: 240px;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: none;
+  line-height: 1.7;
 }
 
-.create-textarea {
-  min-height: 220px;
+.create-select :deep(.el-select__wrapper) {
+  min-height: 2.55rem;
+  padding-inline: 0.8rem 2.2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.create-select :deep(.el-select__wrapper.is-focused) {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.create-select :deep(.el-select__placeholder),
+.create-select :deep(.el-select__selected-item) {
+  color: #0f172a;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.create-select :deep(.el-select__caret) {
+  color: #64748b;
+  font-size: 14px;
 }
 
 .form-actions {
@@ -297,10 +382,8 @@ async function submitTicket() {
   margin-top: 1rem;
 }
 
-.form-error {
-  margin: 0;
-  color: #b42318;
-  font-size: 0.9rem;
+.create-submit-button {
+  min-width: 124px;
 }
 
 @media (max-width: 1100px) {
@@ -315,9 +398,19 @@ async function submitTicket() {
     grid-template-columns: 1fr;
   }
 
+  .create-select-row {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
   .form-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .create-submit-button {
+    width: 100%;
   }
 }
 </style>

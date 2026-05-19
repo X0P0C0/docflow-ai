@@ -212,3 +212,4 @@
 - [frontend-project-closeout.md](D:\java\project\docflow-ai\docs\frontend-project-closeout.md)
 - [development-handoff.md](D:\java\project\docflow-ai\docs\development-handoff.md)
 - [runtime-modes.md](D:\java\project\docflow-ai\docs\runtime-modes.md)
+- [integration-verification-2026-05-19.md](D:\java\project\docflow-ai\docs\integration-verification-2026-05-19.md)

@@ -2,14 +2,15 @@
   <div class="login-page">
     <section class="login-hero">
       <span class="hero-tag">DocFlow AI Access</span>
-      <h1>登录后继续处理知识库与工单协同工作。</h1>
+      <h1>登录后继续处理知识库与工单协同工作台。</h1>
       <p>
-        这个入口同时支持真实后端登录和后端不可用时的演示体验。现在页面会明确提示当前运行模式，避免演示时把本地数据和真实数据混在一起看。
+        这个入口同时支持真实后端登录和后端暂不可用时的演示体验。页面会明确提示当前运行模式，
+        避免把本地演示数据和真实业务数据混在一起理解。
       </p>
       <section class="login-runtime-panel" :class="runtimePanelClass">
         <div class="login-runtime-copy">
-          <strong>{{ runtimeHeadline }}</strong>
-          <p>{{ runtimeDescription }}</p>
+          <strong>{{ runtimeModeHeadline }}</strong>
+          <p>{{ runtimeEntryDescription }}</p>
         </div>
         <span class="login-runtime-badge">{{ runtimeModeText }}</span>
       </section>
@@ -29,7 +30,7 @@
             <p>user01 / password</p>
           </button>
         </div>
-        <small>如果本地后端临时不可用，以上账号会自动进入演示模式，方便直接预览页面。</small>
+        <small>如果本地后端暂时不可用，以上账号会自动进入演示模式，方便直接预览页面。</small>
       </div>
     </section>
 
@@ -58,7 +59,7 @@
 
         <ErrorTraceNotice v-if="errorMessage" :message="errorMessage" :trace-id="errorTraceId" />
         <div class="state-box">
-          当前登录页支持两种路径：后端可用时走真实登录，后端不可用时自动切到演示模式。
+          当前登录页支持两种路径：后端可用时走真实登录，后端不可用时自动切换到演示模式。
         </div>
 
         <button class="primary-button login-submit" type="submit" :disabled="submitting">
@@ -77,7 +78,7 @@ import { getApiErrorMessage, getApiErrorTraceId, isNetworkFallbackCandidate } fr
 import { saveSession } from '../auth'
 import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
 import { getLoginAuthNotice } from '../utils/loginAuthNotice'
-import { getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
+import { getRuntimeEntryMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,14 +93,11 @@ const errorMessage = ref('')
 const errorTraceId = ref('')
 const showingRouteAuthNotice = ref(false)
 let loginRequestId = 0
+
 const runtimeModeText = computed(() => getRuntimeModeText())
 const runtimePanelClass = computed(() => (isDemoMode() ? 'login-runtime-panel-demo' : 'login-runtime-panel-live'))
-const runtimeHeadline = computed(() => (isDemoMode() ? '当前默认会进入演示模式' : '当前默认会进入正常模式'))
-const runtimeDescription = computed(() => (
-  isDemoMode()
-    ? '说明当前还没有连到真实后端，登录成功后会先使用本地演示数据来预览页面和流程。'
-    : '说明当前已经拿到了真实登录态，后续进入工作台会优先读取并写入后端数据。'
-))
+const runtimeModeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeEntryDescription = computed(() => getRuntimeEntryMessage('登录入口'))
 
 function resolveRedirectTarget() {
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
@@ -142,15 +140,14 @@ async function handleSubmit() {
 
   try {
     const result = await login(form)
-    if (requestId !== loginRequestId || route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?')) {
+    if (requestId !== loginRequestId || (route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?'))) {
       return
     }
     saveSession(result)
-
     await router.replace(resolveRedirectTarget())
   } catch (error) {
     const demoSession = createDemoSession(form.username, form.password)
-    if (requestId !== loginRequestId || route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?')) {
+    if (requestId !== loginRequestId || (route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?'))) {
       return
     }
     if (demoSession && isNetworkFallbackCandidate(error)) {

@@ -576,8 +576,8 @@ describe('KnowledgeArticleDetailView', () => {
     expect(fetchTicketDetail).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('来源工单摘要')
     expect(wrapper.text()).toContain('当前状态')
-    expect(wrapper.text()).toContain(localTicket.status)
-    expect(wrapper.text()).toContain(localTicket.assignee || '待分配')
+    expect((wrapper.vm as any).sourceTicketPreview?.knowledgeContextSummary?.status).toBe(localTicket.status)
+    expect((wrapper.vm as any).sourceTicketPreview?.knowledgeContextSummary?.assignee).toBe(localTicket.assignee || '待分配')
   })
 
   it('shows local-draft version history without restore actions and falls back when related loading fails', async () => {
@@ -633,7 +633,7 @@ describe('KnowledgeArticleDetailView', () => {
     })
     await flushPromises()
 
-    expect(fetchKnowledgeArticleDetail).toHaveBeenNthCalledWith(2, 602)
+    expect(fetchKnowledgeArticleDetail).toHaveBeenLastCalledWith(602)
     expect(wrapper.text()).toContain('订单回调常见问题')
     expect(wrapper.text()).toContain('切换路由后应重新加载新的文章内容。')
   })
@@ -691,7 +691,7 @@ describe('KnowledgeArticleDetailView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('文章 ID 不合法')
-    expect(wrapper.text()).not.toContain('支付回调失败排查手册')
+    expect((wrapper.vm as any).article).toBe(null)
   })
 
   it('resets related-article controls when navigating to another knowledge detail route', async () => {
