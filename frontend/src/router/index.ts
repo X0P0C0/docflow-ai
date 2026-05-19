@@ -1,22 +1,23 @@
 import { getRouteRequiredCapability } from '../access-policy'
 import { createRouter, createWebHistory } from 'vue-router'
 import { setAuthFailureHandler } from '../api/http'
-import AiCenterView from '../views/AiCenterView.vue'
 import { clearSession, isAuthenticated, restoreSession } from '../auth'
 import { canAccessCapability } from '../authz'
 import { CAPABILITY_CODES } from '../capability-constants'
 import { buildAuthFailureRedirect, shouldSkipAuthFailureRedirect } from '../utils/authFailure'
-import DashboardView from '../views/DashboardView.vue'
-import KnowledgeArticleDetailView from '../views/KnowledgeArticleDetailView.vue'
-import KnowledgeArticleEditorView from '../views/KnowledgeArticleEditorView.vue'
-import KnowledgeArticleListView from '../views/KnowledgeArticleListView.vue'
-import LoginView from '../views/LoginView.vue'
-import NotificationCenterView from '../views/NotificationCenterView.vue'
-import ProfileView from '../views/ProfileView.vue'
-import SystemManageView from '../views/SystemManageView.vue'
-import TicketCreateView from '../views/TicketCreateView.vue'
-import TicketDetailView from '../views/TicketDetailView.vue'
-import TicketListView from '../views/TicketListView.vue'
+
+const LoginView = () => import('../views/LoginView.vue')
+const DashboardView = () => import('../views/DashboardView.vue')
+const KnowledgeArticleListView = () => import('../views/KnowledgeArticleListView.vue')
+const KnowledgeArticleEditorView = () => import('../views/KnowledgeArticleEditorView.vue')
+const KnowledgeArticleDetailView = () => import('../views/KnowledgeArticleDetailView.vue')
+const AiCenterView = () => import('../views/AiCenterView.vue')
+const NotificationCenterView = () => import('../views/NotificationCenterView.vue')
+const SystemManageView = () => import('../views/SystemManageView.vue')
+const ProfileView = () => import('../views/ProfileView.vue')
+const TicketListView = () => import('../views/TicketListView.vue')
+const TicketCreateView = () => import('../views/TicketCreateView.vue')
+const TicketDetailView = () => import('../views/TicketDetailView.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -140,18 +141,23 @@ const router = createRouter({
 })
 
 setAuthFailureHandler((error) => {
+  // 把 401/403 的跳转决策放在 router 层，而不是 http 层，
+  // 这样可以结合当前页面状态决定是否真的要跳走。
   const currentRoute = router.currentRoute.value
   if (shouldSkipAuthFailureRedirect(currentRoute, error)) {
     return
   }
   if (error.status === 401) {
+    // 401 说明 token 基本已经不可用了，先清本地会话再跳登录页。
     clearSession()
   }
   router.replace(buildAuthFailureRedirect(currentRoute.fullPath, error))
 })
 
 router.beforeEach(async (to) => {
+  // 路由守卫统一承担两件事：先恢复会话，再判断页面级能力是否足够。
   if (to.meta.requiresAuth) {
+    // 先恢复一次会话，再决定这条路由到底能不能进。
     await restoreSession()
   }
 
@@ -169,6 +175,7 @@ router.beforeEach(async (to) => {
     : getRouteRequiredCapability(to.path)
 
   if (requiredCapability && !canAccessCapability(requiredCapability)) {
+    // 权限不足时尽量把用户送回“最接近当前意图”的可访问页面，而不是直接白屏。
     if (requiredCapability === CAPABILITY_CODES.KNOWLEDGE_MANAGE) {
       return {
         path: '/knowledge/articles',
