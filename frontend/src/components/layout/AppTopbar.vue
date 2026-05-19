@@ -40,7 +40,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { buildTopbarKnowledgeActionCopy } from '../../access-policy'
 import { authState, clearSession } from '../../auth'
 import { canManageKnowledgeArticles } from '../../authz'
-import { isDemoMode } from '../../utils/runtimeMode'
+import { getRuntimeEntryMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../../utils/runtimeMode'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,16 +55,12 @@ const canPublishKnowledge = computed(() => canManageKnowledgeArticles())
 const knowledgeAction = computed(() => buildTopbarKnowledgeActionCopy({
   canManageKnowledge: canPublishKnowledge.value,
 }))
-const modeText = computed(() => (demoMode.value ? '演示模式' : '正常模式'))
+const modeText = computed(() => getRuntimeModeText())
 const modeChipClass = computed(() => (demoMode.value ? 'chip-orange' : 'chip-green'))
 const roleText = computed(() => authState.user?.roles?.join(' / ') || '访客')
 const bannerClass = computed(() => (demoMode.value ? 'runtime-banner-demo' : 'runtime-banner-live'))
-const modeHeadline = computed(() => (demoMode.value ? '当前为演示模式' : '当前为正常模式'))
-const modeDescription = computed(() => (
-  demoMode.value
-    ? '后端当前未参与本次操作，页面中的数据和交互会以本地演示数据为准。'
-    : '当前页面已经连接后端接口，新增、编辑和状态流转会优先写入真实数据。'
-))
+const modeHeadline = computed(() => getRuntimeModeHeadline())
+const modeDescription = computed(() => getRuntimeEntryMessage('顶部导航'))
 
 function handleLogout() {
   clearSession()

@@ -15,8 +15,8 @@ const state = vi.hoisted(() => ({
     user: {
       id: 2,
       username: 'support01',
-      nickname: '李晓安',
-      realName: '李晓安',
+      nickname: 'Support',
+      realName: 'Support',
       email: 'support01@docflow.ai',
       phone: '13800000001',
       avatar: null,
@@ -63,10 +63,10 @@ vi.mock('../../src/authz', () => ({
 
 vi.mock('../../src/access-policy', () => ({
   buildAiCenterAccessCopy: ({ canAccess, roleText }: { canAccess: boolean; roleText: string }) => ({
-    chipText: canAccess ? 'AI Focus' : '权限提示',
-    title: canAccess ? 'AI 已开放' : `当前账号 ${roleText} 暂未开放 AI`,
-    description: canAccess ? '可以直接进入 AI 工作台。' : '当前账号先走工单与知识主线。',
-    actionText: canAccess ? '查看 AI 面板' : '当前能力未开放',
+    chipText: canAccess ? 'AI Focus' : 'Access Notice',
+    title: canAccess ? 'AI access is ready' : `Current account ${roleText} has no AI access yet`,
+    description: canAccess ? 'You can enter the AI workspace directly.' : 'This account should continue through tickets and knowledge first.',
+    actionText: canAccess ? 'Open AI workspace' : 'Access not enabled',
   }),
   buildSidebarBadgeMap: () => ({
     '/knowledge/articles': state.canManageKnowledge ? 'Edit' : 'Read',
@@ -76,13 +76,20 @@ vi.mock('../../src/access-policy', () => ({
   }),
   buildTopbarKnowledgeActionCopy: ({ canManageKnowledge }: { canManageKnowledge: boolean }) => ({
     visible: canManageKnowledge,
-    label: canManageKnowledge ? '发布文章' : '查看知识库',
-    hint: canManageKnowledge ? '可发布' : '只读',
+    label: canManageKnowledge ? 'Publish article' : 'Browse knowledge base',
+    hint: canManageKnowledge ? 'Can publish' : 'Read only',
   }),
 }))
 
 vi.mock('../../src/utils/runtimeMode', () => ({
   isDemoMode: () => state.runtimeDemoMode,
+  getRuntimeModeText: () => (state.runtimeDemoMode ? '演示模式' : '真实模式'),
+  getRuntimeModeHeadline: () => (state.runtimeDemoMode ? '当前正在使用演示会话' : '当前正在使用真实后端会话'),
+  getRuntimeEntryMessage: (subject = '当前入口') => (
+    state.runtimeDemoMode
+      ? `当前${subject}默认会进入演示模式，登录后会优先使用本地演示数据来预览页面和流程。`
+      : `当前${subject}默认会进入真实模式，登录后会优先读取并写入真实后端数据。`
+  ),
 }))
 
 describe('shared components', () => {
@@ -94,8 +101,8 @@ describe('shared components', () => {
     state.authState.user = {
       id: 2,
       username: 'support01',
-      nickname: '李晓安',
-      realName: '李晓安',
+      nickname: 'Support',
+      realName: 'Support',
       email: 'support01@docflow.ai',
       phone: '13800000001',
       avatar: null,
@@ -120,24 +127,24 @@ describe('shared components', () => {
     const wrapper = mount(AppSidebar, {
       props: {
         workspaceNav: [
-          { name: '工作台', to: '/dashboard', badge: 'Hot' },
-          { name: 'AI 工作台', to: '/ai-center', badge: 'Soon' },
+          { name: 'Workspace', to: '/dashboard', badge: 'Hot' },
+          { name: 'AI Center', to: '/ai-center', badge: 'Soon' },
         ],
         manageNav: [
-          { name: '知识库', to: '/knowledge/articles', badge: 'Base' },
-          { name: '系统管理', to: '/settings', badge: 'Base' },
+          { name: 'Knowledge Base', to: '/knowledge/articles', badge: 'Base' },
+          { name: 'System Settings', to: '/settings', badge: 'Base' },
         ],
       },
     })
 
     const links = wrapper.findAll('.router-link')
     expect(links).toHaveLength(2)
-    expect(wrapper.text()).toContain('工作台')
-    expect(wrapper.text()).not.toContain('AI 工作台')
+    expect(wrapper.text()).toContain('Workspace')
+    expect(wrapper.text()).not.toContain('AI Center')
     expect(wrapper.text()).toContain('Read')
     expect(wrapper.find('.nav-item').classes()).toContain('active')
-    expect(wrapper.text()).toContain('权限提示')
-    expect(wrapper.text()).toContain('当前账号 SUPPORT 暂未开放 AI')
+    expect(wrapper.text()).toContain('Access Notice')
+    expect(wrapper.text()).toContain('Current account SUPPORT has no AI access yet')
 
     await wrapper.find('.primary-button').trigger('click')
     expect(state.router.push).not.toHaveBeenCalled()
@@ -153,18 +160,18 @@ describe('shared components', () => {
     const wrapper = mount(AppSidebar, {
       props: {
         workspaceNav: [
-          { name: '工作台', to: '/dashboard', badge: 'Hot' },
-          { name: 'AI 工作台', to: '/ai-center', badge: 'Soon' },
+          { name: 'Workspace', to: '/dashboard', badge: 'Hot' },
+          { name: 'AI Center', to: '/ai-center', badge: 'Soon' },
         ],
         manageNav: [
-          { name: '系统管理', to: '/settings', badge: 'Base' },
+          { name: 'System Settings', to: '/settings', badge: 'Base' },
         ],
       },
     })
 
     expect(wrapper.text()).toContain('AI')
     expect(wrapper.text()).toContain('Admin')
-    expect(wrapper.text()).toContain('AI 已开放')
+    expect(wrapper.text()).toContain('AI access is ready')
     expect(wrapper.findAll('.nav-item')[2].classes()).toContain('active')
 
     await wrapper.find('.primary-button').trigger('click')
@@ -182,12 +189,12 @@ describe('shared components', () => {
         pendingCount: 6,
         knowledgeCoverage: 87,
         localCount: 2,
-        runtimeMode: '正常模式',
-        heroHeadline: '把工单工作台和知识沉淀放在一起。',
-        heroDescription: '当前账号偏向处理侧。',
-        capabilityNote: 'AI 工作台已开放。',
-        primaryAction: { label: '进入知识库', to: '/knowledge/articles' },
-        secondaryAction: { label: '新建知识文章', to: '/knowledge/articles/create' },
+        runtimeMode: '真实模式',
+        heroHeadline: 'Keep tickets and knowledge in one operating lane.',
+        heroDescription: 'This account is currently focused on triage work.',
+        capabilityNote: 'AI workspace is already enabled.',
+        primaryAction: { label: 'Open knowledge base', to: '/knowledge/articles' },
+        secondaryAction: { label: 'Create article', to: '/knowledge/articles/create' },
       },
     })
     await hero.findAll('button')[0].trigger('click')
@@ -198,8 +205,8 @@ describe('shared components', () => {
     const sidebar = mount(AppSidebar, {
       props: {
         workspaceNav: [
-          { name: '工作台', to: '/dashboard', badge: 'Hot' },
-          { name: 'AI 工作台', to: '/ai-center', badge: 'Soon' },
+          { name: 'Workspace', to: '/dashboard', badge: 'Hot' },
+          { name: 'AI Center', to: '/ai-center', badge: 'Soon' },
         ],
         manageNav: [],
       },
@@ -216,13 +223,13 @@ describe('shared components', () => {
 
     expect(wrapper.text()).toContain('演示模式')
     expect(wrapper.text()).toContain('SUPPORT')
-    expect(wrapper.text()).toContain('发布文章')
-    expect(wrapper.text()).toContain('当前为演示模式')
-    expect(wrapper.text()).toContain('李')
+    expect(wrapper.text()).toContain('Publish article')
+    expect(wrapper.text()).toContain('当前正在使用演示会话')
+    expect(wrapper.text()).toContain('当前顶部导航默认会进入演示模式')
 
     const searchButton = wrapper.findAll('button').find((item) => item.text().includes('搜索知识文章'))
     const createTicketButton = wrapper.findAll('button').find((item) => item.text() === '新建工单')
-    const publishButton = wrapper.findAll('button').find((item) => item.text() === '发布文章')
+    const publishButton = wrapper.findAll('button').find((item) => item.text() === 'Publish article')
     const profileButton = wrapper.findAll('button').find((item) => item.text().includes('个人中心'))
     const logoutButton = wrapper.findAll('button').find((item) => item.text() === '退出')
 
@@ -246,18 +253,18 @@ describe('shared components', () => {
         pendingCount: 6,
         knowledgeCoverage: 87,
         localCount: 2,
-        runtimeMode: '正常模式',
-        heroHeadline: '把工单工作台和知识沉淀放在一起。',
-        heroDescription: '当前账号偏向处理侧。',
-        capabilityNote: 'AI 工作台已开放。',
-        primaryAction: { label: '进入工单中心', to: '/tickets' },
-        secondaryAction: { label: '新建知识文章', to: '/knowledge/articles/create' },
+        runtimeMode: '真实模式',
+        heroHeadline: 'Keep tickets and knowledge in one operating lane.',
+        heroDescription: 'This account is currently focused on triage work.',
+        capabilityNote: 'AI workspace is already enabled.',
+        primaryAction: { label: 'Open ticket center', to: '/tickets' },
+        secondaryAction: { label: 'Create article', to: '/knowledge/articles/create' },
       },
     })
 
-    expect(wrapper.text()).toContain('把工单工作台和知识沉淀放在一起。')
-    expect(wrapper.text()).toContain('首页当前展示的是正常模式')
-    expect(wrapper.text()).toContain('李晓安')
+    expect(wrapper.text()).toContain('Keep tickets and knowledge in one operating lane.')
+    expect(wrapper.text()).toContain('真实模式')
+    expect(wrapper.text()).toContain('Support')
     expect(wrapper.text()).toContain('87%')
     expect(wrapper.text()).toContain('本地可继续记录')
 
@@ -272,45 +279,45 @@ describe('shared components', () => {
   it('renders ticket panel links, status chips, and local fallback error copy', () => {
     const wrapper = mount(TicketPanel, {
       props: {
-        title: '待处理工单',
-        description: '先看当前处理队列。',
-        actionText: '查看全部',
+        title: 'Pending tickets',
+        description: 'Review the current handling queue first.',
+        actionText: 'View all',
         errorMessage: '工单接口暂时不可用',
         errorTraceId: '',
         items: [
           {
             id: 1,
             ticketNo: 'INC-1',
-            title: '支付回调异常',
-            meta: 'INC-1 · 待分配 · 更新于 2026-05-14 10:00:00',
+            title: 'Payment callback issue',
+            meta: 'INC-1 · Unassigned · Updated at 2026-05-14 10:00:00',
             submitUserId: 1,
             assigneeUserId: null,
             content: 'content',
             priorityLevel: 'P1',
-            priority: '紧急',
+            priority: 'High',
             status: '处理中',
             priorityClass: 'chip-red',
-            assignee: '待分配',
-            submitter: '王小明',
+            assignee: 'Unassigned',
+            submitter: 'Alice',
             updatedAt: '2026-05-14 10:00:00',
-            tags: ['故障事件', '分类 3'],
+            tags: ['Incident', 'Category 3'],
           },
           {
             id: 2,
             ticketNo: 'INC-2',
-            title: '历史问题',
-            meta: 'INC-2 · 李晓安 · 更新于 2026-05-14 09:00:00',
+            title: 'Historical issue',
+            meta: 'INC-2 · Support · Updated at 2026-05-14 09:00:00',
             submitUserId: 2,
             assigneeUserId: 2,
             content: 'content',
             priorityLevel: 'P3',
-            priority: '普通',
+            priority: 'Normal',
             status: '已关闭',
             priorityClass: 'chip-green',
-            assignee: '李晓安',
-            submitter: '王小明',
+            assignee: 'Support',
+            submitter: 'Alice',
             updatedAt: '2026-05-14 09:00:00',
-            tags: ['问题咨询', '分类 1'],
+            tags: ['Question', 'Category 1'],
           },
         ],
       },

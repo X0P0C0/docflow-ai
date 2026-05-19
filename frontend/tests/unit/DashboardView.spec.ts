@@ -8,10 +8,20 @@ import type { TicketApiItem } from '../../src/api/ticket'
 import DashboardView from '../../src/views/DashboardView.vue'
 import { resetWebStorage } from './helpers/testHarness'
 
-const { fetchKnowledgeArticles, fetchTickets, getRuntimeModeText } = vi.hoisted(() => ({
+const {
+  fetchKnowledgeArticles,
+  fetchTickets,
+  getRuntimeModeText,
+  getRuntimeModeHeadline,
+  getRuntimeDataSourceMessage,
+  isDemoMode,
+} = vi.hoisted(() => ({
   fetchKnowledgeArticles: vi.fn(),
   fetchTickets: vi.fn(),
   getRuntimeModeText: vi.fn(),
+  getRuntimeModeHeadline: vi.fn(),
+  getRuntimeDataSourceMessage: vi.fn(),
+  isDemoMode: vi.fn(),
 }))
 
 const route = reactive({
@@ -33,6 +43,9 @@ vi.mock('../../src/api/ticket', () => ({
 
 vi.mock('../../src/utils/runtimeMode', () => ({
   getRuntimeModeText,
+  getRuntimeModeHeadline,
+  getRuntimeDataSourceMessage,
+  isDemoMode,
 }))
 
 vi.mock('../../src/authz', () => ({
@@ -86,18 +99,28 @@ function createTicketFixture(overrides: Partial<TicketApiItem> = {}): TicketApiI
 }
 
 describe('DashboardView', () => {
+  let mountedWrapper: ReturnType<typeof mount> | null = null
+
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     fetchKnowledgeArticles.mockReset()
     fetchTickets.mockReset()
     getRuntimeModeText.mockReset()
+    getRuntimeModeHeadline.mockReset()
+    getRuntimeDataSourceMessage.mockReset()
+    isDemoMode.mockReset()
     resetWebStorage()
     route.query = {}
     route.fullPath = '/dashboard'
+    getRuntimeModeHeadline.mockReturnValue('褰撳墠姝ｅ湪浣跨敤婕旂ず浼氳瘽')
+    getRuntimeDataSourceMessage.mockImplementation(({ subject }: { subject?: string }) => `runtime:${subject ?? ''}`)
+    isDemoMode.mockReturnValue(true)
     getRuntimeModeText.mockReturnValue('演示模式')
   })
 
   afterEach(() => {
+    mountedWrapper?.unmount()
+    mountedWrapper = null
     vi.restoreAllMocks()
   })
 
@@ -105,8 +128,10 @@ describe('DashboardView', () => {
     const wrapper = mount(DashboardView, {
       global: {
         stubs: {
-          AppSidebar: true,
-          AppTopbar: true,
+          AppShell: {
+            props: ['notice'],
+            template: '<div class="app-shell-stub"><div v-if="notice" class="app-shell-notice-stub">{{ notice }}</div><slot /></div>',
+          },
           HeroPanel: {
             props: ['pendingCount', 'knowledgeCoverage', 'localCount', 'runtimeMode'],
             template: '<div class="hero-panel-props">pending={{ pendingCount }}|coverage={{ knowledgeCoverage }}|local={{ localCount }}|runtime={{ runtimeMode }}</div>',
@@ -128,6 +153,7 @@ describe('DashboardView', () => {
       },
     })
     await flushPromises()
+    mountedWrapper = wrapper
     return wrapper
   }
 

@@ -34,37 +34,44 @@ vi.mock('../../src/authz', () => ({
 
 vi.mock('../../src/utils/runtimeMode', () => ({
   isDemoMode: () => state.runtimeDemoMode,
+  getRuntimeModeText: () => (state.runtimeDemoMode ? 'Demo Mode' : 'Live Mode'),
+  getRuntimeModeHeadline: () => (state.runtimeDemoMode ? 'Demo session active' : 'Live backend session active'),
+  getRuntimeDataSourceMessage: ({ subject }: { subject: string }) => (
+    state.runtimeDemoMode
+      ? `Demo data is active for ${subject}.`
+      : `Live API data is active for ${subject}.`
+  ),
 }))
 
 vi.mock('../../src/access-policy', () => ({
   buildNotificationCenterCopy: ({ canManageKnowledge, canAccessAiCenter, canManageSystem }: { canManageKnowledge: boolean; canAccessAiCenter: boolean; canManageSystem: boolean }) => ({
-    title: canManageSystem ? '系统与协作通知' : '协作通知',
-    description: canManageKnowledge ? '已按知识与工单协作范围整理提醒。' : '已按当前角色整理提醒。',
+    title: canManageSystem ? 'System and collaboration notifications' : 'Collaboration notifications',
+    description: canManageKnowledge ? 'Knowledge and ticket reminders are grouped here.' : 'Reminders are scoped to the current role.',
     unreadCount: canAccessAiCenter ? 4 : 2,
     items: [
-      { message: canManageSystem ? '系统角色权限变更待确认' : '知识文章待复核', time: '刚刚' },
-      { message: '工单处理记录已更新', time: '5 分钟前' },
+      { message: canManageSystem ? 'Role permission changes pending review' : 'Knowledge article pending review', time: 'Just now' },
+      { message: 'Ticket activity updated', time: '5 min ago' },
     ],
   }),
   buildSystemManageCopy: ({ canManageSystem }: { canManageSystem: boolean }) => ({
-    title: canManageSystem ? '系统治理总览' : '系统信息',
-    description: canManageSystem ? '查看角色、权限与配置治理入口。' : '当前账号以查看为主。',
+    title: canManageSystem ? 'System governance overview' : 'System information',
+    description: canManageSystem ? 'Review roles, permissions, and governance entry points.' : 'Current account is view-only here.',
     chipText: canManageSystem ? 'Admin Control' : 'Read Only',
-    hint: canManageSystem ? '继续补角色、分类、通知模板和治理配置。' : '当前账号没有系统治理能力。',
+    hint: canManageSystem ? 'Continue with roles, categories, templates, and governance settings.' : 'This account cannot manage system settings.',
     cards: [
-      { label: '角色模板', value: canManageSystem ? '8' : '0', description: '用于约束菜单和能力范围。' },
-      { label: '通知模板', value: '12', description: '覆盖工单与知识协作提醒。' },
+      { label: 'Role templates', value: canManageSystem ? '8' : '0', description: 'Used to constrain navigation and capability scope.' },
+      { label: 'Notification templates', value: '12', description: 'Covers ticket and knowledge collaboration reminders.' },
     ],
   }),
   buildProfileCapabilitySummaries: () => ({
-    roleSummary: '当前账号以知识沉淀和协作为主。',
-    ticketScopeSummary: '可以查看并推进工单处理链路。',
-    knowledgeScopeSummary: '可以新建、编辑并沉淀知识内容。',
+    roleSummary: 'This account is focused on knowledge collaboration.',
+    ticketScopeSummary: 'This account can review and move ticket workflows forward.',
+    knowledgeScopeSummary: 'This account can create and edit knowledge content.',
   }),
   CAPABILITY_PRESENTATION: [
-    { code: 'TICKET_OPERATE', label: '工单处理', description: '处理评论、状态和协作动作。' },
-    { code: 'KNOWLEDGE_MANAGE', label: '知识管理', description: '维护知识文章与沉淀流程。' },
-    { code: 'AI_CENTER_ACCESS', label: 'AI 工作台', description: '访问 AI 摘要和推荐能力。' },
+    { code: 'TICKET_OPERATE', label: 'Ticket operations', description: 'Handle comments, statuses, and collaboration actions.' },
+    { code: 'KNOWLEDGE_MANAGE', label: 'Knowledge management', description: 'Maintain knowledge articles and their workflow.' },
+    { code: 'AI_CENTER_ACCESS', label: 'AI Center', description: 'Access AI summaries and recommendations.' },
   ],
 }))
 
@@ -81,8 +88,8 @@ describe('entry views smoke coverage', () => {
     authState.user = {
       id: 2,
       username: 'support01',
-      nickname: '李晓安',
-      realName: '李晓安',
+      nickname: 'Support',
+      realName: 'Support',
       email: 'support01@docflow.ai',
       phone: '13800000001',
       avatar: null,
@@ -96,73 +103,66 @@ describe('entry views smoke coverage', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the AI center hero and recommendation cards', () => {
+  function appShellStub() {
+    return {
+      AppShell: {
+        template: '<div class="app-shell-stub"><slot /></div>',
+      },
+    }
+  }
+
+  it('renders the AI center hero and runtime banner', () => {
     const wrapper = mount(AiCenterView, {
       global: {
-        stubs: {
-          AppSidebar: true,
-          AppTopbar: true,
-        },
+        stubs: appShellStub(),
       },
     })
 
     expect(wrapper.text()).toContain('AI Center')
-    expect(wrapper.text()).toContain('今日建议')
     expect(wrapper.text()).toContain('42')
-    expect(wrapper.text()).toContain('知识推荐')
-    expect(wrapper.text()).toContain('支付回调失败排查手册')
-    expect(wrapper.text()).toContain('查看全部')
+    expect(wrapper.text()).toContain('Demo session active')
+    expect(wrapper.text()).toContain('Demo Mode')
+    expect(wrapper.text()).toContain('Demo data is active for')
   })
 
   it('renders notification and system-management copies from access policy', () => {
     const notificationWrapper = mount(NotificationCenterView, {
       global: {
-        stubs: {
-          AppSidebar: true,
-          AppTopbar: true,
-        },
+        stubs: appShellStub(),
       },
     })
     const systemWrapper = mount(SystemManageView, {
       global: {
-        stubs: {
-          AppSidebar: true,
-          AppTopbar: true,
-        },
+        stubs: appShellStub(),
       },
     })
 
-    expect(notificationWrapper.text()).toContain('系统与协作通知')
+    expect(notificationWrapper.text()).toContain('System and collaboration notifications')
     expect(notificationWrapper.text()).toContain('4 Unread')
-    expect(notificationWrapper.text()).toContain('系统角色权限变更待确认')
-    expect(systemWrapper.text()).toContain('系统治理总览')
+    expect(notificationWrapper.text()).toContain('Demo session active')
+    expect(systemWrapper.text()).toContain('System governance overview')
     expect(systemWrapper.text()).toContain('Admin Control')
-    expect(systemWrapper.text()).toContain('角色模板')
-    expect(systemWrapper.text()).toContain('继续补角色、分类、通知模板和治理配置。')
+    expect(systemWrapper.text()).toContain('Role templates')
   })
 
-  it('renders profile identity, demo mode, and locked quick actions for unavailable capabilities', () => {
+  it('renders profile identity, runtime banner, and locked quick actions for unavailable capabilities', () => {
     state.canAccessAiCenter = false
     state.canManageSystem = false
 
     const wrapper = mount(ProfileView, {
       global: {
-        stubs: {
-          AppSidebar: true,
-          AppTopbar: true,
-        },
+        stubs: appShellStub(),
       },
     })
 
-    expect(wrapper.text()).toContain('李晓安')
-    expect(wrapper.text()).toContain('@support01 · support01@docflow.ai')
-    expect(wrapper.text()).toContain('演示模式')
-    expect(wrapper.text()).toContain('知识沉淀')
-    expect(wrapper.text()).toContain('当前账号以知识沉淀和协作为主。')
-    expect(wrapper.text()).toContain('AI 工作台')
+    expect(wrapper.text()).toContain('Support')
+    expect(wrapper.text()).toContain('@support01')
+    expect(wrapper.text()).toContain('Demo Mode')
+    expect(wrapper.text()).toContain('Demo data is active for 个人中心.')
+    expect(wrapper.text()).toContain('This account is focused on knowledge collaboration.')
+    expect(wrapper.text()).toContain('AI Center')
     expect(wrapper.text()).toContain('Locked')
-    expect(wrapper.text()).toContain('系统管理')
-    expect(wrapper.text()).toContain('当前账号以协作和业务处理为主，系统治理入口保持隐藏。')
+    expect(wrapper.findAll('.quick-action-card.disabled')).toHaveLength(2)
 
     const quickActionLinks = wrapper.findAll('.quick-action-card')
     expect(quickActionLinks[2].attributes('data-to')).toBe('/profile')
