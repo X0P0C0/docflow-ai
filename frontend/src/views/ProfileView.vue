@@ -1,10 +1,7 @@
-﻿<template>
-  <div class="app-shell">
-    <AppSidebar :workspace-nav="workspaceNav" :manage-nav="manageNav" />
-    <main class="main-content">
-      <AppTopbar />
-
-      <section class="panel knowledge-hero profile-hero">
+<template>
+  <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
+    <section class="workspace-page">
+      <section class="panel knowledge-hero profile-hero workspace-card">
         <div class="profile-hero-copy">
           <span class="hero-tag">Profile</span>
           <h2>把当前账号、协作身份和能力边界放进同一张工作名片里。</h2>
@@ -23,7 +20,11 @@
 
           <div class="profile-role-chips">
             <span v-for="role in roleList" :key="role" class="chip chip-blue">{{ role }}</span>
-            <span class="chip" :class="modeChipClass">{{ runtimeModeText }}</span>
+          </div>
+
+          <div class="state-box profile-runtime-banner" :class="{ 'state-warning': isDemoMode() }">
+            <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+            <p>{{ runtimeDataSourceMessage }}</p>
           </div>
         </div>
 
@@ -60,7 +61,7 @@
       </section>
 
       <section class="profile-grid">
-        <section class="panel">
+        <section class="panel workspace-card">
           <div class="panel-head">
             <div>
               <h3>账号概览</h3>
@@ -78,7 +79,7 @@
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel workspace-card">
           <div class="panel-head">
             <div>
               <h3>下一步入口</h3>
@@ -106,7 +107,15 @@
         </section>
       </section>
 
-      <section class="panel profile-capability-panel">
+      <section class="profile-insight-grid">
+        <article v-for="insight in profileInsights" :key="insight.label" class="workspace-insight-card">
+          <span class="workspace-section-label">{{ insight.label }}</span>
+          <strong>{{ insight.value }}</strong>
+          <p>{{ insight.description }}</p>
+        </article>
+      </section>
+
+      <section class="panel workspace-card profile-capability-panel">
         <div class="panel-head">
           <div>
             <h3>当前账号能力边界</h3>
@@ -133,16 +142,15 @@
           </div>
         </div>
       </section>
-    </main>
-  </div>
+    </section>
+  </AppShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { buildProfileCapabilitySummaries, CAPABILITY_PRESENTATION } from '../access-policy'
-import AppSidebar from '../components/layout/AppSidebar.vue'
-import AppTopbar from '../components/layout/AppTopbar.vue'
+import AppShell from '../components/layout/AppShell.vue'
 import { authState } from '../auth'
 import { ROLE_CODES } from '../auth-constants'
 import {
@@ -154,7 +162,7 @@ import {
   canViewAllTickets,
 } from '../authz'
 import { manageNav, workspaceNav } from '../mock/dashboard'
-import { isDemoMode } from '../utils/runtimeMode'
+import { getRuntimeDataSourceMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
 
 const currentUser = computed(() => authState.user)
 const roleList = computed(() => currentUser.value?.roles?.length ? currentUser.value.roles : [ROLE_CODES.USER])
@@ -168,8 +176,12 @@ const usernameLine = computed(() => {
 const primaryRoleText = computed(() => roleList.value[0] || ROLE_CODES.USER)
 const permissionCount = computed(() => currentUser.value?.permissions?.length || 0)
 const capabilityCount = computed(() => currentUser.value?.capabilities?.length || 0)
-const runtimeModeText = computed(() => isDemoMode() ? '演示模式' : '正常模式')
-const modeChipClass = computed(() => isDemoMode() ? 'chip-orange' : 'chip-green')
+const runtimeModeText = computed(() => getRuntimeModeText())
+const runtimeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeDataSourceMessage = computed(() => getRuntimeDataSourceMessage({
+  usedFallbackData: false,
+  subject: '个人中心',
+}))
 const workspaceFocus = computed(() => {
   if (canManageSystem()) {
     return '系统治理'
@@ -195,6 +207,23 @@ const capabilityCards = computed(() => CAPABILITY_PRESENTATION.map((capability) 
   ...capability,
   enabled: canAccessCapability(capability.code),
 })))
+const profileInsights = computed(() => [
+  {
+    label: '当前角色',
+    value: primaryRoleText.value,
+    description: '决定你当前更偏向处理、沉淀还是治理协作。',
+  },
+  {
+    label: '能力密度',
+    value: `${capabilityCount.value} / ${permissionCount.value}`,
+    description: '把 capability 和 permission 放在一起看，更容易判断当前账号边界。',
+  },
+  {
+    label: '推荐主线',
+    value: workspaceFocus.value,
+    description: '帮助我们快速决定下一步优先继续哪个业务入口。',
+  },
+])
 
 const quickActions = computed(() => [
   {
@@ -277,11 +306,33 @@ const quickActions = computed(() => [
   gap: 0.75rem;
 }
 
+.profile-runtime-banner {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-runtime-banner strong,
+.profile-runtime-banner p {
+  margin: 0;
+}
+
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
+}
+
+.profile-insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.profile-insight-grid p {
+  margin: 0.45rem 0 0;
+  color: #64748b;
+  line-height: 1.7;
 }
 
 .quick-action-grid {
@@ -323,7 +374,7 @@ const quickActions = computed(() => [
 }
 
 .profile-capability-panel {
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;
 }
 
 .capability-grid {
@@ -358,7 +409,8 @@ const quickActions = computed(() => [
 
 @media (max-width: 960px) {
   .profile-grid,
-  .quick-action-grid {
+  .quick-action-grid,
+  .profile-insight-grid {
     grid-template-columns: 1fr;
   }
 }
