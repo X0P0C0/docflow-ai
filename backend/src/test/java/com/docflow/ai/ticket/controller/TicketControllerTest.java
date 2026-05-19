@@ -1,6 +1,8 @@
 package com.docflow.ai.ticket.controller;
 
 import com.docflow.ai.auth.security.AuthUserPrincipal;
+import com.docflow.ai.auth.service.UserAccessService;
+import com.docflow.ai.knowledge.dto.KnowledgeArticleResponse;
 import com.docflow.ai.ticket.dto.TicketDetailResponse;
 import com.docflow.ai.ticket.service.TicketService;
 import com.docflow.ai.auth.security.JwtTokenProvider;
@@ -10,7 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(TicketController.class)
 @AutoConfigureMockMvc
+@Import(TicketControllerTest.MethodSecurityTestConfig.class)
 class TicketControllerTest {
 
     @Autowired
@@ -38,6 +44,9 @@ class TicketControllerTest {
 
     @MockBean
     private TicketService ticketService;
+
+    @MockBean(name = "userAccessService")
+    private UserAccessService userAccessService;
 
     @MockBean
     private JwtTokenProvider jwtTokenProvider;
@@ -94,5 +103,58 @@ class TicketControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.path").value("/api/tickets"))
                 .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    @Test
+    void createKnowledgeDraftShouldReturnArticleWhenKnowledgePermissionAllowed() throws Exception {
+        KnowledgeArticleResponse response = new KnowledgeArticleResponse();
+        response.setId(300L);
+        response.setTitle("Knowledge draft from ticket");
+
+        when(userAccessService.canManageKnowledge(1L)).thenReturn(true);
+        when(ticketService.createKnowledgeDraft(eq(100L), eq(1L), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/tickets/100/knowledge-draft")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(
+                                new AuthUserPrincipal(1L, "alice"),
+                                null,
+                                List.of()
+                        )))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "origin", "ai-center",
+                                "closeRemark", "Payment rollback completed and customer updated."
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.id").value(300))
+                .andExpect(jsonPath("$.data.title").value("Knowledge draft from ticket"));
+    }
+
+    @Test
+    void createKnowledgeDraftShouldReturnForbiddenWhenKnowledgePermissionDenied() throws Exception {
+        when(userAccessService.canManageKnowledge(1L)).thenReturn(false);
+
+        mockMvc.perform(post("/api/tickets/100/knowledge-draft")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(
+                                new AuthUserPrincipal(1L, "alice"),
+                                null,
+                                List.of()
+                        )))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "origin", "portal"
+                        ))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(40300))
+                .andExpect(jsonPath("$.error").value("AUTH_FORBIDDEN"))
+                .andExpect(jsonPath("$.path").value("/api/tickets/100/knowledge-draft"));
+    }
+
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityTestConfig {
     }
 }

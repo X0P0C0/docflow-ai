@@ -28,6 +28,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = resolveToken(request);
+        // 过滤器只负责“把 token 还原成当前用户身份”，
+        // 具体能不能访问某个业务资源，交给后续权限检查。
         if (StringUtils.hasText(token)
                 && jwtTokenProvider.isValid(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -55,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!StringUtils.hasText(authorization) || !authorization.startsWith("Bearer ")) {
             return null;
         }
+        // 前后端统一约定 Bearer Token，避免出现多种登录态传递方式。
         return authorization.substring(7);
     }
 }

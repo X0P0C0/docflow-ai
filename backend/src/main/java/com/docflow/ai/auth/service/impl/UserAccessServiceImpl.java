@@ -47,6 +47,22 @@ public class UserAccessServiceImpl implements UserAccessService {
     }
 
     @Override
+    public void requireKnowledgeManager(Long userId) {
+        requireActiveUser(userId);
+        if (!canManageKnowledge(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+    }
+
+    @Override
+    public void requireAiCenterAccess(Long userId) {
+        requireActiveUser(userId);
+        if (!canAccessAiCenter(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+    }
+
+    @Override
     public boolean canOperateTickets(Long userId) {
         if (userId == null) {
             return false;
@@ -64,6 +80,16 @@ public class UserAccessServiceImpl implements UserAccessService {
         List<String> roleCodes = getRoleCodes(userId);
         List<String> permissionCodes = sysUserMapper.selectPermissionCodesByUserId(userId);
         return canManageKnowledge(roleCodes, permissionCodes);
+    }
+
+    @Override
+    public boolean canAccessAiCenter(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        List<String> roleCodes = getRoleCodes(userId);
+        List<String> permissionCodes = sysUserMapper.selectPermissionCodesByUserId(userId);
+        return canAccessAiCenter(roleCodes, permissionCodes);
     }
 
     @Override
@@ -86,6 +112,9 @@ public class UserAccessServiceImpl implements UserAccessService {
 
     @Override
     public boolean canAccessAiCenter(List<String> roleCodes, List<String> permissionCodes) {
+        if (containsAny(permissionCodes, SYSTEM_MANAGER_PERMISSION_CODES)) {
+            return true;
+        }
         return containsAny(roleCodes, TICKET_OPERATOR_ROLE_CODES);
     }
 

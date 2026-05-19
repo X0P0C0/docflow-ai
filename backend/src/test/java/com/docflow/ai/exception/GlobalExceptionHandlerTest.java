@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,6 +65,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.error").value("INTERNAL_SERVER_ERROR"));
     }
 
+    @Test
+    void accessDeniedExceptionShouldReturnForbiddenStatusAndUnifiedBody() throws Exception {
+        mockMvc.perform(get("/test/forbidden"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(40300))
+                .andExpect(jsonPath("$.error").value("AUTH_FORBIDDEN"))
+                .andExpect(jsonPath("$.path").value("/test/forbidden"));
+    }
+
     @RestController
     static class TestController {
 
@@ -79,6 +89,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/error")
         public void error() {
             throw new IllegalStateException("boom");
+        }
+
+        @GetMapping("/test/forbidden")
+        public void forbidden() {
+            throw new AccessDeniedException("denied");
         }
     }
 

@@ -35,12 +35,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // 这是纯 API 后端：不走服务端 session，也不走表单登录。
                 .csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(restAuthenticationEntryPoint)
                         .accessDeniedHandler(restAccessDeniedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 这些入口允许匿名访问，其余 API 一律要求先完成 JWT 认证。
                         .requestMatchers(
                                 "/api/health",
                                 "/api/auth/login",
@@ -51,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                // 在进入 controller 之前先把 JWT 解析进 SecurityContext。
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -58,6 +61,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        // 密码算法集中放在配置里，业务层只依赖 PasswordEncoder 接口。
         return new BCryptPasswordEncoder();
     }
 }

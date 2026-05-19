@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex, HttpServletRequest request) {
+        // BusinessException 表示“预期内失败”，例如权限不足、状态冲突、资源不存在。
         log.warn("business exception: method={}, uri={}, code={}, message={}",
                 request.getMethod(),
                 request.getRequestURI(),
@@ -41,6 +43,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException.class
     })
     public ResponseEntity<ApiResponse<Void>> handleBadRequestException(Exception ex, HttpServletRequest request) {
+        // 把 Spring 各种参数校验异常收敛成统一的 errors 列表，方便前端直接展示。
         List<ApiValidationError> validationErrors = resolveValidationErrors(ex);
         String message = validationErrors.isEmpty()
                 ? ResultCode.BAD_REQUEST.getMessage()
@@ -69,8 +72,20 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail(ResultCode.NOT_FOUND, ex.getMessage(), request.getRequestURI()));
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex,
+                                                                         HttpServletRequest request) {
+        log.warn("access denied: method={}, uri={}, message={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.fail(ResultCode.FORBIDDEN, request.getRequestURI()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex, HttpServletRequest request) {
+        // 兜底异常对前端只返回统一文案，具体堆栈细节保留在日志里。
         log.error("unhandled exception: method={}, uri={}",
                 request.getMethod(),
                 request.getRequestURI(),
@@ -120,6 +135,7 @@ public class GlobalExceptionHandler {
                                                  String message,
                                                  String path,
                                                  List<ApiValidationError> validationErrors) {
+        // traceId 来自 RequestTraceFilter 放进 MDC 的值，用于把错误响应和日志串起来。
         return ApiResponse.<Void>builder()
                 .code(code)
                 .error(error)

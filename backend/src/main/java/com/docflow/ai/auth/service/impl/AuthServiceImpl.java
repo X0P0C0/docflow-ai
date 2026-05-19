@@ -28,6 +28,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(String username, String password) {
+        // 登录链路：校验账号 -> 解析权限 -> 回写最后登录时间 -> 生成 JWT -> 返回前端所需用户画像。
         SysUser user = findActiveUserByUsername(username);
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
@@ -75,6 +76,7 @@ public class AuthServiceImpl implements AuthService {
                 .last("LIMIT 1");
 
         SysUser user = sysUserMapper.selectOne(wrapper);
+        // 不区分“用户名不存在”和“密码错误”的返回细节，避免泄露账号存在性。
         if (user == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
@@ -85,6 +87,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private CurrentUserResponse toCurrentUser(SysUser user, List<String> roles, List<String> permissions) {
+        // capabilities 不是数据库直存字段，而是给前端消费的“聚合能力视图”。
         CurrentUserResponse response = new CurrentUserResponse();
         response.setId(user.getId());
         response.setUsername(user.getUsername());

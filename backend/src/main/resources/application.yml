@@ -45,3 +45,5 @@ app:
   jwt:
     secret: ${DOCFLOW_JWT_SECRET:change-this-secret-in-dev-change-this-secret}
     expire-seconds: ${DOCFLOW_JWT_EXPIRE_SECONDS:7200}
+  ai:
+    claim-stale-after: ${DOCFLOW_AI_CLAIM_STALE_AFTER:2h}

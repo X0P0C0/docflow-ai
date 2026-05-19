@@ -10,9 +10,15 @@ public interface UserAccessService {
 
     void requireTicketOperator(Long userId);
 
+    void requireKnowledgeManager(Long userId);
+
+    void requireAiCenterAccess(Long userId);
+
     boolean canOperateTickets(Long userId);
 
     boolean canManageKnowledge(Long userId);
+
+    boolean canAccessAiCenter(Long userId);
 
     boolean canManageKnowledge(List<String> roleCodes, List<String> permissionCodes);
 

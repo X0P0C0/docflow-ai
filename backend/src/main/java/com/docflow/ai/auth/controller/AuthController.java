@@ -24,11 +24,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        // 登录接口只负责签发会话，不在 controller 层掺杂额外权限判断。
         return ApiResponse.success(authService.login(request.getUsername(), request.getPassword()));
     }
 
     @GetMapping("/me")
     public ApiResponse<CurrentUserResponse> currentUser(@AuthenticationPrincipal AuthUserPrincipal principal) {
+        // /me 是前端恢复会话和刷新当前用户画像的统一入口。
         return ApiResponse.success(authService.getCurrentUser(principal.getUserId()));
     }
 }

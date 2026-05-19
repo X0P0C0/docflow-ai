@@ -60,6 +60,7 @@ public class ApiResponse<T> {
     }
 
     private static <T> ApiResponseBuilder<T> baseBuilder() {
+        // 统一补齐时间戳和 traceId，controller 不需要重复处理这些公共元信息。
         return ApiResponse.<T>builder()
                 .timestamp(OffsetDateTime.now())
                 .traceId(MDC.get(TraceIdConstants.TRACE_ID));

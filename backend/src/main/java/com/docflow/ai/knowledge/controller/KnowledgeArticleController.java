@@ -37,6 +37,7 @@ public class KnowledgeArticleController {
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) Long sourceTicketId,
             @RequestParam(required = false) String sourceTicketNo) {
+        // 这里把零散 query 参数整理成 Query DTO，便于 service 层持续扩展筛选条件。
         KnowledgeArticleQuery query = new KnowledgeArticleQuery();
         query.setKeyword(keyword);
         query.setCategoryId(categoryId);
@@ -48,11 +49,13 @@ public class KnowledgeArticleController {
 
     @GetMapping("/source-ticket-counts")
     public ApiResponse<java.util.Map<Long, Long>> countBySourceTickets(@RequestParam List<Long> ticketIds) {
+        // 这个接口主要服务列表页“批量显示每张工单沉淀了多少篇文章”的场景。
         return ApiResponse.success(knowledgeArticleService.countArticlesBySourceTickets(ticketIds));
     }
 
     @GetMapping("/{id}")
     public ApiResponse<KnowledgeArticleResponse> getArticle(@PathVariable Long id) {
+        // 文章详情默认允许已登录用户查看，管理动作再单独加能力校验。
         return ApiResponse.success(knowledgeArticleService.getArticleById(id));
     }
 
@@ -60,6 +63,7 @@ public class KnowledgeArticleController {
     @PreAuthorize("@userAccessService.canManageKnowledge(#principal.userId)")
     public ApiResponse<KnowledgeArticleResponse> createArticle(@AuthenticationPrincipal AuthUserPrincipal principal,
                                                                @Valid @RequestBody CreateKnowledgeArticleRequest request) {
+        // 写操作统一挂在 canManageKnowledge 之下，避免 controller 各自维护分散规则。
         return ApiResponse.success(knowledgeArticleService.createArticle(principal.getUserId(), request));
     }
 
@@ -76,6 +80,7 @@ public class KnowledgeArticleController {
     public ApiResponse<KnowledgeArticleResponse> restoreArticleVersion(@PathVariable Long id,
                                                                        @PathVariable Long versionId,
                                                                        @AuthenticationPrincipal AuthUserPrincipal principal) {
+        // 恢复版本本质上仍然是一次写操作，所以沿用同一套知识管理权限。
         return ApiResponse.success(knowledgeArticleService.restoreArticleVersion(id, versionId, principal.getUserId()));
     }
 

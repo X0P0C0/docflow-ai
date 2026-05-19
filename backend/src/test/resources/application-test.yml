@@ -1,0 +1,15 @@
+spring:
+  sql:
+    init:
+      mode: always
+  datasource:
+    hikari:
+      maximum-pool-size: 4
+  data:
+    redis:
+      timeout: 5s
+
+logging:
+  level:
+    root: WARN
+    com.docflow.ai: INFO

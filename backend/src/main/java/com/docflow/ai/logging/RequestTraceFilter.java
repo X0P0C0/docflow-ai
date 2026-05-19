@@ -21,6 +21,7 @@ public class RequestTraceFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        // traceId 同时写入日志 MDC 和响应头，方便前后端围绕同一个请求编号排查问题。
         String traceId = resolveTraceId(request);
         long startTime = System.currentTimeMillis();
 
@@ -50,6 +51,7 @@ public class RequestTraceFilter extends OncePerRequestFilter {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
+        // 兼容反向代理场景，优先取 X-Forwarded-For。
         String forwardedFor = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwardedFor)) {
             return forwardedFor.split(",")[0].trim();

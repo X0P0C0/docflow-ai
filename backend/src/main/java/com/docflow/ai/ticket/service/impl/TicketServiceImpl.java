@@ -69,6 +69,8 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketListItemResponse> listTickets(Long userId, TicketQueryRequest request) {
         userAccessService.requireActiveUser(userId);
         LambdaQueryWrapper<Ticket> wrapper = new LambdaQueryWrapper<>();
+        // 列表先做数据库过滤，再补上“关联知识文章摘要”，
+        // 让前端列表页一次请求就能知道每张工单是否已经沉淀知识。
         if (request != null) {
             if (request.getKeyword() != null && !request.getKeyword().trim().isEmpty()) {
                 String keyword = request.getKeyword().trim();
@@ -113,6 +115,8 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = requireAccessibleTicket(id, userId);
         List<KnowledgeArticle> linkedArticles = buildSourceArticleMap(List.of(id)).getOrDefault(id, List.of());
 
+        // 详情接口故意聚合主信息、时间线、评论、关联知识和推荐文章，
+        // 这样前端详情页不需要拆很多子请求。
         TicketDetailResponse response = new TicketDetailResponse();
         copyBaseFields(ticket, response, linkedArticles);
         response.setSourceKnowledgeArticles(buildLinkedKnowledgeArticles(linkedArticles));
@@ -152,6 +156,8 @@ public class TicketServiceImpl implements TicketService {
     public TicketDetailResponse createTicket(Long userId, CreateTicketRequest request) {
         SysUser submitUser = userAccessService.requireActiveUser(userId);
 
+        // 新建工单时同步写一条 TicketRecord，
+        // 这样时间线从创建开始就是完整可追溯的。
         Ticket ticket = new Ticket();
         ticket.setTicketNo(generateTicketNo(request.getType()));
         ticket.setTitle(request.getTitle().trim());
@@ -187,6 +193,7 @@ public class TicketServiceImpl implements TicketService {
         requireAccessibleTicket(ticketId, userId);
         validateCommentPermission(userId, commentType, request.getInternal());
 
+        // 评论和时间线同时落库，后续工单生成知识草稿时会用到这部分上下文。
         TicketComment comment = new TicketComment();
         comment.setTicketId(ticketId);
         comment.setUserId(userId);
@@ -285,12 +292,14 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public KnowledgeArticleResponse createKnowledgeDraft(Long ticketId, Long userId, CreateTicketKnowledgeDraftRequest request) {
-        userAccessService.requireTicketOperator(userId);
+        userAccessService.requireKnowledgeManager(userId);
         TicketDetailResponse ticket = getTicketById(ticketId, userId);
         if (ticket.getStatus() == null || ticket.getStatus() < 3) {
             throw new BusinessException("当前工单还未进入可沉淀阶段，请先处理完成或关闭后再生成知识草稿");
         }
 
+        // 这是“工单 -> 知识”主链路：
+        // 先做状态门槛与草稿去重，再把工单上下文整理成知识草稿初稿。
         KnowledgeArticle existingDraft = findExistingKnowledgeDraft(ticketId);
         if (existingDraft != null) {
             return knowledgeArticleService.getArticleById(existingDraft.getId());
@@ -339,6 +348,7 @@ public class TicketServiceImpl implements TicketService {
             return sourceArticleMap;
         }
 
+        // sourceTicketId 是“知识沉淀回挂到工单”的关键关联键。
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.in(KnowledgeArticle::getSourceTicketId, ticketIds)
                 .eq(KnowledgeArticle::getDeleted, 0)
@@ -421,6 +431,8 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private List<TicketRelatedArticleResponse> buildRelatedArticles(Ticket ticket) {
+        // 当前相关文章使用轻量启发式打分，
+        // 先满足页面可用性，而不是引入复杂检索系统。
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(KnowledgeArticle::getDeleted, 0)
                 .eq(KnowledgeArticle::getStatus, 1)
@@ -733,6 +745,7 @@ public class TicketServiceImpl implements TicketService {
 
     private Ticket requireAccessibleTicket(Long ticketId, Long userId) {
         Ticket ticket = requireTicket(ticketId);
+        // 支持/管理员可以操作更大范围；普通用户只允许看自己提交或被指派的工单。
         if (userAccessService.canOperateTickets(userId)) {
             return ticket;
         }

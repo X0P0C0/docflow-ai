@@ -11,8 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -29,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(KnowledgeArticleController.class)
 @AutoConfigureMockMvc
+@Import(KnowledgeArticleControllerTest.MethodSecurityTestConfig.class)
 class KnowledgeArticleControllerTest {
 
     @Autowired
@@ -40,7 +44,7 @@ class KnowledgeArticleControllerTest {
     @MockBean
     private KnowledgeArticleService knowledgeArticleService;
 
-    @MockBean
+    @MockBean(name = "userAccessService")
     private UserAccessService userAccessService;
 
     @MockBean
@@ -101,5 +105,36 @@ class KnowledgeArticleControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.path").value("/api/knowledge/articles"))
                 .andExpect(jsonPath("$.errors").isArray());
+    }
+
+    @Test
+    void createArticleShouldReturnForbiddenWhenKnowledgePermissionDenied() throws Exception {
+        when(userAccessService.canManageKnowledge(1L)).thenReturn(false);
+
+        mockMvc.perform(post("/api/knowledge/articles")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(
+                                new AuthUserPrincipal(1L, "user"),
+                                null,
+                                List.of()
+                        )))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "title", "Payment troubleshooting",
+                                "summary", "How to handle payment failures",
+                                "content", "Step 1: check gateway logs",
+                                "categoryId", 1,
+                                "sourceTicketId", 100,
+                                "status", 1
+                        ))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(40300))
+                .andExpect(jsonPath("$.error").value("AUTH_FORBIDDEN"))
+                .andExpect(jsonPath("$.path").value("/api/knowledge/articles"));
+    }
+
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityTestConfig {
     }
 }

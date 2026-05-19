@@ -40,8 +40,9 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
 
     @Override
     public List<KnowledgeArticleResponse> listArticles(KnowledgeArticleQuery query) {
+        // sourceTicketNo 不是文章表直存字段，所以要先翻译成 ticketId 集合再查文章。
         List<Long> sourceTicketIds = resolveSourceTicketIds(query);
-        if (sourceTicketIds.isEmpty()) {
+        if (sourceTicketIds != null && sourceTicketIds.isEmpty()) {
             return List.of();
         }
 
@@ -115,8 +116,9 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeArticleResponse createArticle(Long userId, CreateKnowledgeArticleRequest request) {
-        userAccessService.requireTicketOperator(userId);
+        userAccessService.requireKnowledgeManager(userId);
 
+        // 创建文章后立刻补第一版快照，保证版本历史从一开始就是完整的。
         KnowledgeArticle article = new KnowledgeArticle();
         article.setTitle(request.getTitle().trim());
         article.setSummary(normalizeSummary(request.getSummary()));
@@ -140,9 +142,10 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeArticleResponse updateArticle(Long id, Long userId, UpdateKnowledgeArticleRequest request) {
-        userAccessService.requireTicketOperator(userId);
+        userAccessService.requireKnowledgeManager(userId);
         KnowledgeArticle existing = requireArticle(id);
 
+        // 主表保存“当前态”，version 表保存“历史态”，更新时两者都要维护。
         KnowledgeArticle update = new KnowledgeArticle();
         update.setId(id);
         update.setTitle(request.getTitle().trim());
@@ -162,10 +165,11 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeArticleResponse restoreArticleVersion(Long id, Long versionId, Long userId) {
-        userAccessService.requireTicketOperator(userId);
+        userAccessService.requireKnowledgeManager(userId);
         KnowledgeArticle article = requireArticle(id);
         KnowledgeArticleVersion version = requireVersion(id, versionId);
 
+        // 恢复版本不是直接回滚旧记录，而是把旧内容重新生成为当前版本。
         KnowledgeArticle update = new KnowledgeArticle();
         update.setId(id);
         update.setTitle(version.getTitle());
@@ -186,7 +190,7 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeArticleResponse archiveArticle(Long id, Long userId) {
-        userAccessService.requireTicketOperator(userId);
+        userAccessService.requireKnowledgeManager(userId);
         KnowledgeArticle article = requireArticle(id);
         if (Integer.valueOf(2).equals(article.getStatus())) {
             throw new BusinessException(ResultCode.RESOURCE_CONFLICT, "文章已归档，无需重复操作");
@@ -206,7 +210,7 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
 
     @Override
     public void deleteArticle(Long id, Long userId) {
-        userAccessService.requireTicketOperator(userId);
+        userAccessService.requireKnowledgeManager(userId);
         requireArticle(id);
 
         KnowledgeArticle update = new KnowledgeArticle();
@@ -293,6 +297,7 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     }
 
     private void createVersionSnapshot(KnowledgeArticle article, Long operatorUserId, Integer versionNo, String remark) {
+        // 这里存的是完整快照而不是 diff，实现简单，也方便直接恢复。
         KnowledgeArticleVersion version = new KnowledgeArticleVersion();
         version.setArticleId(article.getId());
         version.setVersionNo(versionNo);
