@@ -1,59 +1,115 @@
-﻿# 部署说明
+# DocFlow AI 部署说明
 
-## 环境基线
+## 目标
 
-- 后端: JDK 17
-- Maven: 3.9.x
-- 前端: Node 20 LTS
-- 数据库: MySQL 8.x
-- 可选: Redis
+这份文档用于说明当前项目的最小部署和运行前置条件。
 
-## 本地开发与服务器的区别
+## 运行依赖
 
-- 本地开发机推荐使用 `fnm` 管理多版本 Node，因为你可能同时维护 Node 16/18/20 的不同项目。
-- 线上服务器通常不需要 `fnm`，更常见做法是直接安装固定版本的 `Node 20`。
-- 也就是说，`fnm` 是开发便利工具，不是生产环境必需品。
+- JDK 17
+- Node 20.x
+- MySQL 8
+- Redis
 
-## 本地开发脚本
+## 后端
 
-- 本地一键启动脚本: [scripts/start-all.bat](D:\java\project\docflow-ai\scripts\start-all.bat)
-- 该脚本会优先使用 `D:\develop\fnm\fnm.exe`，找不到时再尝试从 PATH 中定位 `fnm`
-- 该脚本会切到 `Node 20`，必要时自动重装前端依赖
+默认端口：
 
-## 服务器建议做法
+- `8081`
 
-### 1. 直接安装固定版本
+启动方式：
 
-推荐服务器直接安装并固定以下版本:
-- `JDK 17`
-- `Maven 3.9.x`
-- `Node 20 LTS`
-- `MySQL 8.x`
+```bash
+cd backend
+mvn spring-boot:run
+```
 
-### 2. 不要依赖本地路径
+## 前端
 
-服务器脚本不要写死这种本地开发路径:
-- `D:\develop\fnm`
-- `D:\develop\java\jdk-17`
+默认开发端口：
 
-服务器应改为使用服务器自己的安装目录，或者直接依赖系统 PATH。
+- `5173`
 
-### 3. 前后端部署思路
+启动方式：
 
-开发阶段:
-- 前端使用 `npm run dev`
-- 后端使用 `mvn spring-boot:run`
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-正式部署时更推荐:
-- 前端先 `npm run build`
-- 将 `dist` 部署给 Nginx
-- 后端打成 jar 运行
-- Nginx 反向代理后端接口
+## 数据库
 
-## 面试时可以怎么讲
+初始化脚本：
 
-你可以这样表达:
-- 本地开发环境使用 `fnm` 管理 Node 多版本，避免不同项目之间的版本冲突。
-- 项目开发基线固定为 `Node 20 + JDK 17`。
-- 生产环境不依赖 `fnm`，而是直接安装固定版本运行时，确保部署稳定性。
-- 本地脚本和部署脚本分离，这是为了把开发便利性和生产稳定性解耦。
+- [sql/init.sql](D:\java\project\docflow-ai\sql\init.sql)
+
+默认数据库：
+
+- `docflow_ai`
+
+## Windows 终端编码
+
+如果在 Windows PowerShell 里查看文档、接口响应或日志时出现中文乱码，通常是终端输出编码问题，不是文件内容损坏。
+
+推荐在当前会话先切到 UTF-8：
+
+```powershell
+[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [Console]::OutputEncoding
+chcp 65001 > $null
+```
+
+然后再读取文档或调用接口，例如：
+
+```powershell
+Get-Content docs/deployment.md -Encoding UTF8
+Invoke-WebRequest http://127.0.0.1:8081/api/health | Select-Object -ExpandProperty Content
+```
+
+补充说明：
+
+- 当前仓库里的 Markdown 文档按 UTF-8 保存
+- 如果终端乱码但编辑器里中文正常，优先检查 PowerShell 编码设置
+- 如需长期生效，可把上面的编码设置放进 PowerShell profile
+
+## 当前建议
+
+当前更适合把这份文档当作“本地与联调部署说明”。
+
+如果后续要做更正式的部署治理，建议继续补：
+
+- dev / test / prod 环境区分
+- 环境变量清单
+- 回滚与备份方案
+- 一键部署或容器化方案
+
+## AI Claim Freshness
+
+The backend AI workspace now supports a configurable stale-claim window for shared reply drafts.
+
+- Config key: `app.ai.claim-stale-after`
+- Environment variable: `DOCFLOW_AI_CLAIM_STALE_AFTER`
+- Default: `2h`
+
+This value controls when a claimed AI reply draft is downgraded from `fresh` to `stale` in:
+
+- `GET /api/ai/workspace`
+- `GET /api/ai/workspace/reply-drafts/{ticketId}`
+- `POST /api/ai/workspace/reply-drafts/{ticketId}/adopt`
+
+Accepted Spring `Duration` formats include:
+
+- `45m`
+- `90m`
+- `2h`
+- `4h`
+
+Example:
+
+```bash
+set DOCFLOW_AI_CLAIM_STALE_AFTER=45m
+cd backend
+mvn spring-boot:run
+```
