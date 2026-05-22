@@ -10,8 +10,8 @@ echo  Node    : %DOCFLOW_NODE_VERSION%
 echo ============================================================
 echo.
 
-rem Ensure correct Node version
-fnm use %DOCFLOW_NODE_VERSION%
+rem Use fnm exec for reliable Node binary resolution
+fnm exec --using=%DOCFLOW_NODE_VERSION% node -v >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] Node %DOCFLOW_NODE_VERSION% not found.
     echo         Run: scripts\setup.bat
@@ -20,7 +20,7 @@ if errorlevel 1 (
 )
 
 cd /d "%DOCFLOW_ROOT%\frontend"
-npm run dev -- --host 127.0.0.1 --port %DOCFLOW_FRONTEND_PORT%
+fnm exec --using=%DOCFLOW_NODE_VERSION% npm run dev -- --host 127.0.0.1 --port %DOCFLOW_FRONTEND_PORT%
 if errorlevel 1 (
     echo.
     echo [ERROR] Frontend failed to start. Check the output above for details.

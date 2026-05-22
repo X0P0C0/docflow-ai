@@ -32,24 +32,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
-fnm use %DOCFLOW_NODE_VERSION% >nul 2>nul
+rem Check Node availability via fnm exec (more reliable than fnm use)
+fnm exec --using=%DOCFLOW_NODE_VERSION% node -v >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] Node %DOCFLOW_NODE_VERSION% is not installed.
     echo         Run: scripts\setup.bat
     pause
     exit /b 1
-)
-
-rem ---- Preflight: Frontend dependencies ----
-if not exist "%DOCFLOW_ROOT%\frontend\node_modules" (
-    echo [WARN]  node_modules not found.
-    echo         Running one-time install...
-    call npm install --prefix "%DOCFLOW_ROOT%\frontend"
-    if errorlevel 1 (
-        echo [ERROR] npm install failed. Check your network and try again.
-        pause
-        exit /b 1
-    )
 )
 
 rem ---- Start services ----

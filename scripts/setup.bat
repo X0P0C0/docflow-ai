@@ -50,7 +50,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem Ensure correct Node version is installed (one-time download if needed)
+rem Ensure correct Node version is installed
 fnm install %DOCFLOW_NODE_VERSION%
 if errorlevel 1 (
     echo [ERROR] Failed to install Node %DOCFLOW_NODE_VERSION% via fnm
@@ -58,18 +58,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-fnm use %DOCFLOW_NODE_VERSION%
-if errorlevel 1 (
-    echo [ERROR] Failed to switch to Node %DOCFLOW_NODE_VERSION%
-    pause
-    exit /b 1
-)
-
-for /f "tokens=*" %%v in ('node -v') do echo         Node version: %%v
+rem Show active Node version (via fnm exec for reliability)
+for /f "tokens=*" %%v in ('fnm exec --using^=%DOCFLOW_NODE_VERSION% node -v') do echo         Node version: %%v
 
 echo         Installing frontend dependencies...
 cd /d "%DOCFLOW_ROOT%\frontend"
-call npm install
+fnm exec --using=%DOCFLOW_NODE_VERSION% npm install
 if errorlevel 1 (
     echo [ERROR] npm install failed
     pause
