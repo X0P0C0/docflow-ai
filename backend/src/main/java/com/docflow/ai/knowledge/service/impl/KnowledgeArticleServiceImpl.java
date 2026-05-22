@@ -19,6 +19,8 @@ import com.docflow.ai.knowledge.service.KnowledgeArticleService;
 import com.docflow.ai.ticket.entity.Ticket;
 import com.docflow.ai.ticket.mapper.TicketMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -39,6 +41,7 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     private final UserAccessService userAccessService;
 
     @Override
+    @Cacheable(value = "knowledge-list", key = "#query.hashCode() + \"-\" + #query.keyword + \"-\" + #query.status + \"-\" + #query.categoryId", unless = "#result.isEmpty()")
     public List<KnowledgeArticleResponse> listArticles(KnowledgeArticleQuery query) {
         // sourceTicketNo 不是文章表直存字段，所以要先翻译成 ticketId 集合再查文章。
         List<Long> sourceTicketIds = resolveSourceTicketIds(query);
