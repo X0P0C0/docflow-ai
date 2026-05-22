@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <AppShell :workspace-nav="workspaceNav" :manage-nav="manageNav">
     <section class="ai-page workspace-page">
       <section class="panel ai-header-card workspace-card">
@@ -30,7 +30,7 @@
             </article>
           </div>
           <div class="state-box ai-runtime-banner" :class="{ 'state-warning': usedFallbackData || isDemoMode() }">
-            <strong>{{ runtimeHeadline }} · {{ runtimeModeText }}</strong>
+            <strong>{{ runtimeHeadline }} 路 {{ runtimeModeText }}</strong>
             <p>{{ runtimeDataSourceMessage }}</p>
           </div>
         </div>
@@ -120,16 +120,16 @@
 
           <div class="mini-list ai-draft-list">
             <div class="mini-item ai-draft-block">
-              <strong>{{ activeDraft.ticketNo }} · {{ activeDraft.ticketTitle }}</strong>
-              <p>{{ activeDraft.scene }} · {{ activeDraft.confidence }}</p>
+              <strong>{{ activeDraft.ticketNo }} 路 {{ activeDraft.ticketTitle }}</strong>
+              <p>{{ activeDraft.scene }} 路 {{ activeDraft.confidence }}</p>
               <p v-if="activeDraftOwnershipText" class="ai-adoption-meta">{{ activeDraftOwnershipText }}</p>
             </div>
             <div class="mini-item ai-draft-block">
-              <strong>Opener</strong>
+              <strong>开场语</strong>
               <p>{{ activeDraft.opener }}</p>
             </div>
             <div class="mini-item ai-draft-block">
-              <strong>Diagnosis</strong>
+              <strong>诊断分析</strong>
               <p>{{ activeDraft.diagnosis }}</p>
             </div>
             <div class="mini-item ai-draft-block">
@@ -401,7 +401,7 @@
                 current claim before reassigning it.
               </p>
             </div>
-            <span class="chip chip-orange">Claimed</span>
+            <span class="chip chip-orange">已认领</span>
           </div>
           <div class="mini-list">
             <div class="mini-item">
