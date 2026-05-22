@@ -1488,50 +1488,50 @@ watch(
 .detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .detail-main,
 .detail-side {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .detail-topbar {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
 }
 
 .detail-topbar-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .detail-chip-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .detail-title {
-  margin: 14px 0 10px;
-  font-size: 32px;
-  line-height: 1.18;
+  margin: var(--space-4) 0 var(--space-3);
+  font-size: var(--text-5xl);
+  line-height: var(--leading-tight);
   letter-spacing: -0.03em;
 }
 
 .detail-summary {
   margin: 0 0 14px;
-  font-size: 15px;
-  line-height: 1.8;
-  color: #475569;
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--gray-600);
 }
 
 .detail-runtime-banner {
   display: grid;
-  gap: 6px;
-  margin-bottom: 14px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .detail-runtime-banner strong,
@@ -1542,18 +1542,18 @@ watch(
 .detail-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 16px;
-  margin-bottom: 16px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(226, 232, 240, 0.9);
-  color: #64748b;
-  font-size: 13px;
+  gap: var(--space-3) 16px;
+  margin-bottom: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
 .ticket-overview-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .ticket-overview-card,
@@ -1561,31 +1561,31 @@ watch(
 .knowledge-workbench-card,
 .timeline-card,
 .comment-card {
-  border-radius: 14px;
+  border-radius: var(--radius-md);
 }
 
 .ticket-overview-card {
-  padding: 16px;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  background: #f8fafc;
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  background: var(--gray-50);
 }
 
 .ticket-overview-card strong {
-  font-size: 24px;
-  line-height: 1.1;
+  font-size: var(--text-4xl);
+  line-height: var(--leading-tight);
 }
 
 .ticket-overview-card p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .ticket-form {
-  margin-top: 1rem;
-  padding: 0.95rem;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: 14px;
-  background: #f8fafc;
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
 }
 
 .form-grid {
@@ -1597,10 +1597,10 @@ watch(
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.85rem;
-  color: #475569;
-  font-size: 0.92rem;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  color: var(--gray-600);
+  font-size: var(--text-base);
 }
 
 .field:first-child {
@@ -1610,54 +1610,54 @@ watch(
 .field-control {
   width: 100%;
   min-height: 2.6rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 10px;
-  background: #fff;
-  color: #0f172a;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-solid);
+  color: var(--text-primary);
   font: inherit;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .field-control:focus {
   outline: none;
-  border-color: rgba(37, 99, 235, 0.35);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .field-textarea {
   resize: vertical;
   min-height: 108px;
-  line-height: 1.7;
+  line-height: var(--leading-relaxed);
 }
 
 .checkbox-field {
   flex-direction: row;
   align-items: center;
-  gap: 0.65rem;
+  gap: var(--space-3);
 }
 
 .checkbox-field input {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .form-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
 }
 
 .form-error {
   margin: 0;
-  color: #b42318;
-  font-size: 0.9rem;
+  color: var(--color-danger);
+  font-size: var(--text-base);
 }
 
 .section-highlight-banner {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   border-color: rgba(37, 99, 235, 0.18);
   background: rgba(239, 246, 255, 0.92);
 }
@@ -1665,46 +1665,46 @@ watch(
 .comment-toolbar,
 .checklist {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .comment-toolbar {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .section-highlight {
-  padding: 0.5rem;
-  border-radius: 14px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
   background: rgba(239, 246, 255, 0.72);
 }
 
 .context-card-highlight {
   border-color: rgba(37, 99, 235, 0.2);
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.08);
+  box-shadow: var(--shadow-primary);
   background: rgba(239, 246, 255, 0.8);
 }
 
 .knowledge-group {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .knowledge-group + .knowledge-group {
-  margin-top: 0.25rem;
+  margin-top: var(--space-1);
 }
 
 .knowledge-group-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  color: #64748b;
+  gap: var(--space-4);
+  color: var(--text-secondary);
 }
 
 .knowledge-group-tools {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .quick-filter-chip {
@@ -1714,26 +1714,26 @@ watch(
 }
 
 .chip-default {
-  color: #475569;
-  background: rgba(148, 163, 184, 0.14);
+  color: var(--gray-600);
+  background: var(--gray-200);
 }
 
 .active-chip {
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.14);
+  box-shadow: var(--shadow-primary);
 }
 
 .knowledge-capture-box {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
   margin-bottom: 0;
 }
 
 .knowledge-capture-copy {
   display: grid;
-  gap: 0.35rem;
+  gap: var(--space-2);
 }
 
 .knowledge-capture-copy p,
@@ -1744,14 +1744,14 @@ watch(
 .knowledge-capture-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .knowledge-summary-box {
   display: grid;
-  gap: 0.35rem;
-  margin-bottom: 1rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .knowledge-summary-box strong,
@@ -1761,49 +1761,49 @@ watch(
 
 .knowledge-workbench-panel {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .knowledge-workbench-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: var(--space-4);
 }
 
 .knowledge-workbench-card {
-  padding: 0.95rem 1rem;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  background: #f8fafc;
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  background: var(--gray-50);
 }
 
 .knowledge-workbench-card strong,
 .knowledge-workbench-card p {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: var(--space-2);
 }
 
 .knowledge-workbench-card p {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 0;
 }
 
 .knowledge-workbench-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .panel-divider {
   height: 1px;
-  margin-bottom: 1rem;
-  background: rgba(15, 23, 42, 0.08);
+  margin-bottom: var(--space-4);
+  background: var(--border-color);
 }
 
 .inline-link-button {
   text-decoration: none;
 }
 
-.ticket-insight-strip { margin-top: 14px; }
+.ticket-insight-strip { margin-top: var(--space-4); }
 
 .timeline-highlight {
   border-color: rgba(37, 99, 235, 0.18);
@@ -1813,29 +1813,29 @@ watch(
 .checklist-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 0.95rem;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  color: #334155;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  border: 1px solid var(--border-color);
+  color: var(--gray-700);
 }
 
 .checklist-item input {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .checklist-summary {
-  margin-top: 1rem;
+  margin-top: var(--space-4);
   margin-bottom: 0;
 }
 
 .knowledge-empty-hint {
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .detail-layout,
   .ticket-overview-grid {
     grid-template-columns: 1fr;

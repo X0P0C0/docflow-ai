@@ -200,7 +200,7 @@ function resolveToneHint(message: string) {
 
 .notification-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .notification-runtime-banner strong,
@@ -213,7 +213,7 @@ function resolveToneHint(message: string) {
 .notification-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .notification-item {
@@ -222,15 +222,15 @@ function resolveToneHint(message: string) {
 
 .quick-link-grid {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .quick-link-card {
   border: 1px solid rgba(226, 232, 240, 0.95);
-  background: #fff;
+  background: var(--bg-panel-solid);
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1280px) {
   .notification-grid {
     grid-template-columns: 1fr;
   }

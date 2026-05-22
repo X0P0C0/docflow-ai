@@ -275,11 +275,11 @@ async function submitTicket() {
 
 .create-select-row {
   align-items: end;
-  gap: 1rem;
+  gap: var(--space-4);
   margin-top: 0.9rem;
   padding: 0.85rem 0.95rem;
   border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.78);
 }
 
@@ -298,7 +298,7 @@ async function submitTicket() {
   flex-direction: column;
   gap: 0.45rem;
   margin-top: 0.85rem;
-  color: #475569;
+  color: var(--gray-600);
   font-size: 0.92rem;
 }
 
@@ -309,7 +309,7 @@ async function submitTicket() {
 .field span {
   font-size: 0.86rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--gray-700);
 }
 
 .create-select-field {
@@ -324,8 +324,8 @@ async function submitTicket() {
 .create-input :deep(.el-input__wrapper) {
   min-height: 2.75rem;
   padding-inline: 0.85rem;
-  border-radius: 10px;
-  background: #ffffff;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel-solid)fff;
   box-shadow: none;
 }
 
@@ -336,14 +336,14 @@ async function submitTicket() {
 .create-input :deep(.el-input__inner),
 .create-input :deep(.el-textarea__inner) {
   font-size: 0.92rem;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .create-textarea :deep(.el-textarea__inner) {
   min-height: 240px;
   padding: 0.9rem 1rem;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--bg-panel-solid)fff;
   box-shadow: none;
   line-height: 1.7;
 }
@@ -351,9 +351,9 @@ async function submitTicket() {
 .create-select :deep(.el-select__wrapper) {
   min-height: 2.55rem;
   padding-inline: 0.8rem 2.2rem;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(148, 163, 184, 0.26);
-  background: #ffffff;
+  background: var(--bg-panel-solid)fff;
   box-shadow: none;
 }
 
@@ -364,13 +364,13 @@ async function submitTicket() {
 
 .create-select :deep(.el-select__placeholder),
 .create-select :deep(.el-select__selected-item) {
-  color: #0f172a;
+  color: var(--text-primary);
   font-size: 0.9rem;
   line-height: 1.3;
 }
 
 .create-select :deep(.el-select__caret) {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -378,7 +378,7 @@ async function submitTicket() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   margin-top: 1rem;
 }
 
@@ -392,7 +392,7 @@ async function submitTicket() {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .form-grid,
   .form-grid-3 {
     grid-template-columns: 1fr;

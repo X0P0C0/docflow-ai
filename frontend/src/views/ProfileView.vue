@@ -273,18 +273,18 @@ const quickActions = computed(() => [
 .profile-hero-copy {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .profile-identity {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .profile-identity p {
   margin: 0.25rem 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .profile-avatar {
@@ -293,8 +293,8 @@ const quickActions = computed(() => [
   border-radius: 1rem;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #0f172a, #2563eb);
-  color: #f8fafc;
+  background: linear-gradient(135deg, var(--text-primary), #2563eb);
+  color: var(--gray-50);
   font-size: 1.4rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -303,12 +303,12 @@ const quickActions = computed(() => [
 .profile-role-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .profile-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .profile-runtime-banner strong,
@@ -326,19 +326,19 @@ const quickActions = computed(() => [
 .profile-insight-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .profile-insight-grid p {
   margin: 0.45rem 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 
 .quick-action-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .quick-action-card {
@@ -365,12 +365,12 @@ const quickActions = computed(() => [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .quick-action-card p {
   margin: 0.75rem 0 0;
-  color: #475569;
+  color: var(--gray-600);
 }
 
 .profile-capability-panel {
@@ -380,7 +380,7 @@ const quickActions = computed(() => [
 .capability-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  gap: var(--space-4);
   margin-top: 1.5rem;
 }
 
@@ -395,7 +395,7 @@ const quickActions = computed(() => [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .capability-card p {
@@ -404,7 +404,7 @@ const quickActions = computed(() => [
 
 .capability-card code {
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--gray-600);
 }
 
 @media (max-width: 960px) {

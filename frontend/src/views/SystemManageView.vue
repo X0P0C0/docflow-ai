@@ -185,7 +185,7 @@ const governanceActions = computed(() => (
 
 .system-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .system-runtime-banner strong,
@@ -197,11 +197,11 @@ const governanceActions = computed(() => (
 .system-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .system-manage-hint {
-  margin-top: 16px;
+  margin-top: var(--space-4);
   margin-bottom: 0;
 }
 
@@ -209,7 +209,7 @@ const governanceActions = computed(() => (
   align-items: flex-start;
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1280px) {
   .system-grid {
     grid-template-columns: 1fr;
   }

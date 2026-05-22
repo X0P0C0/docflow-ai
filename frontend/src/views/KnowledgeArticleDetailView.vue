@@ -887,7 +887,7 @@ watch(
 
 .detail-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
   margin-bottom: 1rem;
 }
 
@@ -898,14 +898,14 @@ watch(
 
 .knowledge-outline {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin-bottom: 1.25rem;
 }
 
 .outline-item {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: center;
   padding: 0.85rem 0.95rem;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -965,19 +965,19 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin-bottom: 1.25rem;
 }
 
 .source-ticket-copy p {
   margin: 0.3rem 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .source-ticket-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .source-ticket-summary {
@@ -998,31 +998,31 @@ watch(
 .preview-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin-top: 1rem;
 }
 
 .preview-block {
   margin-top: 1rem;
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .preview-block-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  color: #64748b;
+  gap: var(--space-4);
+  color: var(--text-secondary);
 }
 
 .preview-item {
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .related-toolbar {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin-bottom: 1rem;
 }
 
@@ -1038,7 +1038,7 @@ watch(
 }
 
 .panel-pinned .mini-list {
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .panel-pinned .mini-item {
@@ -1062,7 +1062,7 @@ watch(
 
 .version-item {
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .version-copy {
@@ -1074,7 +1074,7 @@ watch(
   white-space: nowrap;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .version-item {
     align-items: start;
   }

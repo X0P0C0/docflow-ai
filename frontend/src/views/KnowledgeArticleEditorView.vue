@@ -538,13 +538,13 @@ watch(
 .editor-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.95fr);
-  gap: 16px;
+  gap: var(--space-4);
   align-items: start;
 }
 
 .editor-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
   margin-top: 1rem;
 }
 
@@ -556,7 +556,7 @@ watch(
 .editor-form__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .editor-form__item {
@@ -565,12 +565,12 @@ watch(
 
 .editor-side {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .editor-progress {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin-top: 1rem;
 }
 
@@ -593,8 +593,8 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  color: #64748b;
+  gap: var(--space-4);
+  color: var(--text-secondary);
 }
 
 .editor-source-banner {
@@ -616,14 +616,14 @@ watch(
 
 .publish-checklist {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin-top: 1rem;
 }
 
 .publish-check-item {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: start;
   padding: 0.85rem 0.95rem;
   border-radius: 16px;
@@ -638,7 +638,7 @@ watch(
 
 .publish-check-item p {
   margin-top: 0.25rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .publish-check-item-done {
@@ -665,13 +665,13 @@ watch(
   margin-top: 1rem;
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1280px) {
   .editor-layout {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 840px) {
+@media (max-width: 768px) {
   .editor-form__grid,
   .editor-progress-meta {
     grid-template-columns: 1fr;
@@ -679,7 +679,7 @@ watch(
   }
 
   .editor-progress-meta {
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 }
 </style>

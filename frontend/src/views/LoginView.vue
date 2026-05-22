@@ -190,7 +190,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
   padding: 1rem 1.1rem;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.18);

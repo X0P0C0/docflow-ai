@@ -257,7 +257,7 @@ watch(
 <style scoped>
 .dashboard-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
   margin: 12px 0 16px;
 }
 

@@ -1375,7 +1375,7 @@ onMounted(() => {
 
 .ai-runtime-banner {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
   margin-top: 1rem;
 }
 
@@ -1386,7 +1386,7 @@ onMounted(() => {
 
 .ai-state-box {
   display: grid;
-  gap: 6px;
+  gap: var(--space-2);
   margin-bottom: 14px;
 }
 
@@ -1402,8 +1402,8 @@ onMounted(() => {
 
 .ai-generated-at {
   display: grid;
-  gap: 6px;
-  margin-top: 14px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .ai-generated-at strong,
@@ -1413,7 +1413,7 @@ onMounted(() => {
 
 .ai-action-hint {
   margin: 12px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 
@@ -1422,14 +1422,14 @@ onMounted(() => {
 .ai-highlight-card p,
 .ai-draft-block p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.7;
 }
 
 .ai-adoption-meta {
   margin-top: 8px;
   color: #0f766e;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .ai-modal-backdrop {
@@ -1445,7 +1445,7 @@ onMounted(() => {
 .ai-modal-card {
   width: min(560px, 100%);
   border-radius: 20px;
-  background: #fff;
+  background: var(--bg-panel-solid);
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
   padding: 24px;
 }
@@ -1462,14 +1462,14 @@ onMounted(() => {
 .ai-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .ai-secondary-grid,
 .ai-footer-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .ai-footer-grid {
@@ -1484,7 +1484,7 @@ onMounted(() => {
 .ai-recommendation-copy strong,
 .ai-followup-item strong,
 .ai-draft-block strong {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .ai-inline-actions,
@@ -1492,7 +1492,7 @@ onMounted(() => {
 .ai-followup-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
   margin-top: 12px;
 }
@@ -1500,7 +1500,7 @@ onMounted(() => {
 .ai-recommendation-item,
 .ai-followup-item {
   align-items: center;
-  gap: 14px;
+  gap: var(--space-4);
 }
 
 .ai-followup-item--claimed {
@@ -1517,11 +1517,11 @@ onMounted(() => {
 .ai-followup-item > div,
 .ai-draft-notes {
   display: grid;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .ai-owner-chip {
-  background: #fff7ed;
+  background: var(--bg-panel-solid)7ed;
   color: #b45309;
   border: 1px solid rgba(245, 158, 11, 0.28);
 }
@@ -1534,7 +1534,7 @@ onMounted(() => {
 
 .ai-followup-groups {
   display: grid;
-  gap: 14px;
+  gap: var(--space-4);
 }
 
 .ai-followup-group {
@@ -1546,12 +1546,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .ai-followup-group-head p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .ai-draft-list {
@@ -1562,7 +1562,7 @@ onMounted(() => {
   align-items: start;
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1280px) {
   .ai-main-grid,
   .ai-secondary-grid {
     grid-template-columns: 1fr;
