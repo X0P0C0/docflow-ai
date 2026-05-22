@@ -24,3 +24,6 @@ taskkill /f /t /fi "WINDOWTITLE eq DocFlow AI - Frontend*" >nul 2>nul
 
 echo.
 echo [INFO]  All services stopped.
+echo.
+echo  Press any key to close this window...
+pause >nul

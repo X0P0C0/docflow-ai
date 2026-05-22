@@ -12,3 +12,8 @@ echo.
 
 cd /d "%DOCFLOW_ROOT%\backend"
 mvn spring-boot:run
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Backend failed to start. Check the output above for details.
+    pause
+)

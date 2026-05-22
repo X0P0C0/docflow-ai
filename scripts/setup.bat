@@ -16,6 +16,7 @@ echo [1/3] Checking Java...
 if not exist "%JAVA_HOME%\bin\java.exe" (
     echo [ERROR] JDK not found at %JAVA_HOME%
     echo         Please install JDK 17 and update JAVA_HOME in scripts\env.bat
+    pause
     exit /b 1
 )
 for /f "tokens=*" %%v in ('"%JAVA_HOME%\bin\java.exe" -version 2^>^&1') do (
@@ -30,6 +31,7 @@ where mvn.cmd >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] Maven not found in PATH or env.bat fallback paths.
     echo         Please install Maven 3.9+ and update scripts\env.bat
+    pause
     exit /b 1
 )
 for /f "tokens=*" %%v in ('mvn.cmd --version 2^>^&1 ^| findstr /r "Apache Maven"') do (
@@ -44,6 +46,7 @@ where fnm.exe >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] fnm not found.
     echo         Please install fnm and update scripts\env.bat
+    pause
     exit /b 1
 )
 
@@ -51,12 +54,14 @@ rem Ensure correct Node version is installed (one-time download if needed)
 fnm install %DOCFLOW_NODE_VERSION%
 if errorlevel 1 (
     echo [ERROR] Failed to install Node %DOCFLOW_NODE_VERSION% via fnm
+    pause
     exit /b 1
 )
 
 fnm use %DOCFLOW_NODE_VERSION%
 if errorlevel 1 (
     echo [ERROR] Failed to switch to Node %DOCFLOW_NODE_VERSION%
+    pause
     exit /b 1
 )
 
@@ -67,6 +72,7 @@ cd /d "%DOCFLOW_ROOT%\frontend"
 call npm install
 if errorlevel 1 (
     echo [ERROR] npm install failed
+    pause
     exit /b 1
 )
 
@@ -75,3 +81,6 @@ echo.
 echo ============================================================
 echo  Setup complete. You can now run: scripts\start-all.bat
 echo ============================================================
+echo.
+echo  Press any key to close this window...
+pause >nul

@@ -12,6 +12,7 @@ rem ---- Preflight: Java ----
 if not exist "%JAVA_HOME%\bin\java.exe" (
     echo [ERROR] JDK not found at %JAVA_HOME%
     echo         Run scripts\setup.bat first, or update scripts\env.bat
+    pause
     exit /b 1
 )
 
@@ -19,6 +20,7 @@ rem ---- Preflight: Maven ----
 where mvn.cmd >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] Maven not found. Run scripts\setup.bat first.
+    pause
     exit /b 1
 )
 
@@ -26,6 +28,7 @@ rem ---- Preflight: Node.js + fnm ----
 where fnm.exe >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] fnm not found. Run scripts\setup.bat first.
+    pause
     exit /b 1
 )
 
@@ -33,6 +36,7 @@ fnm use %DOCFLOW_NODE_VERSION% >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] Node %DOCFLOW_NODE_VERSION% is not installed.
     echo         Run: scripts\setup.bat
+    pause
     exit /b 1
 )
 
@@ -43,6 +47,7 @@ if not exist "%DOCFLOW_ROOT%\frontend\node_modules" (
     call npm install --prefix "%DOCFLOW_ROOT%\frontend"
     if errorlevel 1 (
         echo [ERROR] npm install failed. Check your network and try again.
+        pause
         exit /b 1
     )
 )
@@ -66,3 +71,5 @@ echo  Frontend is ready in ~3-5 seconds.
 echo.
 echo  Run scripts\stop-all.bat to shut everything down.
 echo.
+echo  Press any key to close this window...
+pause >nul

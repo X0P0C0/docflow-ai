@@ -21,3 +21,8 @@ if errorlevel 1 (
 
 cd /d "%DOCFLOW_ROOT%\frontend"
 npm run dev -- --host 127.0.0.1 --port %DOCFLOW_FRONTEND_PORT%
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Frontend failed to start. Check the output above for details.
+    pause
+)
