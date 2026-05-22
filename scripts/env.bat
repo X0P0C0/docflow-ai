@@ -5,7 +5,10 @@ rem Source this file from other scripts: call "%~dp0env.bat"
 rem ============================================================
 
 rem ---- Project root (derived from script location) ----
-set "DOCFLOW_ROOT=%~dp0.."
+rem Resolve project root from script location
+pushd "%~dp0.."
+set "DOCFLOW_ROOT=%CD%"
+popd
 
 rem ---- Java ----
 if not defined JAVA_HOME set "JAVA_HOME=D:\develop\java\jdk-17"

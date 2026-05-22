@@ -63,9 +63,9 @@ for /f "tokens=*" %%v in ('fnm exec --using^=%DOCFLOW_NODE_VERSION% node -v') do
 
 echo         Installing frontend dependencies...
 cd /d "%DOCFLOW_ROOT%\frontend"
-fnm exec --using=%DOCFLOW_NODE_VERSION% npm install
+fnm exec --using=%DOCFLOW_NODE_VERSION% npm.cmd install
 if errorlevel 1 (
-    echo [ERROR] npm install failed
+    echo [ERROR] npm.cmd install failed
     pause
     exit /b 1
 )
