@@ -1,12 +1,16 @@
 @echo off
 setlocal EnableExtensions
+call "%~dp0env.bat"
 
-set "PROJECT_ROOT=D:\java\project\docflow-ai"
+echo ============================================================
+echo  DocFlow AI - Restarting All Services
+echo ============================================================
+echo.
 
-echo [DocFlow AI] Restarting services...
-call "%PROJECT_ROOT%\scripts\stop-all.bat"
+call "%~dp0stop-all.bat"
 
-echo [DocFlow AI] Waiting for ports to be released...
+echo.
+echo Waiting 2 seconds for ports to release...
 timeout /t 2 /nobreak >nul
 
-call "%PROJECT_ROOT%\scripts\start-all.bat"
+call "%~dp0start-all.bat"

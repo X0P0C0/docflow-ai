@@ -1,4 +1,4 @@
-# DocFlow AI
+﻿# DocFlow AI
 
 DocFlow AI 是一个围绕工单协同、知识沉淀和 AI 辅助工作台构建的全栈项目。
 
@@ -25,9 +25,38 @@ DocFlow AI 是一个围绕工单协同、知识沉淀和 AI 辅助工作台构�
 
 如果数据库是在密码统一前初始化的，真实后端可能仍要求旧密码 `123456`。这种情况下先执行 [sql/alter_seed_user_passwords.sql](D:\java\project\docflow-ai\sql\alter_seed_user_passwords.sql)。
 
-### 2. 启动后端
+### 2. 一键启动（推荐）
 
-后端默认端口是 `8081`，Spring Boot 3 需要 `Java 17`。
+首次使用前，执行一次性安装（安装 JDK 17、Maven、Node.js 和前端依赖）：
+
+```batch
+scripts\setup.bat
+```
+
+日常开发启动：
+
+```batch
+scripts\start-all.bat
+```
+
+停止所有服务：
+
+```batch
+scripts\stop-all.bat
+```
+
+所有脚本均调用 [scripts\env.bat](D:\java\project\docflow-ai\scripts\env.bat) 统一管理环境配置（JDK、Maven、Node 路径和端口），修改时只需改这一处。
+
+也可以单独启动某个服务：
+
+```batch
+scripts\start-backend.bat
+scripts\start-frontend.bat
+```
+
+### 3. 手动启动（备选）
+
+**后端** 默认端口 `8081`，Spring Boot 3 需要 `Java 17`。
 
 ```bash
 cd backend
@@ -45,14 +74,12 @@ DOCFLOW_REDIS_PORT=6379
 DOCFLOW_JWT_SECRET=change-this-secret-in-dev-change-this-secret
 ```
 
-健康检查：
+后端健康检查：
 
 - `GET http://127.0.0.1:8081/api/health`
 - `GET http://127.0.0.1:8081/swagger-ui.html`
 
-### 3. 启动前端
-
-前端开发服务器默认端口通常是 `5173`，并通过 Vite 代理把 `/api` 转发到 `http://127.0.0.1:8081`。
+**前端** 默认端口 `5173`，Vite 代理 `/api` 转发到 `http://127.0.0.1:8081`。
 
 ```bash
 cd frontend

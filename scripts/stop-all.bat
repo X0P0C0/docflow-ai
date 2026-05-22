@@ -1,35 +1,26 @@
 @echo off
 setlocal EnableExtensions
+call "%~dp0env.bat"
 
-set "BACKEND_PORT=8081"
-set "FRONTEND_PORT=5173"
+echo ============================================================
+echo  DocFlow AI - Stopping All Services
+echo ============================================================
+echo.
 
-echo [DocFlow AI] Stopping backend on port %BACKEND_PORT%...
-call :kill_port %BACKEND_PORT%
-
-echo [DocFlow AI] Stopping frontend on port %FRONTEND_PORT%...
-call :kill_port %FRONTEND_PORT%
-
-echo [DocFlow AI] Closing launcher windows if they are still open...
-taskkill /f /t /fi "WINDOWTITLE eq DocFlow AI Backend*" >nul 2>nul
-taskkill /f /t /fi "WINDOWTITLE eq DocFlow AI Frontend*" >nul 2>nul
-
-echo [DocFlow AI] Stop commands completed.
-echo [DocFlow AI] If a service was not running, it was skipped.
-exit /b 0
-
-:kill_port
-set "TARGET_PORT=%~1"
-set "FOUND_PID="
-
-for /f "tokens=5" %%I in ('netstat -ano ^| findstr /r /c:":%TARGET_PORT% .*LISTENING"') do (
-  set "FOUND_PID=%%I"
-  echo [DocFlow AI] Terminating PID %%I on port %TARGET_PORT%...
-  taskkill /f /t /pid %%I >nul 2>nul
+rem ---- Stop by port using PowerShell (much more reliable than netstat) ----
+for %%P in (%DOCFLOW_BACKEND_PORT% %DOCFLOW_FRONTEND_PORT%) do (
+    echo [INFO]  Stopping process on port %%P ...
+    powershell -NoProfile -Command ^
+        "$pids = (Get-NetTCPConnection -LocalPort %%P -ErrorAction SilentlyContinue).OwningProcess | Sort-Object -Unique;" ^
+        "if ($pids) { $pids | ForEach-Object { Write-Host \"         Killing PID $_\" ; Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } }" ^
+        "else { Write-Host '         No process found on this port.' }"
 )
 
-if not defined FOUND_PID (
-  echo [DocFlow AI] No listening process found on port %TARGET_PORT%.
-)
+rem ---- Close launcher windows ----
+echo.
+echo [INFO]  Closing launcher windows...
+taskkill /f /t /fi "WINDOWTITLE eq DocFlow AI - Backend*" >nul 2>nul
+taskkill /f /t /fi "WINDOWTITLE eq DocFlow AI - Frontend*" >nul 2>nul
 
-exit /b 0
+echo.
+echo [INFO]  All services stopped.

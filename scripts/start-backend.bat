@@ -1,12 +1,14 @@
 @echo off
 setlocal EnableExtensions
+call "%~dp0env.bat"
 
-set "PROJECT_ROOT=D:\java\project\docflow-ai"
-set "JAVA_HOME=D:\develop\java\jdk-17"
-set "MAVEN_HOME=D:\develop\java\maven\apache-maven-3.9.0-bin\apache-maven-3.9.0"
+echo ============================================================
+echo  DocFlow AI - Backend
+echo ============================================================
+echo  Port    : %DOCFLOW_BACKEND_PORT%
+echo  Java    : %JAVA_HOME%
+echo ============================================================
+echo.
 
-cd /d "%PROJECT_ROOT%\backend"
-set "JAVA_HOME=%JAVA_HOME%"
-set "PATH=%JAVA_HOME%\bin;%MAVEN_HOME%\bin;%PATH%"
-
+cd /d "%DOCFLOW_ROOT%\backend"
 mvn spring-boot:run
