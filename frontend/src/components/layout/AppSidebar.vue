@@ -1,5 +1,8 @@
-<template>
-  <aside class="sidebar">
+﻿<template>
+  <aside
+    class="sidebar"
+    :class="{ 'is-open': isOpen }"
+  >
     <div class="brand-card">
       <div class="brand-mark">D</div>
       <div>
@@ -16,6 +19,7 @@
         class="nav-item"
         :class="{ active: isActive(item.to) }"
         :to="item.to"
+        @click="emit('close')"
       >
         <span>{{ item.name }}</span>
         <span class="nav-badge">{{ navBadgeText(item.to, item.badge) }}</span>
@@ -30,6 +34,7 @@
         class="nav-item"
         :class="{ active: isActive(item.to) }"
         :to="item.to"
+        @click="emit('close')"
       >
         <span>{{ item.name }}</span>
         <span class="nav-text">{{ navBadgeText(item.to, item.badge) }}</span>
@@ -53,52 +58,75 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { buildAiCenterAccessCopy, buildSidebarBadgeMap } from '../../access-policy'
-import { authState } from '../../auth'
-import { canAccessAiCenter, canAccessRoute, canManageKnowledgeArticles, canManageSystem } from '../../authz'
-import type { NavItem } from '../../types/dashboard'
+import { computed } from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
+import { buildAiCenterAccessCopy, buildSidebarBadgeMap } from "../../access-policy";
+import { authState } from "../../auth";
+import {
+  canAccessAiCenter,
+  canAccessRoute,
+  canManageKnowledgeArticles,
+  canManageSystem,
+} from "../../authz";
+import type { NavItem } from "../../types/dashboard";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 const props = defineProps<{
-  workspaceNav: NavItem[]
-  manageNav: NavItem[]
-}>()
+  workspaceNav: NavItem[];
+  manageNav: NavItem[];
+  isOpen?: boolean;
+  isCollapsed?: boolean;
+}>();
 
-const visibleWorkspaceNav = computed(() => props.workspaceNav.filter((item) => canAccessRoute(item.to)))
-const visibleManageNav = computed(() => props.manageNav.filter((item) => canAccessRoute(item.to)))
-const canOpenAiCenter = computed(() => canAccessAiCenter())
-const sidebarBadgeMap = computed(() => buildSidebarBadgeMap({
-  canManageKnowledge: canManageKnowledgeArticles(),
-  canAccessAiCenter: canOpenAiCenter.value,
-  canManageSystem: canManageSystem(),
-}))
-const roleText = computed(() => authState.user?.roles?.join(' / ') || '访客')
-const aiAccessCopy = computed(() => buildAiCenterAccessCopy({
-  canAccess: canOpenAiCenter.value,
-  roleText: roleText.value,
-}))
-const aiAccessChipClass = computed(() => (canOpenAiCenter.value ? 'chip-blue' : 'chip-default'))
-const aiAccessChipText = computed(() => aiAccessCopy.value.chipText)
-const aiAccessTitle = computed(() => aiAccessCopy.value.title)
-const aiAccessDescription = computed(() => aiAccessCopy.value.description)
-const aiAccessActionText = computed(() => aiAccessCopy.value.actionText)
+const emit = defineEmits<{
+  close: [];
+}>();
+
+const visibleWorkspaceNav = computed(() =>
+  props.workspaceNav.filter((item) => canAccessRoute(item.to))
+);
+const visibleManageNav = computed(() =>
+  props.manageNav.filter((item) => canAccessRoute(item.to))
+);
+const canOpenAiCenter = computed(() => canAccessAiCenter());
+const sidebarBadgeMap = computed(() =>
+  buildSidebarBadgeMap({
+    canManageKnowledge: canManageKnowledgeArticles(),
+    canAccessAiCenter: canOpenAiCenter.value,
+    canManageSystem: canManageSystem(),
+  })
+);
+const roleText = computed(() => authState.user?.roles?.join(" / ") || "访客");
+const aiAccessCopy = computed(() =>
+  buildAiCenterAccessCopy({
+    canAccess: canOpenAiCenter.value,
+    roleText: roleText.value,
+  })
+);
+const aiAccessChipClass = computed(() =>
+  canOpenAiCenter.value ? "chip-blue" : "chip-default"
+);
+const aiAccessChipText = computed(() => aiAccessCopy.value.chipText);
+const aiAccessTitle = computed(() => aiAccessCopy.value.title);
+const aiAccessDescription = computed(() => aiAccessCopy.value.description);
+const aiAccessActionText = computed(() => aiAccessCopy.value.actionText);
 
 function isActive(target: string) {
-  return route.path === target || route.path.startsWith(`${target}/`)
+  return route.path === target || route.path.startsWith(`${target}/`);
 }
 
 function navBadgeText(target: string, fallback: string) {
-  return sidebarBadgeMap.value[target as keyof typeof sidebarBadgeMap.value] || fallback
+  return (
+    (sidebarBadgeMap.value as Record<string, string>)[target] || fallback
+  );
 }
 
 function handleAiAction() {
-  if (!canOpenAiCenter.value || route.path === '/ai-center') {
-    return
+  if (!canOpenAiCenter.value || route.path === "/ai-center") {
+    return;
   }
-  router.push('/ai-center')
+  router.push("/ai-center");
 }
 </script>

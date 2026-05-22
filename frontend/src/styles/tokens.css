@@ -1,0 +1,164 @@
+/* ============================================================
+   DocFlow AI ? Design Tokens
+   The single source of truth for all visual design decisions.
+   Every component references these variables ? never hardcode.
+   ============================================================ */
+
+:root {
+  /* ?? Typography ??????????????????????????????????????? */
+  --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.8125rem; /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg:   1rem;      /* 16px */
+  --text-xl:   1.125rem;  /* 18px */
+  --text-2xl:  1.25rem;   /* 20px */
+  --text-3xl:  1.5rem;    /* 24px */
+  --text-4xl:  1.875rem;  /* 30px */
+  --text-5xl:  2.25rem;   /* 36px */
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+
+  /* ?? Spacing (4px base unit) ?????????????????????????? */
+  --space-0:  0;
+  --space-1:  0.25rem;  /* 4px  */
+  --space-2:  0.5rem;   /* 8px  */
+  --space-3:  0.75rem;  /* 12px */
+  --space-4:  1rem;     /* 16px */
+  --space-5:  1.25rem;  /* 20px */
+  --space-6:  1.5rem;   /* 24px */
+  --space-8:  2rem;     /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ?? Color Palette ???????????????????????????????????? */
+  /* Gray */
+  --gray-50:  #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+
+  /* Blue (primary) */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+
+  /* Semantic: Background */
+  --bg-app:          var(--gray-50);
+  --bg-panel:        rgba(255, 255, 255, 0.88);
+  --bg-panel-solid:  #ffffff;
+  --bg-sidebar:      linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92));
+  --bg-sidebar-hover:#ffffff;
+  --bg-input:        rgba(255, 255, 255, 0.94);
+  --bg-table-header: rgba(248, 250, 252, 0.92);
+  --bg-table-hover:  rgba(239, 246, 255, 0.82);
+
+  /* Semantic: Text */
+  --text-primary:    var(--gray-900);
+  --text-secondary:  var(--gray-500);
+  --text-muted:      var(--gray-400);
+  --text-inverse:    #ffffff;
+
+  /* Semantic: Border */
+  --border-color:     rgba(15, 23, 42, 0.08);
+  --border-light:     rgba(148, 163, 184, 0.16);
+  --border-focus:     rgba(37, 99, 235, 0.45);
+
+  /* Semantic: Accent */
+  --color-primary:       var(--blue-600);
+  --color-primary-hover: var(--blue-700);
+  --color-primary-light: var(--blue-50);
+  --color-success:       #16a34a;
+  --color-success-light: #f0fdf4;
+  --color-warning:       #ea580c;
+  --color-warning-light: #fff7ed;
+  --color-danger:        #dc2626;
+  --color-danger-light:  #fef2f2;
+  --color-info:          var(--blue-500);
+  --color-info-light:    var(--blue-50);
+
+  /* ?? Border Radius ???????????????????????????????????? */
+  --radius-sm:   8px;
+  --radius-md:   14px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
+  --radius-2xl:  32px;
+  --radius-full: 9999px;
+
+  /* ?? Shadows ??????????????????????????????????????????? */
+  --shadow-xs:  0 1px  2px  rgba(15, 23, 42, 0.04);
+  --shadow-sm:  0 4px  12px rgba(15, 23, 42, 0.06);
+  --shadow-md:  0 12px 32px rgba(15, 23, 42, 0.08);
+  --shadow-lg:  0 24px 56px rgba(15, 23, 42, 0.1);
+  --shadow-xl:  0 32px 72px rgba(15, 23, 42, 0.12);
+  --shadow-primary: 0 12px 28px rgba(37, 99, 235, 0.2);
+  --shadow-card-hover: 0 18px 44px rgba(15, 23, 42, 0.09);
+
+  /* ?? Transitions ??????????????????????????????????????? */
+  --transition-fast:   150ms ease;
+  --transition-normal: 220ms ease;
+  --transition-slow:   350ms ease;
+
+  /* ?? Layout ???????????????????????????????????????????? */
+  --sidebar-width:           260px;
+  --sidebar-width-collapsed: 64px;
+  --topbar-height:           56px;
+  --content-max-width:       1200px;
+  --app-padding:             var(--space-5);
+
+  /* ?? Z-Index ??????????????????????????????????????????? */
+  --z-sidebar:  100;
+  --z-topbar:   200;
+  --z-overlay:  300;
+  --z-modal:    400;
+  --z-toast:    500;
+
+  /* ?? Element Plus Integration ?????????????????????????? */
+  --el-color-primary:        var(--color-primary);
+  --el-color-primary-light-3: var(--blue-400);
+  --el-color-primary-light-5: var(--blue-300);
+  --el-color-primary-light-7: var(--blue-100);
+  --el-color-primary-light-9: var(--blue-50);
+  --el-border-radius-base:   var(--radius-md);
+  --el-border-radius-round:  var(--radius-full);
+  --el-font-size-base:       var(--text-base);
+  --el-box-shadow-light:     var(--shadow-md);
+  --el-fill-color-light:     rgba(248, 250, 252, 0.92);
+  --el-fill-color-blank:     var(--bg-panel-solid);
+  --el-border-color-light:   var(--border-light);
+  --el-text-color-regular:   var(--text-primary);
+  --el-text-color-secondary: var(--text-secondary);
+}
+
+/* ?? Responsive Breakpoints (for reference, used in @media) ?? */
+/* sm:  640px  ? mobile landscape */
+/* md:  768px  ? tablet portrait  */
+/* lg:  1024px ? tablet landscape / small desktop */
+/* xl:  1280px ? standard desktop */
+/* 2xl: 1536px ? large desktop */
