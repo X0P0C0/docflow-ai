@@ -1,269 +1,269 @@
-<template>
-  <div class="login-page">
-    <section class="login-hero">
-      <span class="hero-tag">DocFlow AI Access</span>
-      <h1>登录后继续处理知识库与工单协同工作台。</h1>
-      <p>
-        
-        
-      </p>
-      
-      <div class="login-quick-card">
-        <strong>快捷登录</strong>
-        <div class="login-quick-grid">
-          <button type="button" class="login-quick-account" :disabled="submitting" @click="fillQuickAccount('admin', 'password')">
-            <span>管理员</span>
-            <p>admin / password</p>
-          </button>
-          <button type="button" class="login-quick-account" :disabled="submitting" @click="fillQuickAccount('support01', 'password')">
-            <span>技术支持</span>
-            <p>support01 / password</p>
-          </button>
-          <button type="button" class="login-quick-account" :disabled="submitting" @click="fillQuickAccount('user01', 'password')">
-            <span>普通用户</span>
-            <p>user01 / password</p>
-          </button>
-        </div>
-        <small>点击下方按钮快速填充账号信息。</small>
-      </div>
-    </section>
-
-    <section class="login-panel">
-      <div class="login-panel-head">
-        <span class="chip chip-blue">Sign In</span>
-        <h2>欢迎回来</h2>
-        <p>输入已有测试账号，继续进入 DocFlow AI 工作台。</p>
-      </div>
-
-      <form class="login-form" @submit.prevent="handleSubmit">
-        <label class="login-field">
-          <span>用户名</span>
-          <input v-model.trim="form.username" type="text" placeholder="请输入用户名" autocomplete="username" />
-        </label>
-
-        <label class="login-field">
-          <span>密码</span>
-          <input
-            v-model="form.password"
-            type="password"
-            placeholder="请输入密码"
-            autocomplete="current-password"
-          />
-        </label>
-
-        <ErrorTraceNotice v-if="errorMessage" :message="errorMessage" :trace-id="errorTraceId" />
-        <div class="state-box">
-          当前登录页支持两种路径：后端可用时走真实登录，后端不可用时自动切换到演示模式。
-        </div>
-
-        <button class="primary-button login-submit" type="submit" :disabled="submitting">
-          {{ submitting ? '登录中...' : '进入工作台' }}
-        </button>
-      </form>
-    </section>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { createDemoSession, login } from '../api/auth'
-import { getApiErrorMessage, getApiErrorTraceId, isNetworkFallbackCandidate } from '../api/http'
-import { saveSession } from '../auth'
-import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
-import { getLoginAuthNotice } from '../utils/loginAuthNotice'
-import { getRuntimeEntryMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
-
-const route = useRoute()
-const router = useRouter()
-
-const form = reactive({
-  username: 'admin',
-  password: 'password',
-})
-
-const submitting = ref(false)
-const errorMessage = ref('')
-const errorTraceId = ref('')
-const showingRouteAuthNotice = ref(false)
-let loginRequestId = 0
-
-const _runtimeModeText = computed(() => getRuntimeModeText())
-const runtimePanelClass = computed(() => (isDemoMode() ? 'login-runtime-panel-demo' : 'login-runtime-panel-live'))
-const runtimeModeHeadline = computed(() => getRuntimeModeHeadline())
-const runtimeEntryDescription = computed(() => getRuntimeEntryMessage('登录入口'))
-
-function resolveRedirectTarget() {
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-  if (redirect.startsWith('/') && !redirect.startsWith('//')) {
-    return redirect
-  }
-  return '/dashboard'
-}
-
-function syncRouteAuthReason() {
-  const authNotice = getLoginAuthNotice(route.query.reason)
-  if (authNotice) {
-    errorMessage.value = authNotice
-    errorTraceId.value = ''
-    showingRouteAuthNotice.value = true
-    return
-  }
-  if (showingRouteAuthNotice.value) {
-    errorMessage.value = ''
-    errorTraceId.value = ''
-    showingRouteAuthNotice.value = false
-  }
-}
-
-async function handleSubmit() {
-  if (submitting.value) {
-    return
-  }
-  if (!form.username || !form.password) {
-    errorMessage.value = '请输入用户名和密码。'
-    errorTraceId.value = ''
-    return
-  }
-
-  const requestId = ++loginRequestId
-  submitting.value = true
-  errorMessage.value = ''
-  errorTraceId.value = ''
-  showingRouteAuthNotice.value = false
-
-  try {
-    const result = await login(form)
-    if (requestId !== loginRequestId || (route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?'))) {
-      return
-    }
-    saveSession(result)
-    await router.replace(resolveRedirectTarget())
-  } catch (error) {
-    const demoSession = createDemoSession(form.username, form.password)
-    if (requestId !== loginRequestId || (route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?'))) {
-      return
-    }
-    if (demoSession && isNetworkFallbackCandidate(error)) {
-      saveSession(demoSession)
-      await router.replace(resolveRedirectTarget())
-      return
-    }
-
-    errorMessage.value = getApiErrorMessage(error, '登录失败，请稍后重试。')
-    errorTraceId.value = getApiErrorTraceId(error)
-  } finally {
-    if (requestId === loginRequestId && (route.fullPath === '/login' || String(route.fullPath).startsWith('/login?'))) {
-      submitting.value = false
-    }
-  }
-}
-
-function fillQuickAccount(username: string, password: string) {
-  if (submitting.value) {
-    return
-  }
-  form.username = username
-  form.password = password
-  errorMessage.value = ''
-  errorTraceId.value = ''
-  showingRouteAuthNotice.value = false
-}
-
-watch(
-  () => route.query.reason,
-  () => {
-    syncRouteAuthReason()
-  },
-  { immediate: true },
-)
-</script>
-
-<style scoped>
-.login-runtime-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: 1rem 1.1rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.login-runtime-copy strong,
-.login-runtime-copy p {
-  display: block;
-  margin: 0;
-}
-
-.login-runtime-copy p {
-  margin-top: 0.45rem;
-}
-
-.login-runtime-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 96px;
-  padding: 0.65rem 0.9rem;
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-.login-runtime-panel-demo {
-  background: rgba(251, 146, 60, 0.14);
-}
-
-.login-runtime-panel-demo .login-runtime-badge {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fed7aa;
-}
-
-.login-runtime-panel-live {
-  background: rgba(34, 197, 94, 0.12);
-}
-
-.login-runtime-panel-live .login-runtime-badge {
-  background: rgba(255, 255, 255, 0.16);
-  color: #bbf7d0;
-}
-
-.login-quick-account {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 0.85rem;
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
-}
-
-.login-quick-account:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.login-quick-account span,
-.login-quick-account p {
-  display: block;
-  margin: 0;
-}
-
-.login-quick-account p {
-  margin-top: 0.35rem;
-}
-
-@media (max-width: 680px) {
-  .login-runtime-panel {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .login-runtime-badge {
-    min-width: 0;
-  }
-}
-</style>
+<template>
+  <div class="login-page">
+    <section class="login-hero">
+      <span class="hero-tag">DocFlow AI Access</span>
+      <h1>登录后继续处理知识库与工单协同工作台。</h1>
+      <p>
+        
+        
+      </p>
+      
+      <div class="login-quick-card">
+        <strong>快捷登录</strong>
+        <div class="login-quick-grid">
+          <button type="button" class="login-quick-account" :disabled="submitting" @click="fillQuickAccount('admin', 'password')">
+            <span>管理员</span>
+            <p>admin / password</p>
+          </button>
+          <button type="button" class="login-quick-account" :disabled="submitting" @click="fillQuickAccount('support01', 'password')">
+            <span>技术支持</span>
+            <p>support01 / password</p>
+          </button>
+          <button type="button" class="login-quick-account" :disabled="submitting" @click="fillQuickAccount('user01', 'password')">
+            <span>普通用户</span>
+            <p>user01 / password</p>
+          </button>
+        </div>
+        <small>点击下方按钮快速填充账号信息。</small>
+      </div>
+    </section>
+
+    <section class="login-panel">
+      <div class="login-panel-head">
+        <span class="chip chip-blue">Sign In</span>
+        <h2>欢迎回来</h2>
+        <p>输入已有测试账号，继续进入 DocFlow AI 工作台。</p>
+      </div>
+
+      <form class="login-form" @submit.prevent="handleSubmit">
+        <label class="login-field">
+          <span>用户名</span>
+          <input v-model.trim="form.username" type="text" placeholder="请输入用户名" autocomplete="username" />
+        </label>
+
+        <label class="login-field">
+          <span>密码</span>
+          <input
+            v-model="form.password"
+            type="password"
+            placeholder="请输入密码"
+            autocomplete="current-password"
+          />
+        </label>
+
+        <ErrorTraceNotice v-if="errorMessage" :message="errorMessage" :trace-id="errorTraceId" />
+        <div class="state-box">
+          
+        </div>
+
+        <button class="primary-button login-submit" type="submit" :disabled="submitting">
+          {{ submitting ? '登录中...' : '进入工作台' }}
+        </button>
+      </form>
+    </section>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { createDemoSession, login } from '../api/auth'
+import { getApiErrorMessage, getApiErrorTraceId, isNetworkFallbackCandidate } from '../api/http'
+import { saveSession } from '../auth'
+import ErrorTraceNotice from '../components/common/ErrorTraceNotice.vue'
+import { getLoginAuthNotice } from '../utils/loginAuthNotice'
+import { getRuntimeEntryMessage, getRuntimeModeHeadline, getRuntimeModeText, isDemoMode } from '../utils/runtimeMode'
+
+const route = useRoute()
+const router = useRouter()
+
+const form = reactive({
+  username: 'admin',
+  password: 'password',
+})
+
+const submitting = ref(false)
+const errorMessage = ref('')
+const errorTraceId = ref('')
+const showingRouteAuthNotice = ref(false)
+let loginRequestId = 0
+
+const _runtimeModeText = computed(() => getRuntimeModeText())
+const runtimePanelClass = computed(() => (isDemoMode() ? 'login-runtime-panel-demo' : 'login-runtime-panel-live'))
+const runtimeModeHeadline = computed(() => getRuntimeModeHeadline())
+const runtimeEntryDescription = computed(() => getRuntimeEntryMessage('登录入口'))
+
+function resolveRedirectTarget() {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+  if (redirect.startsWith('/') && !redirect.startsWith('//')) {
+    return redirect
+  }
+  return '/dashboard'
+}
+
+function syncRouteAuthReason() {
+  const authNotice = getLoginAuthNotice(route.query.reason)
+  if (authNotice) {
+    errorMessage.value = authNotice
+    errorTraceId.value = ''
+    showingRouteAuthNotice.value = true
+    return
+  }
+  if (showingRouteAuthNotice.value) {
+    errorMessage.value = ''
+    errorTraceId.value = ''
+    showingRouteAuthNotice.value = false
+  }
+}
+
+async function handleSubmit() {
+  if (submitting.value) {
+    return
+  }
+  if (!form.username || !form.password) {
+    errorMessage.value = '请输入用户名和密码。'
+    errorTraceId.value = ''
+    return
+  }
+
+  const requestId = ++loginRequestId
+  submitting.value = true
+  errorMessage.value = ''
+  errorTraceId.value = ''
+  showingRouteAuthNotice.value = false
+
+  try {
+    const result = await login(form)
+    if (requestId !== loginRequestId || (route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?'))) {
+      return
+    }
+    saveSession(result)
+    await router.replace(resolveRedirectTarget())
+  } catch (error) {
+    const demoSession = createDemoSession(form.username, form.password)
+    if (requestId !== loginRequestId || (route.fullPath !== '/login' && !String(route.fullPath).startsWith('/login?'))) {
+      return
+    }
+    if (demoSession && isNetworkFallbackCandidate(error)) {
+      saveSession(demoSession)
+      await router.replace(resolveRedirectTarget())
+      return
+    }
+
+    errorMessage.value = getApiErrorMessage(error, '登录失败，请稍后重试。')
+    errorTraceId.value = getApiErrorTraceId(error)
+  } finally {
+    if (requestId === loginRequestId && (route.fullPath === '/login' || String(route.fullPath).startsWith('/login?'))) {
+      submitting.value = false
+    }
+  }
+}
+
+function fillQuickAccount(username: string, password: string) {
+  if (submitting.value) {
+    return
+  }
+  form.username = username
+  form.password = password
+  errorMessage.value = ''
+  errorTraceId.value = ''
+  showingRouteAuthNotice.value = false
+}
+
+watch(
+  () => route.query.reason,
+  () => {
+    syncRouteAuthReason()
+  },
+  { immediate: true },
+)
+</script>
+
+<style scoped>
+.login-runtime-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.login-runtime-copy strong,
+.login-runtime-copy p {
+  display: block;
+  margin: 0;
+}
+
+.login-runtime-copy p {
+  margin-top: 0.45rem;
+}
+
+.login-runtime-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.login-runtime-panel-demo {
+  background: rgba(251, 146, 60, 0.14);
+}
+
+.login-runtime-panel-demo .login-runtime-badge {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fed7aa;
+}
+
+.login-runtime-panel-live {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.login-runtime-panel-live .login-runtime-badge {
+  background: rgba(255, 255, 255, 0.16);
+  color: #bbf7d0;
+}
+
+.login-quick-account {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0.85rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.login-quick-account:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.login-quick-account span,
+.login-quick-account p {
+  display: block;
+  margin: 0;
+}
+
+.login-quick-account p {
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 680px) {
+  .login-runtime-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .login-runtime-badge {
+    min-width: 0;
+  }
+}
+</style>
