@@ -1,73 +1,81 @@
-server:
-  port: 8081
+server:
+  port: 8081
+
+spring:
+  application:
+    name: docflow-ai-backend
+  datasource:
+    url: ${DOCFLOW_DB_URL:jdbc:mysql://localhost:3306/docflow_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DOCFLOW_DB_USERNAME:root}
+    password: ${DOCFLOW_DB_PASSWORD:123456}
+    driver-class-name: ${DOCFLOW_DB_DRIVER:com.mysql.cj.jdbc.Driver}
+  data:
+    redis:
+      host: ${DOCFLOW_REDIS_HOST:localhost}
+      port: ${DOCFLOW_REDIS_PORT:6379}
+      database: ${DOCFLOW_REDIS_DATABASE:0}
+      timeout: 
 
-spring:
-  application:
-    name: docflow-ai-backend
-  datasource:
-    url: ${DOCFLOW_DB_URL:jdbc:mysql://localhost:3306/docflow_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
-    username: ${DOCFLOW_DB_USERNAME:root}
-    password: ${DOCFLOW_DB_PASSWORD:123456}
-    driver-class-name: ${DOCFLOW_DB_DRIVER:com.mysql.cj.jdbc.Driver}
-  data:
-    redis:
-      host: ${DOCFLOW_REDIS_HOST:localhost}
-      port: ${DOCFLOW_REDIS_PORT:6379}
-      database: ${DOCFLOW_REDIS_DATABASE:0}
-      timeout: ${DOCFLOW_REDIS_TIMEOUT:5s}
-
-mybatis-plus:
-  mapper-locations: classpath*:/mapper/**/*.xml
-  configuration:
-    map-underscore-to-camel-case: true
-  global-config:
-    db-config:
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-
-logging:
-  file:
-    path: ${DOCFLOW_LOG_PATH:logs}
-  level:
-    root: INFO
-    com.docflow.ai: INFO
-    org.springframework.security: INFO
-    com.baomidou.mybatisplus: WARN
-
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-  api-docs:
-    path: /v3/api-docs
-
-app:
-  jwt:
-    secret: ${DOCFLOW_JWT_SECRET:change-this-secret-in-dev-change-this-secret}
-    expire-seconds: ${DOCFLOW_JWT_EXPIRE_SECONDS:7200}
-  ai:
-    claim-stale-after: ${DOCFLOW_AI_CLAIM_STALE_AFTER:2h}
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when_authorized
-      show-components: when_authorized
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    tags:
-      application: docflow-ai-backend
-  health:
-    diskspace:
-      enabled: true
-      threshold: 
-    db:
-      enabled: true
-    redis:
-      enabled: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
+    encoding: UTF-8
+    table: flyway_schema_history${DOCFLOW_REDIS_TIMEOUT:5s}
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+  file:
+    path: ${DOCFLOW_LOG_PATH:logs}
+  level:
+    root: INFO
+    com.docflow.ai: INFO
+    org.springframework.security: INFO
+    com.baomidou.mybatisplus: WARN
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  jwt:
+    secret: ${DOCFLOW_JWT_SECRET:change-this-secret-in-dev-change-this-secret}
+    expire-seconds: ${DOCFLOW_JWT_EXPIRE_SECONDS:7200}
+  ai:
+    claim-stale-after: ${DOCFLOW_AI_CLAIM_STALE_AFTER:2h}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      show-components: when_authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: docflow-ai-backend
+  health:
+    diskspace:
+      enabled: true
+      threshold: 
+    db:
+      enabled: true
+    redis:
+      enabled: true
