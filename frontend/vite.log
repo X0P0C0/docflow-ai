@@ -1,0 +1,44 @@
+
+> vue-pure-admin@7.0.0 dev
+> vite
+
+╭─────────────────────────────────────────────╮
+│ 您好! 欢迎使用 pure-admin 开源项目          │
+│ 我们为您精心准备了下面两个贴心的保姆级文档  │
+│ https://pure-admin.cn                       │
+│ https://pure-admin-utils.netlify.app        │
+╰─────────────────────────────────────────────╯
+
+  [32m[1mVITE[22m v8.0.14[39m  [2mready in [0m[1m7105[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m8848[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.19.128.1:[1m8848[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.1.215:[1m8848[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.56.1:[1m8848[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m11:07:31[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] scanning dependencies...
+[2m11:07:34[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+[2m11:07:50[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+[2m11:07:58[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+[2m11:07:59[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ new dependencies optimized: [33m@iconify/vue, @iconify/vue/dist/offline, @pureadmin/descriptions, @pureadmin/table, @vueuse/motion, echarts, echarts/charts, echarts/components, echarts/core, echarts/renderers, element-plus, element-plus/es/locale/lang/en, element-plus/es/locale/lang/zh-cn, nprogress, plus-pro-components/es/locale/lang/en, plus-pro-components/es/locale/lang/zh-cn, version-rocket, vue-router, vue[32m[39m
+[2m11:07:59[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m11:08:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/style/tailwind.css[22m
+[2m11:08:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-broken.vue[22m
+[2m11:08:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-old.vue[22m
+[2m11:08:48[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-test.vue[22m
+[2m11:10:39[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/views/docflow/dashboard/index-test.vue[22m
+[2m11:11:06[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/views/docflow/dashboard/index-test.vue[22m
+[2m11:11:38[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-fixed.vue[22m
+[2m11:11:38[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-full.vue[22m
+[2m11:16:01[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/style/tailwind.css[22m
+[2m11:16:14[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/style/tailwind.css[22m
+[2m11:18:01[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/style/tailwind.css[22m
+[2m11:18:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...
+[2m11:18:12[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ new dependencies optimized: [33mpath-browserify[32m[39m
+[2m11:18:12[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m11:19:27[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-old2.vue[22m
+[2m11:19:27[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/views/docflow/dashboard/index.vue, /src/style/tailwind.css[22m
+[2m11:22:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-broken.vue[22m
+[2m11:22:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-fixed.vue[22m
+[2m11:22:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-test.vue[22m
+[2m11:22:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2msrc/views/docflow/dashboard/index-old2.vue[22m

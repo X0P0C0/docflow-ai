@@ -1,112 +1,97 @@
-import { get } from './http'
-import { del } from './http'
-import { post } from './http'
+import { http } from "@/utils/http";
 
-export interface AiWorkspaceOverview {
-  pendingSuggestions: number
-  adoptedSuggestions: number
-  knowledgeRecommendations: number
-}
+type ApiResult<T> = {
+  code: number;
+  message: string;
+  data: T;
+};
 
-export interface AiReplySuggestion {
-  ticketId?: number | null
-  statusKey?: string
-  adopted?: boolean
-  adoptedByUserId?: number | null
-  adoptedByName?: string
-  adoptedAt?: string
-  lastActivityAt?: string
-  claimFreshness?: string
-  ticketNo?: string
-  title: string
-  summary: string
-  scene: string
-  confidence: string
-  checklist: string[]
-}
+type AiWorkspaceOverview = {
+  pendingSuggestions: number;
+  adoptedSuggestions: number;
+  knowledgeRecommendations: number;
+};
 
-export interface AiKnowledgeRecommendation {
-  articleId?: number | null
-  title: string
-  reason: string
-  matchRate: string
-}
+export type AiReplySuggestion = {
+  ticketId: number;
+  ticketNo: string;
+  title: string;
+  summary: string;
+  confidence: string;
+  checklist: string[];
+  adopted: boolean;
+};
 
-export interface AiFeedItem {
-  title: string
-  value: string
-}
+export type AiFeedItem = {
+  title: string;
+  value: string;
+};
 
-export interface AiFollowupItem {
-  ticketId?: number | null
-  queueKey?: string
-  statusKey?: string
-  adopted?: boolean
-  adoptedByUserId?: number | null
-  adoptedByName?: string
-  adoptedAt?: string
-  lastActivityAt?: string
-  claimFreshness?: string
-  title: string
-  desc: string
-  chip: string
-  chipClass: string
-}
+export type AiKnowledgeRecommendation = {
+  articleId: number;
+  ticketNo: string;
+  title: string;
+  reason: string;
+  matchRate: string;
+};
 
-export interface AiWorkspaceResponse {
-  generatedAt: string
-  heuristicBased: boolean
-  overview: AiWorkspaceOverview
-  primarySuggestion: AiReplySuggestion
-  recommendations: AiKnowledgeRecommendation[]
-  feed: AiFeedItem[]
-  followups: AiFollowupItem[]
-  adoptedTicketIds?: number[]
-}
+export type AiFollowupItem = {
+  ticketId: number;
+  title: string;
+  desc: string;
+  chip: string;
+  chipClass: string;
+};
 
-export interface AiReplyDraftResponse {
-  ticketId: number
-  statusKey?: string
-  adopted?: boolean
-  adoptedByUserId?: number | null
-  adoptedByName?: string
-  adoptedAt?: string
-  lastActivityAt?: string
-  claimFreshness?: string
-  ticketNo: string
-  ticketTitle: string
-  scene: string
-  confidence: string
-  opener: string
-  diagnosis: string
-  nextStep: string
-  customerReply: string
-  operatorNotes: string[]
-  relatedKnowledge: AiKnowledgeRecommendation[]
-}
+export type AiReplyDraft = {
+  ticketId: number;
+  statusKey: string;
+  adopted: boolean;
+  adoptedByUserId: number | null;
+  adoptedByName: string | null;
+  adoptedAt: string | null;
+  ticketNo: string;
+  ticketTitle: string;
+  scene: string;
+  confidence: string;
+  opener: string;
+  diagnosis: string;
+  nextStep: string;
+  customerReply: string;
+  operatorNotes: string[];
+  relatedKnowledge: AiKnowledgeRecommendation[];
+};
 
-export function fetchAiWorkspace() {
-  return get<AiWorkspaceResponse>('/api/ai/workspace')
-}
+export type AiWorkspace = {
+  heuristicBased: boolean;
+  overview: AiWorkspaceOverview;
+  primarySuggestion: AiReplySuggestion | null;
+  feed: AiFeedItem[];
+  recommendations: AiKnowledgeRecommendation[];
+  followups: AiFollowupItem[];
+};
 
-export function fetchAiReplyDraft(ticketId: number) {
-  return get<AiReplyDraftResponse>(`/api/ai/workspace/reply-drafts/${ticketId}`)
-}
+export const getAiWorkspace = () => {
+  return http.request<ApiResult<AiWorkspace>>("get", "/api/ai/workspace");
+};
 
-export interface AiWorkspaceAdoptionResponse {
-  ticketId: number
-  adopted: boolean
-  adoptedByUserId?: number | null
-  adoptedByName?: string
-  adoptedAt?: string
-  lastActivityAt?: string
-  claimFreshness?: string
-}
+export const getReplyDraft = (ticketId: number) => {
+  return http.request<ApiResult<AiReplyDraft>>(
+    "get",
+    `/api/ai/workspace/reply-drafts/${ticketId}`
+  );
+};
 
-export function adoptAiReplyDraft(ticketId: number) {
-  return post<AiWorkspaceAdoptionResponse>(`/api/ai/workspace/reply-drafts/${ticketId}/adopt`)
-}
+export const adoptReplyDraft = (ticketId: number) => {
+  return http.request<ApiResult<null>>(
+    "post",
+    `/api/ai/workspace/reply-drafts/${ticketId}/adopt`
+  );
+};
 
-export function unadoptAiReplyDraft(ticketId: number) {
-  return del<AiWorkspaceAdoptionResponse>(`/api/ai/workspace/reply-drafts/${ticketId}/adopt`)
-}
+export const unadoptReplyDraft = (ticketId: number) => {
+  return http.request<ApiResult<null>>(
+    "delete",
+    `/api/ai/workspace/reply-drafts/${ticketId}/adopt`
+  );
+};

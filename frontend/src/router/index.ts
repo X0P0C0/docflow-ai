@@ -1,204 +1,243 @@
-import { getRouteRequiredCapability } from '../access-policy'
-import { createRouter, createWebHistory } from 'vue-router'
-import { setAuthFailureHandler } from '../api/http'
-import { clearSession, isAuthenticated, restoreSession } from '../auth'
-import { canAccessCapability } from '../authz'
-import { CAPABILITY_CODES } from '../capability-constants'
-import { buildAuthFailureRedirect, shouldSkipAuthFailureRedirect } from '../utils/authFailure'
+import "@/utils/sso";
+import Cookies from "js-cookie";
+import { getConfig } from "@/config";
+import NProgress from "@/utils/progress";
+import { transformI18n } from "@/plugins/i18n";
+import { buildHierarchyTree } from "@/utils/tree";
+import remainingRouter from "./modules/remaining";
+import { useMultiTagsStoreHook } from "@/store/modules/multiTags";
+import { usePermissionStoreHook } from "@/store/modules/permission";
+import {
+  isUrl,
+  openLink,
+  cloneDeep,
+  isAllEmpty,
+  storageLocal
+} from "@pureadmin/utils";
+import {
+  ascending,
+  getTopMenu,
+  initRouter,
+  isOneOfArray,
+  getHistoryMode,
+  findRouteByPath,
+  handleAliveRoute,
+  formatTwoStageRoutes,
+  formatFlatteningRoutes
+} from "./utils";
+import {
+  type Router,
+  type RouteRecordRaw,
+  type RouteComponent,
+  createRouter
+} from "vue-router";
+import {
+  type DataInfo,
+  userKey,
+  removeToken,
+  multipleTabsKey
+} from "@/utils/auth";
 
-const LoginView = () => import('../views/LoginView.vue')
-const DashboardView = () => import('../views/DashboardView.vue')
-const KnowledgeArticleListView = () => import('../views/KnowledgeArticleListView.vue')
-const KnowledgeArticleEditorView = () => import('../views/KnowledgeArticleEditorView.vue')
-const KnowledgeArticleDetailView = () => import('../views/KnowledgeArticleDetailView.vue')
-const AiCenterView = () => import('../views/AiCenterView.vue')
-const NotificationCenterView = () => import('../views/NotificationCenterView.vue')
-const SystemManageView = () => import('../views/SystemManageView.vue')
-const ProfileView = () => import('../views/ProfileView.vue')
-const TicketListView = () => import('../views/TicketListView.vue')
-const TicketCreateView = () => import('../views/TicketCreateView.vue')
-const TicketDetailView = () => import('../views/TicketDetailView.vue')
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      redirect: '/dashboard',
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-      meta: {
-        guestOnly: true,
-      },
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: DashboardView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/knowledge/articles',
-      name: 'knowledge-article-list',
-      component: KnowledgeArticleListView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/knowledge/articles/create',
-      name: 'knowledge-article-create',
-      component: KnowledgeArticleEditorView,
-      meta: {
-        requiresAuth: true,
-        requiredCapability: CAPABILITY_CODES.KNOWLEDGE_MANAGE,
-      },
-    },
-    {
-      path: '/knowledge/articles/:id',
-      name: 'knowledge-article-detail',
-      component: KnowledgeArticleDetailView,
-      props: true,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/knowledge/articles/:id/edit',
-      name: 'knowledge-article-edit',
-      component: KnowledgeArticleEditorView,
-      props: true,
-      meta: {
-        requiresAuth: true,
-        requiredCapability: CAPABILITY_CODES.KNOWLEDGE_MANAGE,
-      },
-    },
-    {
-      path: '/ai-center',
-      name: 'ai-center',
-      component: AiCenterView,
-      meta: {
-        requiresAuth: true,
-        requiredCapability: CAPABILITY_CODES.AI_CENTER_ACCESS,
-      },
-    },
-    {
-      path: '/notifications',
-      name: 'notifications',
-      component: NotificationCenterView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SystemManageView,
-      meta: {
-        requiresAuth: true,
-        requiredCapability: CAPABILITY_CODES.SYSTEM_MANAGE,
-      },
-    },
-    {
-      path: '/profile',
-      name: 'profile',
-      component: ProfileView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/tickets',
-      name: 'ticket-list',
-      component: TicketListView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/tickets/create',
-      name: 'ticket-create',
-      component: TicketCreateView,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-    {
-      path: '/tickets/:id',
-      name: 'ticket-detail',
-      component: TicketDetailView,
-      props: true,
-      meta: {
-        requiresAuth: true,
-      },
-    },
-  ],
-})
-
-setAuthFailureHandler((error) => {
-  // 把 401/403 的跳转决策放在 router 层，而不是 http 层，
-  // 这样可以结合当前页面状态决定是否真的要跳走。
-  const currentRoute = router.currentRoute.value
-  if (shouldSkipAuthFailureRedirect(currentRoute, error)) {
-    return
+/** Auto-load static route modules except `remaining.ts`. */
+const modules: Record<string, any> = import.meta.glob(
+  ["./modules/**/*.ts", "!./modules/**/remaining.ts"],
+  {
+    eager: true
   }
-  if (error.status === 401) {
-    // 401 说明 token 基本已经不可用了，先清本地会话再跳登录页。
-    clearSession()
+);
+
+/** Raw static routes before flattening and hierarchy transforms. */
+const routes = [];
+
+function hideMenuTree(route: any) {
+  if (!route?.meta) route.meta = {};
+  route.meta.showLink = false;
+  route.children?.forEach((child: any) => hideMenuTree(child));
+  return route;
+}
+
+Object.keys(modules).forEach(key => {
+  const route = modules[key].default;
+  if (
+    !key.includes("docflow-") &&
+    !key.endsWith("/home.ts") &&
+    !key.endsWith("/error.ts")
+  ) {
+    // Keep non-DocFlow route modules available but out of the main menu.
+    routes.push(hideMenuTree(route));
+    return;
   }
-  router.replace(buildAuthFailureRedirect(currentRoute.fullPath, error))
-})
+  routes.push(route);
+});
 
-router.beforeEach(async (to) => {
-  // 路由守卫统一承担两件事：先恢复会话，再判断页面级能力是否足够。
-  if (to.meta.requiresAuth) {
-    // 先恢复一次会话，再决定这条路由到底能不能进。
-    await restoreSession()
-  }
+/** Export normalized static routes for the active router instance. */
+export const constantRoutes: Array<RouteRecordRaw> = formatTwoStageRoutes(
+  formatFlatteningRoutes(buildHierarchyTree(ascending(routes.flat(Infinity))))
+);
 
-  if (to.meta.requiresAuth && !isAuthenticated()) {
-    return {
-      path: '/login',
-      query: {
-        redirect: to.fullPath,
-      },
-    }
-  }
+/** Snapshot used when resetting routes after logout. */
+const initConstantRoutes: Array<RouteRecordRaw> = cloneDeep(constantRoutes);
 
-  const requiredCapability = typeof to.meta.requiredCapability === 'string'
-    ? to.meta.requiredCapability
-    : getRouteRequiredCapability(to.path)
+/** Menu routes kept in their original hierarchy. */
+export const constantMenus: Array<RouteComponent> = ascending(
+  routes.flat(Infinity)
+).concat(...remainingRouter);
 
-  if (requiredCapability && !canAccessCapability(requiredCapability)) {
-    // 权限不足时尽量把用户送回“最接近当前意图”的可访问页面，而不是直接白屏。
-    if (requiredCapability === CAPABILITY_CODES.KNOWLEDGE_MANAGE) {
-      return {
-        path: '/knowledge/articles',
-        query: {
-          reason: 'forbidden',
-          from: to.fullPath,
-        },
+/** Paths excluded from the visible menu tree. */
+export const remainingPaths = Object.keys(remainingRouter).map(v => {
+  return remainingRouter[v].path;
+});
+
+/** Create the router instance. */
+export const router: Router = createRouter({
+  history: getHistoryMode(import.meta.env.VITE_ROUTER_HISTORY),
+  routes: constantRoutes.concat(...(remainingRouter as any)),
+  strict: true,
+  scrollBehavior(to, from, savedPosition) {
+    return new Promise(resolve => {
+      if (savedPosition) {
+        return savedPosition;
+      } else {
+        if (from.meta.saveSrollTop) {
+          const top: number =
+            document.documentElement.scrollTop || document.body.scrollTop;
+          resolve({ left: 0, top });
+        }
       }
-    }
-    return {
-      path: '/dashboard',
-      query: {
-        reason: 'forbidden',
-        from: to.fullPath,
-      },
-    }
+    });
+  }
+});
+
+/** Track pages that have already completed an initial load. */
+const loadedPaths = new Set<string>();
+
+/** Clear the page-load cache. */
+export function resetLoadedPaths() {
+  loadedPaths.clear();
+}
+
+/** Reset the router to its initial static state. */
+export function resetRouter() {
+  router.clearRoutes();
+  for (const route of initConstantRoutes.concat(...(remainingRouter as any))) {
+    router.addRoute(route);
+  }
+  router.options.routes = formatTwoStageRoutes(
+    formatFlatteningRoutes(buildHierarchyTree(ascending(routes.flat(Infinity))))
+  );
+  usePermissionStoreHook().clearAllCachePage();
+  resetLoadedPaths();
+}
+
+/** Route whitelist. */
+const whiteList = ["/login"];
+
+const { VITE_HIDE_HOME } = import.meta.env;
+
+router.beforeEach((to: ToRouteType, _from) => {
+  to.meta.loaded = loadedPaths.has(to.path);
+
+  if (!to.meta.loaded) {
+    NProgress.start();
   }
 
-  if (to.meta.guestOnly && isAuthenticated()) {
-    return '/dashboard'
+  if (to.meta?.keepAlive) {
+    handleAliveRoute(to, "add");
+    // Handle full-page refresh and tag-click refresh cases.
+    if (_from.name === undefined || _from.name === "Redirect") {
+      handleAliveRoute(to);
+    }
   }
+  const userInfo = storageLocal().getItem<DataInfo<number>>(userKey);
+  const externalLink = isUrl(to?.name as string);
+  if (!externalLink) {
+    to.matched.some(item => {
+      if (!item.meta.title) return "";
+      const Title = getConfig().Title;
+      if (Title)
+        document.title = `${transformI18n(item.meta.title)} | ${Title}`;
+      else document.title = transformI18n(item.meta.title);
+    });
+  }
+  /** Keep logged-in users on their current route instead of sending them back to `/login`. */
+  function toCorrectRoute() {
+    return whiteList.includes(to.fullPath) ? _from.fullPath : undefined;
+  }
+  if (Cookies.get(multipleTabsKey) && userInfo) {
+    // Route to 403 when role access is insufficient.
+    if (to.meta?.roles && !isOneOfArray(to.meta?.roles, userInfo?.roles)) {
+      return { path: "/error/403" };
+    }
+    // If the home page is hidden, direct manual `/welcome` access to 404.
+    if (VITE_HIDE_HOME === "true" && to.fullPath === "/welcome") {
+      return { path: "/error/404" };
+    }
+    if (_from?.name) {
+      // Handle external-link routes.
+      if (externalLink) {
+        openLink(to?.name as string);
+        NProgress.done();
+        return false;
+      } else {
+        return toCorrectRoute();
+      }
+    } else {
+      // First-load refresh path: rebuild dynamic routes if needed.
+      if (
+        usePermissionStoreHook().wholeMenus.length === 0 &&
+        to.path !== "/login"
+      ) {
+        initRouter().then((router: Router) => {
+          if (!useMultiTagsStoreHook().getMultiTagsCache) {
+            const { path } = to;
+            const route = findRouteByPath(
+              path,
+              router.options.routes[0].children
+            );
+            getTopMenu(true);
+            // Tags with query/params payloads are not restored here.
+            if (route && route.meta?.title) {
+              if (isAllEmpty(route.parentId) && route.meta?.backstage) {
+                // Dynamic top-level route directory case.
+                const { path, name, meta } = route.children[0];
+                useMultiTagsStoreHook().handleTags("push", {
+                  path,
+                  name,
+                  meta
+                });
+              } else {
+                const { path, name, meta } = route;
+                useMultiTagsStoreHook().handleTags("push", {
+                  path,
+                  name,
+                  meta
+                });
+              }
+            }
+          }
+          // Ensure dynamic routes are ready before re-entering the target path.
+          if (isAllEmpty(to.name)) router.push(to.fullPath);
+        });
+      }
+      return toCorrectRoute();
+    }
+  } else {
+    if (to.path !== "/login") {
+      if (whiteList.indexOf(to.path) !== -1) {
+        return true;
+      } else {
+        removeToken();
+        return { path: "/login" };
+      }
+    } else {
+      return true;
+    }
+  }
+});
 
-  return true
-})
+router.afterEach(to => {
+  loadedPaths.add(to.path);
+  NProgress.done();
+});
 
-export default router
+export default router;
