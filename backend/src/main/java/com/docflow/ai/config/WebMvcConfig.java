@@ -3,6 +3,7 @@ package com.docflow.ai.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import com.docflow.ai.common.observability.ApiPerformanceInterceptor;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -12,8 +13,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RateLimiterInterceptor rateLimiterInterceptor;
 
-    public WebMvcConfig(@Autowired(required = false) RateLimiterInterceptor rateLimiterInterceptor) {
+    private final ApiPerformanceInterceptor performanceInterceptor;
+
+    public WebMvcConfig(@Autowired(required = false) RateLimiterInterceptor rateLimiterInterceptor,
+                        ApiPerformanceInterceptor performanceInterceptor) {
         this.rateLimiterInterceptor = rateLimiterInterceptor;
+        this.performanceInterceptor = performanceInterceptor;
     }
 
     @Override
@@ -28,6 +33,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(performanceInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/actuator/**");
         if (rateLimiterInterceptor != null) {
             registry.addInterceptor(rateLimiterInterceptor)
                 .addPathPatterns("/api/**")
@@ -38,4 +46,5 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 );
         }
     }
-}
+}
+
