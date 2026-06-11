@@ -13,12 +13,20 @@ import com.docflow.ai.ticket.entity.Ticket;
 import com.docflow.ai.ticket.mapper.TicketCommentMapper;
 import com.docflow.ai.ticket.mapper.TicketMapper;
 import com.docflow.ai.ticket.mapper.TicketRecordMapper;
+import com.docflow.ai.ticket.service.SlaService;
+import com.docflow.ai.ticket.mapper.TicketLinkMapper;
+import com.docflow.ai.ticket.mapper.TicketMergeLogMapper;
+import com.docflow.ai.monitoring.BusinessMetricsService;
+import com.docflow.ai.common.pattern.RedisEventPublisher;
+import com.docflow.ai.common.pattern.RedisEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 
 import java.util.List;
@@ -155,16 +163,20 @@ class TicketKnowledgeDraftSpringBootTest {
                                         KnowledgeArticleMapper knowledgeArticleMapper,
                                         SysUserMapper sysUserMapper,
                                         KnowledgeArticleService knowledgeArticleService,
-                                        UserAccessService userAccessService) {
+                                        SlaService slaService,
+                                        TicketLinkMapper ticketLinkMapper,
+                                        TicketMergeLogMapper ticketMergeLogMapper,
+                                        StringRedisTemplate redisTemplate,
+                                        ObjectMapper objectMapper,
+                                        UserAccessService userAccessService,
+                                        BusinessMetricsService metrics,
+                                        RedisEventPublisher redisEventPublisher) {
             return new TicketServiceImpl(
-                    ticketMapper,
-                    ticketRecordMapper,
-                    ticketCommentMapper,
-                    knowledgeArticleMapper,
-                    sysUserMapper,
-                    knowledgeArticleService,
-                    userAccessService
-            );
+                    ticketMapper, redisEventPublisher,
+                    ticketRecordMapper, ticketCommentMapper,
+                    knowledgeArticleMapper, sysUserMapper, knowledgeArticleService,
+                    userAccessService, metrics, objectMapper,
+                    redisTemplate, ticketMergeLogMapper, ticketLinkMapper, slaService);
         }
     }
 }

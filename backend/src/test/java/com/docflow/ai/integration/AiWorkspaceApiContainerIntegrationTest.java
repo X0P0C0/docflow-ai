@@ -9,6 +9,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +22,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegrationTest {
 
+    private static final String ADOPTED_TICKETS_KEY = "docflow:ai:workspace:adoptedTickets";
+    private static final String ADOPTION_100_KEY = "docflow:ai:workspace:adoption:100";
+    private static final String ADOPTION_101_KEY = "docflow:ai:workspace:adoption:101";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -29,11 +35,14 @@ class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegra
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    private String recentAdoptedAt;
+
     @BeforeEach
     void clearWorkspaceRedisState() {
-        stringRedisTemplate.delete("docflow:ai:workspace:adoptedTickets");
-        stringRedisTemplate.delete("docflow:ai:workspace:adoption:100");
-        stringRedisTemplate.delete("docflow:ai:workspace:adoption:101");
+        recentAdoptedAt = LocalDateTime.now().minusMinutes(10).toString();
+        stringRedisTemplate.delete(ADOPTED_TICKETS_KEY);
+        stringRedisTemplate.delete(ADOPTION_100_KEY);
+        stringRedisTemplate.delete(ADOPTION_101_KEY);
         jdbcTemplate.update("DELETE FROM kb_article_version");
         jdbcTemplate.update("DELETE FROM kb_article");
 
@@ -80,10 +89,10 @@ class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegra
 
     @Test
     void getWorkspaceEndpointShouldReturnReadModelBackedByMysqlAndRedis() throws Exception {
-        stringRedisTemplate.opsForSet().add("docflow:ai:workspace:adoptedTickets", "101");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:101", "userId", "2");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:101", "userName", "Support Wang");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:101", "adoptedAt", "2026-05-19T12:10:00");
+        stringRedisTemplate.opsForSet().add(ADOPTED_TICKETS_KEY, "101");
+        stringRedisTemplate.opsForHash().put(ADOPTION_101_KEY, "userId", "2");
+        stringRedisTemplate.opsForHash().put(ADOPTION_101_KEY, "userName", "Support Wang");
+        stringRedisTemplate.opsForHash().put(ADOPTION_101_KEY, "adoptedAt", recentAdoptedAt);
 
         mockMvc.perform(get("/api/ai/workspace")
                         .header(authorizationHeaderName(), authHeader(2L, "support01", "SUPPORT")))
@@ -101,7 +110,7 @@ class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegra
                 .andExpect(jsonPath("$.data.primarySuggestion.ticketNo").value("INC-20260519-0101"))
                 .andExpect(jsonPath("$.data.primarySuggestion.title").value("Refund callback pending"))
                 .andExpect(jsonPath("$.data.primarySuggestion.scene").value("INCIDENT / In Progress"))
-                .andExpect(jsonPath("$.data.primarySuggestion.confidence").value("Medium"))
+                .andExpect(jsonPath("$.data.primarySuggestion.confidence").value("High"))
                 .andExpect(jsonPath("$.data.recommendations[0].articleId").value(300))
                 .andExpect(jsonPath("$.data.recommendations[0].title").value("Payment callback recovery checklist"))
                 .andExpect(jsonPath("$.data.feed[0].title").value("Pending reply suggestions"))
@@ -114,10 +123,10 @@ class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegra
 
     @Test
     void getReplyDraftEndpointShouldReturnReadModelBackedByMysqlAndRedis() throws Exception {
-        stringRedisTemplate.opsForSet().add("docflow:ai:workspace:adoptedTickets", "101");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:101", "userId", "2");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:101", "userName", "Support Wang");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:101", "adoptedAt", "2026-05-19T12:10:00");
+        stringRedisTemplate.opsForSet().add(ADOPTED_TICKETS_KEY, "101");
+        stringRedisTemplate.opsForHash().put(ADOPTION_101_KEY, "userId", "2");
+        stringRedisTemplate.opsForHash().put(ADOPTION_101_KEY, "userName", "Support Wang");
+        stringRedisTemplate.opsForHash().put(ADOPTION_101_KEY, "adoptedAt", recentAdoptedAt);
 
         mockMvc.perform(get("/api/ai/workspace/reply-drafts/101")
                         .header(authorizationHeaderName(), authHeader(2L, "support01", "SUPPORT")))
@@ -133,7 +142,7 @@ class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegra
                 .andExpect(jsonPath("$.data.ticketNo").value("INC-20260519-0101"))
                 .andExpect(jsonPath("$.data.ticketTitle").value("Refund callback pending"))
                 .andExpect(jsonPath("$.data.scene").value("INCIDENT / In Progress"))
-                .andExpect(jsonPath("$.data.confidence").value("Medium"))
+                .andExpect(jsonPath("$.data.confidence").value("High"))
                 .andExpect(jsonPath("$.data.opener").value(org.hamcrest.Matchers.containsString("INC-20260519-0101")))
                 .andExpect(jsonPath("$.data.diagnosis").value(org.hamcrest.Matchers.containsString("No linked knowledge article has been attached yet")))
                 .andExpect(jsonPath("$.data.customerReply").value(org.hamcrest.Matchers.containsString("Hello, we have received your report for INC-20260519-0101.")))
@@ -143,10 +152,10 @@ class AiWorkspaceApiContainerIntegrationTest extends AbstractApiContainerIntegra
 
     @Test
     void unadoptReplyDraftEndpointShouldClearAdoptionState() throws Exception {
-        stringRedisTemplate.opsForSet().add("docflow:ai:workspace:adoptedTickets", "100");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:100", "userId", "2");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:100", "userName", "Support Wang");
-        stringRedisTemplate.opsForHash().put("docflow:ai:workspace:adoption:100", "adoptedAt", "2026-05-19T12:00:00");
+        stringRedisTemplate.opsForSet().add(ADOPTED_TICKETS_KEY, "100");
+        stringRedisTemplate.opsForHash().put(ADOPTION_100_KEY, "userId", "2");
+        stringRedisTemplate.opsForHash().put(ADOPTION_100_KEY, "userName", "Support Wang");
+        stringRedisTemplate.opsForHash().put(ADOPTION_100_KEY, "adoptedAt", recentAdoptedAt);
 
         mockMvc.perform(delete("/api/ai/workspace/reply-drafts/100/adopt")
                         .header(authorizationHeaderName(), authHeader(2L, "support01", "SUPPORT")))

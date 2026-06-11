@@ -47,7 +47,7 @@ class TicketApiContainerIntegrationTest extends AbstractApiContainerIntegrationT
                 .andExpect(jsonPath("$.data.sourceTicketId").value(100))
                 .andExpect(jsonPath("$.data.authorUserId").value(2))
                 .andExpect(jsonPath("$.data.status").value(0))
-                .andExpect(jsonPath("$.data.title").value("Payment callback failed"))
+                .andExpect(jsonPath("$.data.title").value("Payment callback failed处理复盘"))
                 .andExpect(jsonPath("$.data.content").value(org.hamcrest.Matchers.containsString("Root cause fixed and customer informed.")));
     }
 

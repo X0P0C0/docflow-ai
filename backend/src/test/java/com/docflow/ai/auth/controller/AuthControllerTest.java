@@ -1,5 +1,6 @@
 package com.docflow.ai.auth.controller;
 
+import com.docflow.ai.monitoring.BusinessMetricsService;
 import com.docflow.ai.auth.dto.CurrentUserResponse;
 import com.docflow.ai.auth.dto.LoginResponse;
 import com.docflow.ai.auth.security.AuthUserPrincipal;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,7 +42,7 @@ class AuthControllerTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AuthController(authService, new BusinessMetricsService(Mockito.mock(io.micrometer.core.instrument.MeterRegistry.class))))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
