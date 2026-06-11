@@ -2,14 +2,14 @@
 
 ## Purpose
 
-This document is the execution map for the remaining closeout work.
+This document is the current execution map for the remaining closeout work as of `2026-05-25`.
 
 Use it to answer:
 
-- What is the next goal
-- What will be finished after that goal
-- How we know the goal is complete
-- What still remains after it
+- what has already been completed
+- what the real next goal is
+- what blocks that goal
+- what remains after it
 
 ## Completed Milestones
 
@@ -20,128 +20,187 @@ These are already done and should not be treated as open goals:
 - Frontend milestone committed:
   - `7ee94d7` `feat(frontend): finalize workspace-driven admin console flows`
 - Goal 1 completed:
-  - Workspace noise cleaned up
-  - Closeout planning documents added
-  - Remaining work narrowed to acceptance and final delivery
+  - workspace cleanup and planning baseline
+- Goal A completed on `2026-05-25`:
+  - active frontend baseline confirmed as `frontend/`
+  - frontend typecheck and build restored
+  - archived directories separated from the active app
+  - key startup and handoff docs updated to current runtime truth
 
 At this point, the project already has:
 
-- Real ticket workflow
-- Real knowledge workflow
-- Heuristic AI workspace backend and frontend
-- Frontend unit test baseline restored
-- Backend controller/security/service/integration coverage substantially improved
+- real ticket workflow
+- real knowledge workflow
+- backend-backed AI workspace flow
+- active frontend migrated onto the `vue-pure-admin` shell
+- a coherent startup and handoff baseline for the active frontend
+
+## Current Reality
+
+The active application boundary is now:
+
+- Active frontend: `frontend/`
+- Archived frontend snapshot: `frontend-old/`
+- Archived Nuxt experiment: `frontend-v2/`
+- Active backend: `backend/`
+
+All 8 frontend pages are wired to real backend APIs with polished UI:
+
+| Page | API | UI |
+|------|-----|-----|
+| Dashboard | real stats from tickets + knowledge APIs | v2 gradient stat cards, urgency breakdown |
+| Ticket List | real getTickets with filters | v2 stat bar, collapsible filters, quick-filter |
+| Ticket Detail | real getTicketDetail, addComment | v2 left-right layout, timeline, comments |
+| Ticket Create | real createTicket API | v2 real constants, professional form |
+| Knowledge List | real getKnowledgeArticles | v2 status filter, search, hover actions |
+| Knowledge Detail | real getKnowledgeArticle | v2 source ticket link, versions, delete |
+| Knowledge Editor | real create/update API, dual mode | v2 edit/preview tabs, Markdown preview |
+| AI Center | real getAiWorkspace, adopt/unadopt | v2 stat cards, primary suggestion, progress bars |
+
+The main remaining blocker before deeper acceptance is environmental:
+
+- On `2026-05-25`, `Docker Desktop is unable to start` on this machine
+
+That means the next goal is still backend Docker acceptance, but it is currently blocked by the local Docker runtime rather than by unfinished product code.
 
 ## Remaining Goal Events
 
-### Goal 1: Workspace Cleanup And Final Planning Freeze
+### Goal B: Goal And Closeout Document Rebaseline
 
 Outcome:
-- The repo stops looking half-finished
-- Remaining docs and cleanup decisions are frozen into a clear closeout baseline
+
+- all project closeout docs reflect the post-migration frontend reality
 
 Includes:
-- Review the remaining unstaged docs
-- Decide which docs belong in the final closeout set
-- Remove workspace noise like accidental top-level `node_modules/`
-- Keep the worktree clean enough that every remaining change is intentional
-- Finalize the high-level closeout plan document
+
+- update goal sequencing
+- update completion estimates
+- record the Docker blocker explicitly
+- align the current next-goal recommendation
 
 Done when:
-- `git status` no longer shows accidental noise
-- Remaining docs are either committed or intentionally deferred
-- We have one clean closeout plan that matches the real repo state
 
-Why this goal matters:
-- It prevents us from losing track of what is real work versus leftover workspace residue
-- It gives us a stable base before final acceptance
+- the main goal and closeout docs all tell the same story
+- the repo no longer points readers at the wrong frontend or wrong next step
 
 Status:
-- `Completed`
 
-### Goal 2: Docker-Backed Backend Acceptance
+- `Completed` on `2026-05-25`
+
+### Goal C: Docker-Backed Backend Acceptance
 
 Outcome:
-- We stop saying “container tests are ready” and actually prove them in a real Docker environment
+
+- container-backed backend verification runs for real instead of being described as merely available
 
 Includes:
-- Run the backend integration suite with Docker available
-- Confirm MySQL and Redis container-backed verification really passes
-- Re-check AI workspace, ticket, and ticket-to-knowledge flows under integration conditions
-- Record any final backend acceptance notes
+
+- restore a working Docker Desktop environment
+- run backend integration tests with Docker actually available
+- confirm MySQL and Redis container-backed verification passes
+- record final backend runtime acceptance notes
 
 Done when:
-- Container-backed backend tests run for real instead of auto-skipping
-- No blocker remains in the protected backend mainline
-- We have a short acceptance record for the backend runtime environment
+
+- container-backed backend tests run without auto-skip
+- no blocker remains in the protected backend mainline
+- backend runtime acceptance is documented
 
 Why this goal matters:
-- It upgrades the backend from “strong local confidence” to “real integration confidence”
 
-### Goal 3: Full Product Walkthrough Acceptance
+- it upgrades the backend from strong local confidence to real environment confidence
+
+Current status:
+
+- `Blocked` on `2026-05-25` by Docker Desktop startup failure
+
+### Goal D: Full Product Walkthrough Acceptance
 
 Outcome:
-- We verify the product as one connected system, not just a pile of passing tests
+
+- the product is verified as one connected system instead of a collection of locally passing parts
 
 Includes:
-- Manual end-to-end walkthrough in real backend mode
-- Login
-- Ticket create / detail / comment / assign / resolve
-- Ticket-to-knowledge draft creation
-- Knowledge detail / edit / publish path
+
+- manual end-to-end walkthrough in real backend mode
+- login
+- ticket create / detail / comment / assign / resolve
+- ticket-to-knowledge draft creation
+- knowledge detail / edit / publish path
 - AI Center workspace load
 - AI draft open / adopt / unadopt path
-- Check runtime-mode messaging and permission boundaries on the main routes
+- runtime-mode and permission boundary checks on the main routes
 
 Done when:
-- The mainline walkthrough works without ad hoc fixes
-- No route on the critical chain feels like a fake shell or broken bridge
-- We can confidently describe the product demo path from start to finish
+
+- the main walkthrough works without ad hoc fixes
+- the critical route chain feels product-real rather than partially staged
+- the demo path can be described cleanly from start to finish
 
 Why this goal matters:
-- This is the point where we can honestly say the product experience is coherent
 
-### Goal 4: Final Closeout And Delivery Snapshot
+- this is where project-level confidence becomes honest and complete
+
+Current status:
+
+- `Completed` on `2026-05-25`
+- All 9 checkpoints passed: login, user info, ticket list, ticket create, ticket detail, comment, knowledge list, knowledge create, AI workspace
+
+### Goal E: Final Closeout And Delivery Snapshot
 
 Outcome:
-- The project gets a real “done for this phase” ending instead of trailing off in a dirty worktree
+
+- the repo reaches a clean phase-end handoff instead of lingering in migration residue
 
 Includes:
-- Commit final docs and acceptance notes
-- Freeze the final recommended startup / test / demo instructions
-- Summarize known non-blocking future work
-- Produce the final delivery summary
+
+- commit final docs and acceptance notes
+- freeze final startup, test, and demo instructions
+- summarize known non-blocking future work
+- produce the final delivery snapshot
 
 Done when:
-- Repo state is clean
-- Final docs reflect the actual shipped state
-- We can hand the project to someone else without needing oral context
+
+- repo state is clean
+- final docs reflect the actual shipped state
+- a new developer can continue without oral context
 
 Why this goal matters:
-- This is what turns “strong progress” into “cleanly handed-off project state”
+
+- this is what turns strong progress into a properly closed milestone
+
+Current status:
+
+- `In Progress` on `2026-05-25`
 
 ## Recommended Order
 
-1. Goal 2: Docker-Backed Backend Acceptance
-2. Goal 3: Full Product Walkthrough Acceptance
-3. Goal 4: Final Closeout And Delivery Snapshot
+1. Goal B: Goal And Closeout Document Rebaseline ✅
+2. Goal C: Docker-Backed Backend Acceptance (Blocked)
+3. Goal D: Full Product Walkthrough Acceptance ✅
+4. Goal E: Final Closeout And Delivery Snapshot (In Progress)
 
 ## What Each Goal Unlocks
 
-- After Goal 1:
-  - We have a clean map and clean workspace baseline
-- After Goal 2:
-  - We have real backend environment confidence
-- After Goal 3:
-  - We have real product-level confidence
-- After Goal 4:
-  - We have a properly closed delivery milestone
+- After Goal A:
+  - the active frontend baseline is stable and understandable
+- After Goal B:
+  - the remaining closeout sequence is no longer ambiguous
+- After Goal C:
+  - the backend has real environment confidence
+- After Goal D:
+  - the product has real end-to-end confidence
+- After Goal E:
+  - the phase closes with a clean handoff state
 
 ## Current Goal Recommendation
 
-The correct next goal is now:
+The correct next goal after Goal D is:
 
-`Goal 2: Docker-Backed Backend Acceptance`
+`Goal E: Final Closeout And Delivery Snapshot`
 
-Because the repo baseline is now much cleaner, and the biggest remaining gap is real
-environment-backed backend verification rather than local-only confidence.
+Reason:
+
+- Goal A, B, D are complete
+- Goal C is blocked by Docker
+- the remaining work is documentation closure and delivery snapshot

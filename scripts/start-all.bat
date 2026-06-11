@@ -1,64 +1,34 @@
 @echo off
-setlocal EnableExtensions
-call "%~dp0env.bat"
+setlocal
 
-echo.
 echo ============================================================
 echo  DocFlow AI - Starting All Services
 echo ============================================================
 echo.
 
-rem ---- Preflight: Java ----
-if not exist "%JAVA_HOME%\bin\java.exe" (
-    echo [ERROR] JDK not found at %JAVA_HOME%
-    echo         Run scripts\setup.bat first, or update scripts\env.bat
-    pause
-    exit /b 1
-)
+rem Set all paths
+set "JAVA_HOME=D:\develop\java\jdk-17"
+set "PATH=%JAVA_HOME%\bin;D:\develop\java\maven\apache-maven-3.9.0-bin\apache-maven-3.9.0\bin;%APPDATA%\fnm\node-versions\v22.22.3\installation;C:\Windows\system32;C:\Windows"
 
-rem ---- Preflight: Maven ----
-where mvn.cmd >nul 2>nul
-if errorlevel 1 (
-    echo [ERROR] Maven not found. Run scripts\setup.bat first.
-    pause
-    exit /b 1
-)
+rem Start Backend
+echo [1/2] Starting Backend on port 8081...
+cd /d "%~dp0..\backend"
+start "DocFlow Backend" cmd /k "mvn spring-boot:run"
 
-rem ---- Preflight: Node.js + fnm ----
-where fnm.exe >nul 2>nul
-if errorlevel 1 (
-    echo [ERROR] fnm not found. Run scripts\setup.bat first.
-    pause
-    exit /b 1
-)
+rem Wait for backend
+echo Waiting for backend to start...
+timeout /t 20 /nobreak > nul
 
-rem Check Node availability via fnm exec (more reliable than fnm use)
-fnm exec --using=%DOCFLOW_NODE_VERSION% node -v >nul 2>nul
-if errorlevel 1 (
-    echo [ERROR] Node %DOCFLOW_NODE_VERSION% is not installed.
-    echo         Run: scripts\setup.bat
-    pause
-    exit /b 1
-)
-
-rem ---- Start services ----
-echo [INFO]  Starting backend on port %DOCFLOW_BACKEND_PORT% ...
-start "DocFlow AI - Backend" "%DOCFLOW_ROOT%\scripts\start-backend.bat"
-
-echo [INFO]  Starting frontend on port %DOCFLOW_FRONTEND_PORT% ...
-start "DocFlow AI - Frontend" "%DOCFLOW_ROOT%\scripts\start-frontend.bat"
+rem Start Frontend
+echo [2/2] Starting Frontend on port 8900...
+cd /d "%~dp0..\frontend"
+start "DocFlow Frontend" cmd /k "call pnpm dev"
 
 echo.
-echo ------------------------------------------------------------
-echo  Backend  : http://127.0.0.1:%DOCFLOW_BACKEND_PORT%
-echo  Swagger  : http://127.0.0.1:%DOCFLOW_BACKEND_PORT%/swagger-ui.html
-echo  Frontend : http://127.0.0.1:%DOCFLOW_FRONTEND_PORT%
-echo ------------------------------------------------------------
+echo ============================================================
+echo  Services starting...
+echo  Backend:  http://localhost:8081
+echo  Frontend: http://localhost:8900
+echo ============================================================
 echo.
-echo  Backend takes ~15-30 seconds on first launch (Maven download).
-echo  Frontend is ready in ~3-5 seconds.
-echo.
-echo  Run scripts\stop-all.bat to shut everything down.
-echo.
-echo  Press any key to close this window...
-pause >nul
+pause

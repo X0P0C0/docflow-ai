@@ -1,58 +1,94 @@
-# DocFlow AI 部署说明
+# DocFlow AI Deployment Guide
 
-## 目标
+## Purpose
 
-这份文档用于说明当前项目的最小部署和运行前置条件。
+This document records the current local deployment baseline for `DocFlow AI`.
 
-## 运行依赖
+It reflects the active frontend migration state in this repository.
+
+## Active Application Boundary
+
+- Active frontend: `frontend/`
+- Archived frontend snapshot: `frontend-old/`
+- Archived Nuxt experiment: `frontend-v2/`
+- Backend: `backend/`
+
+All startup, debugging, and acceptance work should use `frontend/` and `backend/`.
+
+## Runtime Requirements
 
 - JDK 17
-- Node 20.x
+- Maven
+- Node 22
+- pnpm 11+
 - MySQL 8
 - Redis
 
-## 后端
+## Default Ports
 
-默认端口：
+- Backend: `8081`
+- Frontend: `8848`
 
-- `8081`
+## Database Initialization
 
-启动方式：
+Initialize the database with:
+
+- [sql/init.sql](D:\java\project\docflow-ai\sql\init.sql)
+
+Optional upgrade scripts:
+
+- [sql/alter_kb_article_add_source_ticket.sql](D:\java\project\docflow-ai\sql\alter_kb_article_add_source_ticket.sql)
+- [sql/alter_seed_user_passwords.sql](D:\java\project\docflow-ai\sql\alter_seed_user_passwords.sql)
+
+Default database name:
+
+- `docflow_ai`
+
+## Preferred Startup
+
+One-time setup:
+
+```batch
+scripts\setup.bat
+```
+
+Start all services:
+
+```batch
+scripts\start-all.bat
+```
+
+Stop all services:
+
+```batch
+scripts\stop-all.bat
+```
+
+## Manual Startup
+
+### Backend
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-## 前端
+Health endpoints:
 
-默认开发端口：
+- `GET http://127.0.0.1:8081/api/health`
+- `GET http://127.0.0.1:8081/swagger-ui.html`
 
-- `5173`
-
-启动方式：
+### Frontend
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-## 数据库
+## Windows Encoding Notes
 
-初始化脚本：
-
-- [sql/init.sql](D:\java\project\docflow-ai\sql\init.sql)
-
-默认数据库：
-
-- `docflow_ai`
-
-## Windows 终端编码
-
-如果在 Windows PowerShell 里查看文档、接口响应或日志时出现中文乱码，通常是终端输出编码问题，不是文件内容损坏。
-
-推荐在当前会话先切到 UTF-8：
+If PowerShell shows Chinese text as garbled, switch the console to UTF-8 before reading docs or logs:
 
 ```powershell
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -61,45 +97,28 @@ $OutputEncoding = [Console]::OutputEncoding
 chcp 65001 > $null
 ```
 
-然后再读取文档或调用接口，例如：
+Examples:
 
 ```powershell
 Get-Content docs/deployment.md -Encoding UTF8
 Invoke-WebRequest http://127.0.0.1:8081/api/health | Select-Object -ExpandProperty Content
 ```
 
-补充说明：
-
-- 当前仓库里的 Markdown 文档按 UTF-8 保存
-- 如果终端乱码但编辑器里中文正常，优先检查 PowerShell 编码设置
-- 如需长期生效，可把上面的编码设置放进 PowerShell profile
-
-## 当前建议
-
-当前更适合把这份文档当作“本地与联调部署说明”。
-
-如果后续要做更正式的部署治理，建议继续补：
-
-- dev / test / prod 环境区分
-- 环境变量清单
-- 回滚与备份方案
-- 一键部署或容器化方案
-
 ## AI Claim Freshness
 
-The backend AI workspace now supports a configurable stale-claim window for shared reply drafts.
+The backend AI workspace supports a configurable stale-claim window for shared reply drafts.
 
 - Config key: `app.ai.claim-stale-after`
 - Environment variable: `DOCFLOW_AI_CLAIM_STALE_AFTER`
 - Default: `2h`
 
-This value controls when a claimed AI reply draft is downgraded from `fresh` to `stale` in:
+This affects:
 
 - `GET /api/ai/workspace`
 - `GET /api/ai/workspace/reply-drafts/{ticketId}`
 - `POST /api/ai/workspace/reply-drafts/{ticketId}/adopt`
 
-Accepted Spring `Duration` formats include:
+Accepted `Duration` examples:
 
 - `45m`
 - `90m`

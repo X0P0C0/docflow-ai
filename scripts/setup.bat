@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 call "%~dp0env.bat"
 
 echo.
@@ -7,65 +7,55 @@ echo ============================================================
 echo  DocFlow AI - One-Time Setup
 echo ============================================================
 echo.
-echo This script installs project dependencies.
-echo Run this once after cloning the repo or when package.json changes.
-echo.
 
 rem ---- Check Java ----
-echo [1/3] Checking Java...
+echo [1/4] Checking Java...
 if not exist "%JAVA_HOME%\bin\java.exe" (
     echo [ERROR] JDK not found at %JAVA_HOME%
-    echo         Please install JDK 17 and update JAVA_HOME in scripts\env.bat
     pause
     exit /b 1
 )
-for /f "tokens=*" %%v in ('"%JAVA_HOME%\bin\java.exe" -version 2^>^&1') do (
-    if not defined JAVA_VER set "JAVA_VER=%%v"
-)
-echo         %JAVA_VER%
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /r "version"
 echo         [OK]
 
 rem ---- Check Maven ----
-echo [2/3] Checking Maven...
+echo [2/4] Checking Maven...
 where mvn.cmd >nul 2>nul
 if errorlevel 1 (
-    echo [ERROR] Maven not found in PATH or env.bat fallback paths.
-    echo         Please install Maven 3.9+ and update scripts\env.bat
+    echo [ERROR] Maven not found.
     pause
     exit /b 1
 )
-for /f "tokens=*" %%v in ('mvn.cmd --version 2^>^&1 ^| findstr /r "Apache Maven"') do (
-    if not defined MVN_VER set "MVN_VER=%%v"
-)
-echo         %MVN_VER%
+mvn.cmd --version 2>&1 | findstr /r "Apache Maven"
 echo         [OK]
 
-rem ---- Check Node.js ----
-echo [3/3] Checking Node.js + installing frontend dependencies...
+rem ---- Install Node ----
+echo [3/4] Installing Node %DOCFLOW_NODE_VERSION%...
 where fnm.exe >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] fnm not found.
-    echo         Please install fnm and update scripts\env.bat
     pause
     exit /b 1
 )
-
-rem Ensure correct Node version is installed
 fnm install %DOCFLOW_NODE_VERSION%
-if errorlevel 1 (
-    echo [ERROR] Failed to install Node %DOCFLOW_NODE_VERSION% via fnm
+
+rem Find installed Node directory
+set "NODE_DIR=%APPDATA%\fnm\node-versions\v%DOCFLOW_NODE_VERSION%.*"
+for /d %%d in ("!NODE_DIR!") do set "FOUND=%%d\installation"
+if not defined FOUND (
+    echo [ERROR] Could not find Node installation.
     pause
     exit /b 1
 )
+echo         Node: !FOUND!\node.exe
 
-rem Show active Node version (via fnm exec for reliability)
-for /f "tokens=*" %%v in ('fnm exec --using^=%DOCFLOW_NODE_VERSION% node -v') do echo         Node version: %%v
-
-echo         Installing frontend dependencies...
+rem ---- Install pnpm + deps ----
+echo [4/4] Installing frontend dependencies...
+call "!FOUND!\npm.cmd" install -g pnpm
 cd /d "%DOCFLOW_ROOT%\frontend"
-fnm exec --using=%DOCFLOW_NODE_VERSION% npm.cmd install
+call "!FOUND!\pnpm.cmd" install
 if errorlevel 1 (
-    echo [ERROR] npm.cmd install failed
+    echo [ERROR] pnpm install failed.
     pause
     exit /b 1
 )
@@ -73,8 +63,7 @@ if errorlevel 1 (
 cd /d "%DOCFLOW_ROOT%"
 echo.
 echo ============================================================
-echo  Setup complete. You can now run: scripts\start-all.bat
+echo  Setup complete! Run: scripts\start-all.bat
 echo ============================================================
 echo.
-echo  Press any key to close this window...
-pause >nul
+pause

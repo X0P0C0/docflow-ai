@@ -22,8 +22,8 @@ if errorlevel 1 (
     )
 )
 
-rem ---- Node.js version ----
-set "DOCFLOW_NODE_VERSION=20"
+rem ---- Node.js version (vue-pure-admin needs >=22) ----
+set "DOCFLOW_NODE_VERSION=22"
 
 rem ---- fnm (prefer PATH, fallback to fixed location) ----
 where fnm.exe >nul 2>nul
@@ -35,4 +35,4 @@ if errorlevel 1 (
 
 rem ---- Service ports ----
 set "DOCFLOW_BACKEND_PORT=8081"
-set "DOCFLOW_FRONTEND_PORT=5173"
+set "DOCFLOW_FRONTEND_PORT=8900"
