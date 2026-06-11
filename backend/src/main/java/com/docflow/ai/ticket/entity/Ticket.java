@@ -3,6 +3,7 @@ package com.docflow.ai.ticket.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.docflow.ai.common.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -44,4 +45,17 @@ public class Ticket extends BaseEntity {
     private LocalDateTime actualFinishTime;
 
     private LocalDateTime closeTime;
+
+    @Version
+    private Integer version;
+    private Integer escalationLevel;
+    private Long mergedIntoId;
+    private Integer satisfactionScore;
+    private String satisfactionComment;
+    private LocalDateTime slaResponseDeadline;
+    private LocalDateTime slaResolveDeadline;
+    private LocalDateTime firstResponseTime;
+    private LocalDateTime resolvedTime;
+    private Integer deleted;
+
 }

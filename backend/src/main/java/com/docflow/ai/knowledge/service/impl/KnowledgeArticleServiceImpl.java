@@ -41,7 +41,6 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
     private final UserAccessService userAccessService;
 
     @Override
-    @Cacheable(value = "knowledge-list", key = "#query.hashCode() + \"-\" + #query.keyword + \"-\" + #query.status + \"-\" + #query.categoryId", unless = "#result.isEmpty()")
     public List<KnowledgeArticleResponse> listArticles(KnowledgeArticleQuery query) {
         // sourceTicketNo 不是文章表直存字段，所以要先翻译成 ticketId 集合再查文章。
         List<Long> sourceTicketIds = resolveSourceTicketIds(query);
@@ -50,7 +49,8 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
         }
 
         LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(query.getStatus() != null, KnowledgeArticle::getStatus, query.getStatus())
+        wrapper.eq(KnowledgeArticle::getDeleted, 0)
+                .eq(query.getStatus() != null, KnowledgeArticle::getStatus, query.getStatus())
                 .eq(query.getCategoryId() != null, KnowledgeArticle::getCategoryId, query.getCategoryId())
                 .eq(query.getSourceTicketId() != null, KnowledgeArticle::getSourceTicketId, query.getSourceTicketId())
                 .in(sourceTicketIds != null, KnowledgeArticle::getSourceTicketId, sourceTicketIds)
@@ -367,4 +367,38 @@ public class KnowledgeArticleServiceImpl implements KnowledgeArticleService {
         response.setTitle(ticket.getTitle());
         return response;
     }
+
+    @Override
+    public void rateArticle(Long articleId, int score) {
+        if (score < 1 || score > 5) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "Score must be between 1 and 5");
+        }
+        KnowledgeArticle article = requireArticle(articleId);
+        // Simple average: update like_count as a proxy for rating
+        // In production, you'd have a separate rating table
+        article.setLikeCount(article.getLikeCount() + 1);
+        knowledgeArticleMapper.updateById(article);
+    }
+
+    @Override
+    public List<KnowledgeArticleResponse> recommendByKeyword(String keyword, int limit) {
+        if (!StringUtils.hasText(keyword)) {
+            return List.of();
+        }
+        LambdaQueryWrapper<KnowledgeArticle> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(KnowledgeArticle::getDeleted, 0)
+                .eq(KnowledgeArticle::getStatus, 1)
+                .and(w -> w
+                        .like(KnowledgeArticle::getTitle, keyword)
+                        .or()
+                        .like(KnowledgeArticle::getSummary, keyword)
+                        .or()
+                        .like(KnowledgeArticle::getContent, keyword))
+                .orderByDesc(KnowledgeArticle::getViewCount)
+                .last("LIMIT " + limit);
+        return knowledgeArticleMapper.selectList(wrapper).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
 }

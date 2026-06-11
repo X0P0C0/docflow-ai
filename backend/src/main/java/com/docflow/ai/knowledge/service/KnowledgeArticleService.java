@@ -24,4 +24,8 @@ public interface KnowledgeArticleService {
     KnowledgeArticleResponse archiveArticle(Long id, Long userId);
 
     void deleteArticle(Long id, Long userId);
+
+    void rateArticle(Long articleId, int score);
+
+    List<KnowledgeArticleResponse> recommendByKeyword(String keyword, int limit);
 }
