@@ -1,13 +1,67 @@
+﻿# IDE
 .idea/
 .vs/
-node_modules/
+*.iml
+*.swp
+*.swo
+*~
 
+# OS
+.DS_Store
+Thumbs.db
+
+# Java
 backend/target/
 backend/target-local/
 backend/logs/
 backend/*.log
+*.class
+*.jar
+*.war
 
+# Node
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
 frontend/.test-dist/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Scripts (temporary)
+scripts/*.py
+scripts/*.txt
+
+# Docker
+docker-compose.override.yml
+
+# Database
+*.sql.bak
+
+# Logs
+*.log
+logs/
+
+# Codex / AI tooling
+.playwright-cli/
+anysearch-skill/
+awesome-design-md/
+
+# Archived frontends (kept locally, not tracked)
+frontend-old/
+frontend-v2/
+
+# Scratch / temp files
+screen-tickets-create.png
+start-backend.ps1
+test_comment.sql
+vite.log
+vite_err.log
+vite_out.log
+backend-error.log
+backend.log
