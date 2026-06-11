@@ -19,6 +19,15 @@ export default {
         title: "控制台",
         showLink: true
       }
+    },
+    {
+      path: "/dashboard/reports",
+      name: "DashboardReports",
+      component: () => import("@/views/docflow/dashboard/reports.vue"),
+      meta: {
+        title: "报表分析",
+        showLink: true
+      }
     }
   ]
 } satisfies RouteConfigsTable;

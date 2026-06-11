@@ -4,14 +4,14 @@ import dayjs from "dayjs";
 import { useRoute, useRouter } from "vue-router";
 import { message } from "@/utils/message";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import { getTickets, getTicketStats, getTicketAssignees, updateTicketStatus, assignTicket, type TicketListItem, type TicketAssigneeOption, type TicketStats } from "@/api/tickets";
 import {
-  getTicketPriorityLabel,
-  getTicketStatusLabel,
-  ticketPriorityOptions,
-  ticketStatusOptions,
-  ticketTypeOptions
-} from "@/constants/tickets";
+  getTickets, getTicketStats, getTicketAssignees,
+  batchUpdateStatus, batchAssign, exportTickets,
+  type TicketListItem, type TicketAssigneeOption, type TicketStats,
+  type BatchOperationResponse
+} from "@/api/tickets";
+import { getTicketPriorityLabel, getTicketStatusLabel, getTicketTypeLabel } from "@/constants/tickets";
+import { extractPaginated } from "@/utils/api-helper";
 
 defineOptions({ name: "DocflowTicketList" });
 
@@ -49,22 +49,20 @@ const quickFilters = [
 ];
 
 const statCards = computed(() => {
-    const s = ticketStats.value;
-    return [
-      { label: "全部", value: s?.total ?? totalTickets.value, color: "#6366f1", filter: "all" },
-      { label: "处理中", value: s?.inProgress ?? 0, color: "#d97706", filter: "in-progress" },
-      { label: "待分配", value: s?.unassigned ?? 0, color: "#ef4444", filter: "unassigned" },
-      { label: "已解决", value: s?.resolved ?? 0, color: "#16a34a", filter: "resolved" }
-    ];
-  });
+  const s = ticketStats.value;
+  return [
+    { label: "全部工单", value: s?.total ?? totalTickets.value, color: "#533afd", bg: "#f5f3ff", icon: "ri:inbox-line", filter: "all" },
+    { label: "处理中", value: s?.inProgress ?? 0, color: "#d97706", bg: "#fffbeb", icon: "ri:loader-4-line", filter: "in-progress" },
+    { label: "待分配", value: s?.unassigned ?? 0, color: "#ef4444", bg: "#fef2f2", icon: "ri:user-unfollow-line", filter: "unassigned" },
+    { label: "已解决", value: s?.resolved ?? 0, color: "#10b981", bg: "#f0fdf4", icon: "ri:checkbox-circle-line", filter: "resolved" }
+  ];
+});
 
 const displayedTickets = computed(() => tickets.value);
 
 const allSelected = computed({
   get: () => displayedTickets.value.length > 0 && selectedIds.value.length === displayedTickets.value.length,
-  set: (val: boolean) => {
-    selectedIds.value = val ? displayedTickets.value.map(t => t.id) : [];
-  }
+  set: (val: boolean) => { selectedIds.value = val ? displayedTickets.value.map(t => t.id) : []; }
 });
 
 const isIndeterminate = computed(() =>
@@ -82,7 +80,14 @@ function statusTagType(status?: number | null) {
 function priorityTagType(level?: number | null) {
   if (level === 4) return "danger";
   if (level === 3) return "warning";
-  if (level === 2) return "";
+  if (level === 2) return "info";
+  return "info";
+}
+
+function typeTagType(type?: string | null) {
+  if (type === "INCIDENT") return "danger";
+  if (type === "TASK") return "primary";
+  if (type === "QUESTION") return "success";
   return "info";
 }
 
@@ -105,10 +110,7 @@ function applyQueryParams() {
   }
   if (q.priority) {
     const p = Number(q.priority);
-    if ([1, 2, 3, 4].includes(p)) {
-      filters.value.priority = p;
-      showFilters.value = true;
-    }
+    if ([1, 2, 3, 4].includes(p)) { filters.value.priority = p; showFilters.value = true; }
   }
 }
 
@@ -118,20 +120,16 @@ async function loadTickets() {
     const apiStatus = activeQuickFilter.value === "in-progress" ? 2
       : activeQuickFilter.value === "resolved" ? 3
       : filters.value.status;
-    const apiAssignee = activeQuickFilter.value === "unassigned" ? -1
-      : undefined;
-    const { code, message: errorMessage, data } = await getTickets({
+    const apiAssignee = activeQuickFilter.value === "unassigned" ? -1 : undefined;
+    const { code, data } = await getTickets({
       keyword: filters.value.keyword.trim() || undefined,
-      status: apiStatus,
-      priority: filters.value.priority,
-      type: filters.value.type,
-      assigneeUserId: apiAssignee,
-      page: currentPage.value,
-      size: pageSize.value
+      status: apiStatus, priority: filters.value.priority,
+      type: filters.value.type, assigneeUserId: apiAssignee,
+      page: currentPage.value, size: pageSize.value
     });
-    if (code !== 200) throw new Error(errorMessage || "加载失败");
-    tickets.value = data.records;
-    totalTickets.value = data.total;
+    if (code !== 200) throw new Error("加载失败");
+    tickets.value = Array.isArray(data) ? data : (data?.records || []);
+    totalTickets.value = Array.isArray(data) ? data.length : (data?.total || 0);
     selectedIds.value = [];
   } catch (error) {
     tickets.value = [];
@@ -140,288 +138,222 @@ async function loadTickets() {
 }
 
 async function loadAssignees() {
-  try {
-    const { code, data } = await getTicketAssignees();
-    if (code === 200) assignees.value = data;
-  } catch { /* silently fail */ }
+  try { const { code, data } = await getTicketAssignees(); if (code === 200) assignees.value = data; } catch {}
 }
 
-function handlePageChange(page: number) {
-  currentPage.value = page;
-  loadTickets();
+async function loadStats() {
+  try { const { code, data } = await getTicketStats(); if (code === 200) ticketStats.value = data; } catch {}
 }
 
-function handleSizeChange(size: number) {
-  pageSize.value = size;
-  currentPage.value = 1;
-  loadTickets();
+function handlePageChange(page: number) { currentPage.value = page; loadTickets(); }
+function handleSizeChange(size: number) { pageSize.value = size; currentPage.value = 1; loadTickets(); }
+
+function applyQuickFilter(val: string) {
+  activeQuickFilter.value = val; currentPage.value = 1; filters.value.status = undefined; loadTickets();
 }
 
-function handleSearch() {
-  currentPage.value = 1;
-  activeQuickFilter.value = "all";
-  activeQuickFilter.value = "all";
-  loadTickets();
-}
-
-function resetFilters() {
-  currentPage.value = 1;
+function clearFilters() {
   filters.value = { keyword: "", status: undefined, priority: undefined, type: undefined };
-  activeQuickFilter.value = "all";
-  loadTickets();
+  activeQuickFilter.value = "all"; currentPage.value = 1; loadTickets();
 }
 
 function openBatchDialog(action: "status" | "assign") {
-  batchAction.value = action;
-  batchStatus.value = 2;
-  batchAssignee.value = null;
-  batchDialogVisible.value = true;
+  if (!selectedIds.value.length) { message("请先选择工单", { type: "warning" }); return; }
+  batchAction.value = action; batchDialogVisible.value = true;
 }
 
 async function handleBatch() {
-  if (!selectedIds.value.length) return;
   batchLoading.value = true;
-  let success = 0;
-  let fail = 0;
   try {
-    for (const id of selectedIds.value) {
-      try {
-        if (batchAction.value === "status") {
-          await updateTicketStatus(id, { status: batchStatus.value, remark: "批量操作" });
-        } else if (batchAction.value === "assign" && batchAssignee.value) {
-          await assignTicket(id, { assigneeUserId: batchAssignee.value });
-        }
-        success++;
-      } catch { fail++; }
-    }
-    batchDialogVisible.value = false;
-    if (fail === 0) {
-      message(`批量操作成功：${success} 张工单已更新`, { type: "success" });
+    let result: BatchOperationResponse;
+    if (batchAction.value === "status") {
+      const { code, data } = await batchUpdateStatus({ ticketIds: selectedIds.value, status: batchStatus.value });
+      if (code !== 200) throw new Error("批量操作失败");
+      result = data;
     } else {
-      message(`操作完成：${success} 成功，${fail} 失败`, { type: "warning" });
+      if (!batchAssignee.value) return;
+      const { code, data } = await batchAssign({ ticketIds: selectedIds.value, assigneeUserId: batchAssignee.value });
+      if (code !== 200) throw new Error("批量指派失败");
+      result = data;
     }
-    loadTickets();
+    message(`成功 ${result.successCount} 条，失败 ${result.failCount} 条`, { type: "success" });
+    batchDialogVisible.value = false; selectedIds.value = []; loadTickets(); loadStats();
+  } catch (error) {
+    message(error instanceof Error ? error.message : "操作失败", { type: "error" });
   } finally { batchLoading.value = false; }
 }
 
-function exportCSV() {
-  const list = displayedTickets.value;
-  if (!list.length) {
-    message("没有可导出的数据", { type: "warning" });
-    return;
-  }
-  const BOM = "\uFEFF";
-  const headers = ["工单编号", "标题", "内容", "优先级", "状态", "提交人", "处理人", "创建时间", "更新时间"];
-  const rows = list.map(t => [
-    t.ticketNo,
-    t.title,
-    (t.content || "").replace(/"/g, '""'),
-    getTicketPriorityLabel(t.priority),
-    getTicketStatusLabel(t.status),
-    t.submitterName || "",
-    t.assigneeName || "待分配",
-    t.createTime ? dayjs(t.createTime).format("YYYY-MM-DD HH:mm") : "",
-    t.updateTime ? dayjs(t.updateTime).format("YYYY-MM-DD HH:mm") : ""
-  ]);
-
-  const csv = BOM + [headers, ...rows]
-    .map(row => row.map(cell => `"${cell}"`).join(","))
-    .join("\n");
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `工单导出_${dayjs().format("YYYYMMDD_HHmm")}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-  message(`已导出 ${list.length} 条工单`, { type: "success" });
-}
-
-watch(() => route.query, () => { applyQueryParams(); loadTickets(); });
-
-watch(activeQuickFilter, () => {
-  currentPage.value = 1;
-  loadTickets();
-});
-
-async function loadStats() {
+async function handleExport() {
   try {
-    const { code, data } = await getTicketStats();
-    if (code === 200) ticketStats.value = data;
-  } catch { /* ignore */ }
+    const blob = await exportTickets({ keyword: filters.value.keyword.trim() || undefined, status: filters.value.status, priority: filters.value.priority, type: filters.value.type });
+    const url = URL.createObjectURL(blob as Blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `工单导出_${dayjs().format("YYYYMMDD_HHmmss")}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    message("导出成功", { type: "success" });
+  } catch { message("导出失败", { type: "error" }); }
 }
 
-onMounted(() => { applyQueryParams(); loadTickets(); loadAssignees(); loadStats(); });
+function toggleSelect(id: number) {
+  const idx = selectedIds.value.indexOf(id);
+  if (idx >= 0) selectedIds.value.splice(idx, 1); else selectedIds.value.push(id);
+}
+function isSelected(id: number) { return selectedIds.value.includes(id); }
+
+onMounted(() => { loadAssignees(); loadStats(); applyQueryParams(); loadTickets(); });
+watch(() => route.query, () => { applyQueryParams(); loadTickets(); });
 </script>
 
 <template>
-  <div>
-    <div class="mb-5 flex items-center justify-between">
+  <div class="p-4">
+    <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">工单中心</h2>
-        <p class="mt-0.5 text-sm text-gray-400">{{ totalTickets }} 张工单</p>
+        <h1 class="text-xl font-bold">工单列表</h1>
+        <span class="text-sm text-gray-400">共 {{ totalTickets }} 条</span>
       </div>
+      <div class="flex gap-2">
+        <el-button @click="handleExport" :icon="useRenderIcon('ep:download')">导出</el-button>
+        <el-button type="primary" @click="goTo('/tickets/create')" :icon="useRenderIcon('ep:plus')">创建工单</el-button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-4">
+      <div v-for="card in statCards" :key="card.filter"
+        class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all"
+        :class="activeQuickFilter === card.filter ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
+        @click="applyQuickFilter(card.filter)">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center" :style="{ background: card.bg, color: card.color }">
+          <el-icon :size="20"><component :is="useRenderIcon(card.icon)" /></el-icon>
+        </div>
+        <div>
+          <div class="text-2xl font-bold" :style="{ color: card.color }">{{ card.value }}</div>
+          <div class="text-xs text-gray-500">{{ card.label }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <el-button @click="showFilters = !showFilters">
-          <component :is="useRenderIcon(showFilters ? 'ep:arrow-up' : 'ep:arrow-down', { width: '14px', height: '14px' })" class="mr-1" />
-          筛选
+        <el-input v-model="filters.keyword" placeholder="搜索工单标题、编号" clearable style="width: 260px"
+          @clear="clearFilters" @keyup.enter="loadTickets"
+          :prefix-icon="useRenderIcon('ep:search')" />
+        <el-button @click="showFilters = !showFilters" :icon="useRenderIcon('ep:filter')">
+          {{ showFilters ? '隐藏筛选' : '筛选' }}
         </el-button>
-        <el-button @click="exportCSV">
-          <component :is="useRenderIcon('ep:download', { width: '14px', height: '14px' })" class="mr-1" />
-          导出
-        </el-button>
-        <el-button type="primary" @click="goTo('/tickets/create')">
-          <component :is="useRenderIcon('ep:plus', { width: '16px', height: '16px' })" class="mr-1" />
-          新建工单
-        </el-button>
+      </div>
+      <div class="flex items-center gap-2" v-if="selectedIds.length">
+        <span class="text-sm text-blue-600">已选 {{ selectedIds.length }} 条</span>
+        <el-button size="small" @click="openBatchDialog('status')">批量状态</el-button>
+        <el-button size="small" @click="openBatchDialog('assign')">批量指派</el-button>
+        <el-button size="small" @click="selectedIds = []">取消选择</el-button>
       </div>
     </div>
 
-    <!-- Stat bar -->
-    <div class="grid grid-cols-4 gap-3 mb-4">
-      <div v-for="s in statCards" :key="s.label"
-        class="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-3 text-center cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-        @click="activeQuickFilter = s.filter">
-        <p class="text-2xl font-bold" :style="{ color: s.color }">{{ s.value }}</p>
-        <p class="text-xs text-gray-400 mt-0.5">{{ s.label }}</p>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div v-if="showFilters" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-4 mb-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-        <el-input v-model="filters.keyword" placeholder="搜索标题或内容..." clearable size="default" />
-        <el-select v-model="filters.status" placeholder="状态" clearable size="default">
-          <el-option v-for="o in ticketStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+    <!-- Advanced Filters -->
+    <el-collapse-transition>
+      <div v-if="showFilters" class="flex gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
+        <el-select v-model="filters.status" placeholder="状态" clearable style="width: 130px" @change="loadTickets">
+          <el-option label="新建" :value="1" /><el-option label="处理中" :value="2" />
+          <el-option label="已解决" :value="3" /><el-option label="已关闭" :value="4" />
         </el-select>
-        <el-select v-model="filters.priority" placeholder="优先级" clearable size="default">
-          <el-option v-for="o in ticketPriorityOptions" :key="o.value" :label="o.label" :value="o.value" />
+        <el-select v-model="filters.priority" placeholder="优先级" clearable style="width: 130px" @change="loadTickets">
+          <el-option label="紧急" :value="4" /><el-option label="高" :value="3" />
+          <el-option label="普通" :value="2" /><el-option label="低" :value="1" />
         </el-select>
-        <el-select v-model="filters.type" placeholder="类型" clearable size="default">
-          <el-option v-for="o in ticketTypeOptions" :key="o.value" :label="o.label" :value="o.value" />
+        <el-select v-model="filters.type" placeholder="类型" clearable style="width: 130px" @change="loadTickets">
+          <el-option label="故障" value="INCIDENT" /><el-option label="任务" value="TASK" />
+          <el-option label="咨询" value="QUESTION" />
         </el-select>
+        <el-button @click="clearFilters">重置</el-button>
       </div>
-      <div class="flex items-center gap-2">
-        <el-radio-group v-model="activeQuickFilter" size="small">
-          <el-radio-button v-for="f in quickFilters" :key="f.value" :value="f.value">{{ f.label }}</el-radio-button>
-        </el-radio-group>
-        <div class="flex-1" />
-        <el-button @click="resetFilters">重置</el-button>
-        <el-button type="primary" :loading="loading" @click="handleSearch">查询</el-button>
-      </div>
-    </div>
-
-    <!-- Batch bar -->
-    <div v-if="selectedIds.length" class="flex items-center gap-3 mb-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
-      <span class="text-blue-700 dark:text-blue-300 font-medium">已选 {{ selectedIds.length }} 项</span>
-      <div class="flex-1" />
-      <el-button size="small" @click="openBatchDialog('status')">
-        <component :is="useRenderIcon('ep:set-up', { width: '14px', height: '14px' })" class="mr-1" />
-        批量改状态
-      </el-button>
-      <el-button size="small" @click="openBatchDialog('assign')">
-        <component :is="useRenderIcon('ep:user', { width: '14px', height: '14px' })" class="mr-1" />
-        批量指派
-      </el-button>
-      <el-button size="small" text type="danger" @click="selectedIds = []">取消选择</el-button>
-    </div>
+    </el-collapse-transition>
 
     <!-- Table -->
-    <el-card shadow="never" class="overflow-hidden">
-      <el-table
-        :data="displayedTickets"
-        stripe
-        v-loading="loading"
-        class="ticket-table"
-        @selection-change="(rows: TicketListItem[]) => selectedIds = rows.map(r => r.id)"
-        @row-click="(row: TicketListItem) => goTo(`/tickets/${row.id}`)"
-      >
-        <el-table-column type="selection" width="42" />
-        <el-table-column label="工单信息" min-width="320">
-          <template #default="{ row }">
-            <div class="py-1">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs text-gray-400 shrink-0">{{ row.ticketNo }}</span>
-                <span class="font-medium">{{ row.title }}</span>
-              </div>
-              <p class="mt-1 text-xs text-gray-400 truncate max-w-sm">{{ row.content }}</p>
-            </div>
-          </template>
+    <el-card shadow="never">
+      <el-table :data="displayedTickets" v-loading="loading" @row-click="(row: any) => goTo(`/tickets/detail/${row.id}`)" row-class-name="cursor-pointer">
+        <el-table-column width="40">
+          <template #header><el-checkbox :model-value="allSelected" @update:model-value="(v: boolean) => allSelected = v" :indeterminate="isIndeterminate" /></template>
+          <template #default="{ row }"><el-checkbox :model-value="isSelected(row.id)" @click.stop @update:model-value="() => toggleSelect(row.id)" /></template>
         </el-table-column>
-        <el-table-column label="优先级" width="85" align="center">
-          <template #default="{ row }">
-            <el-tag :type="priorityTagType(row.priority)" size="small" effect="light">P{{ row.priority }}</el-tag>
-          </template>
+        <el-table-column prop="ticketNo" label="编号" width="160" />
+        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
+        <el-table-column label="类型" width="90">
+          <template #default="{ row }"><el-tag :type="typeTagType(row.type)" size="small">{{ getTicketTypeLabel(row.type) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="状态" width="85" align="center">
-          <template #default="{ row }">
-            <el-tag :type="statusTagType(row.status)" size="small" effect="light">
-              {{ getTicketStatusLabel(row.status) }}
-            </el-tag>
-          </template>
+        <el-table-column label="优先级" width="80">
+          <template #default="{ row }"><el-tag :type="priorityTagType(row.priority)" size="small">{{ getTicketPriorityLabel(row.priority) }}</el-tag></template>
         </el-table-column>
-        <el-table-column prop="assigneeName" label="处理人" width="95" align="center">
-          <template #default="{ row }">
-            <span v-if="row.assigneeName" class="text-sm">{{ row.assigneeName }}</span>
-            <span v-else class="text-xs text-orange-400">待分配</span>
-          </template>
+        <el-table-column label="状态" width="80">
+          <template #default="{ row }"><el-tag :type="statusTagType(row.status)" size="small">{{ getTicketStatusLabel(row.status) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="更新时间" width="105">
-          <template #default="{ row }">
-            <span class="text-xs text-gray-400">{{ formatDate(row.updateTime) }}</span>
-          </template>
+        <el-table-column prop="assigneeName" label="处理人" width="100">
+          <template #default="{ row }"><span :class="!row.assigneeName ? 'text-red-400' : ''">{{ row.assigneeName || '未分配' }}</span></template>
+        </el-table-column>
+        <el-table-column label="创建时间" width="130">
+          <template #default="{ row }">{{ formatDate(row.createTime) }}</template>
         </el-table-column>
       </el-table>
 
-      <el-empty v-if="!loading && !displayedTickets.length" description="暂无工单">
-        <el-button type="primary" @click="goTo('/tickets/create')">创建第一张工单</el-button>
-      </el-empty>
-
-      <div v-if="totalTickets > 0" class="flex justify-center pt-4">
+      <!-- Pagination -->
+      <div class="flex justify-end mt-4">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :total="totalTickets"
           :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          background
+          :total="totalTickets"
+          layout="total, sizes, prev, pager, next"
           @current-change="handlePageChange"
           @size-change="handleSizeChange"
         />
       </div>
     </el-card>
 
-    <!-- Batch dialog -->
-    <el-dialog v-model="batchDialogVisible" :title="batchAction === 'status' ? '批量修改状态' : '批量指派'" width="420px">
-      <template v-if="batchAction === 'status'">
-        <el-select v-model="batchStatus" placeholder="选择目标状态" class="w-full">
-          <el-option v-for="o in ticketStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
-        </el-select>
-      </template>
-      <template v-else>
-        <el-select v-model="batchAssignee" placeholder="选择处理人" class="w-full" filterable>
-          <el-option v-for="u in assignees" :key="u.id" :label="`${u.displayName} (@${u.username})`" :value="u.id" />
-        </el-select>
-      </template>
-      <p class="text-xs text-gray-400 mt-3">将对选中的 {{ selectedIds.length }} 张工单执行此操作。</p>
+    <!-- Batch Dialog -->
+    <el-dialog v-model="batchDialogVisible" :title="batchAction === 'status' ? '批量修改状态' : '批量指派'" width="400px">
+      <el-form v-if="batchAction === 'status'" label-width="80px">
+        <el-form-item label="目标状态">
+          <el-select v-model="batchStatus" style="width: 100%">
+            <el-option label="新建" :value="1" /><el-option label="处理中" :value="2" />
+            <el-option label="已解决" :value="3" /><el-option label="已关闭" :value="4" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <el-form v-else label-width="80px">
+        <el-form-item label="指派给">
+          <el-select v-model="batchAssignee" placeholder="选择处理人" style="width: 100%">
+            <el-option v-for="a in assignees" :key="a.id" :label="a.displayName" :value="a.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
       <template #footer>
         <el-button @click="batchDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          :loading="batchLoading"
-          :disabled="batchAction === 'assign' && !batchAssignee"
-          @click="handleBatch"
-        >
-          确认执行
-        </el-button>
+        <el-button type="primary" :loading="batchLoading" :disabled="batchAction === 'assign' && !batchAssignee" @click="handleBatch">确认</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <style scoped>
-.ticket-table :deep(.el-table__row:hover) { background-color: #f8fafc; }
-.dark .ticket-table :deep(.el-table__row:hover) { background-color: rgba(255,255,255,0.02); }
-.ticket-table :deep(.el-table__row) { cursor: pointer; }
+@import "@/styles/animations.css";
+
+:deep(.el-card) {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+:deep(.el-table) {
+  animation: fadeInUp 0.5s ease-out forwards;
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+
+:deep(.el-table__row) {
+  transition: all 0.2s ease;
+}
+
+:deep(.el-table__row:hover) {
+  transform: scale(1.002);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
 </style>

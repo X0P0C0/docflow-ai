@@ -24,7 +24,7 @@ const statusLabel = (s?: number | null) => {
 const statusTagType = (s?: number | null) => {
   if (s === 1) return "success";
   if (s === 2) return "info";
-  return "";
+  return "warning";
 };
 
 function formatDateTime(value?: string | null) {
@@ -64,7 +64,7 @@ onMounted(() => loadArticle());
 
 <template>
   <div class="max-w-4xl" v-loading="loading">
-    <div class="mb-4 flex items-center justify-between">
+    <div class="kd-top">
       <div class="flex items-center gap-2">
         <el-button text circle @click="goBack">
           <component :is="useRenderIcon('ep:arrow-left', { width: '20px', height: '20px' })" />
@@ -88,14 +88,14 @@ onMounted(() => loadArticle());
 
     <template v-if="article">
       <!-- Header -->
-      <el-card shadow="never" class="mb-4">
+      <div class="kd-card kd-header-card">
         <div class="flex items-center gap-2 mb-3">
           <el-tag :type="statusTagType(article.status)" size="small" effect="light">
             {{ statusLabel(article.status) }}
           </el-tag>
           <span v-if="article.sourceTicket" class="text-xs text-gray-400">
             来源工单：
-            <router-link :to="`/tickets/${article.sourceTicket.id}`" class="text-blue-500 hover:underline">
+            <router-link :to="`/tickets/${article.sourceTicket.id}`" class="kd-source-link">
               {{ article.sourceTicket.ticketNo }} {{ article.sourceTicket.title }}
             </router-link>
           </span>
@@ -108,26 +108,24 @@ onMounted(() => loadArticle());
           <span>·</span>
           <span>创建于 {{ formatDateTime(article.createTime) }}</span>
         </div>
-      </el-card>
+      </div>
 
       <!-- Summary -->
-      <el-card v-if="article.summary" shadow="never" class="mb-4">
+      <div v-if="article.summary" class="kd-card">
         <div class="text-sm text-gray-500 leading-relaxed">{{ article.summary }}</div>
-      </el-card>
+      </div>
 
       <!-- Content -->
-      <el-card shadow="never" class="mb-4">
+      <div class="kd-card kd-content-card">
         <div class="knowledge-content" v-html="article.content"></div>
-      </el-card>
+      </div>
 
       <!-- Versions -->
-      <el-card v-if="article.versions && article.versions.length > 1" shadow="never">
-        <template #header>
-          <span class="font-semibold text-sm flex items-center gap-1.5">
-            <component :is="useRenderIcon('ep:clock', { width: '14px', height: '14px' })" />
-            版本历史
-          </span>
-        </template>
+      <div v-if="article.versions && article.versions.length > 1" class="kd-card">
+        <div class="kd-card-header">
+          <component :is="useRenderIcon('ep:clock', { width: '14px', height: '14px' })" />
+          <span>版本历史</span>
+        </div>
         <div class="divide-y divide-gray-100 dark:divide-gray-700">
           <div v-for="v in article.versions" :key="v.id"
             class="flex items-center justify-between py-2.5 text-sm">
@@ -138,7 +136,7 @@ onMounted(() => loadArticle());
             <span class="text-xs text-gray-400">{{ formatDateTime(v.createTime) }}</span>
           </div>
         </div>
-      </el-card>
+      </div>
     </template>
 
     <el-empty v-else-if="!loading" description="文章不存在或无权访问" />
@@ -146,6 +144,19 @@ onMounted(() => loadArticle());
 </template>
 
 <style scoped>
+/* === Knowledge Detail: Stripe Design Language === */
+.kd-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.kd-card { background: #fff; border: 1px solid #e8ecf1; border-radius: 8px; padding: 20px 24px; margin-bottom: 12px; }
+.kd-header-card { border-top: 3px solid #533afd; }
+.kd-content-card { padding: 24px; }
+.kd-source-link { color: #533afd; font-weight: 600; text-decoration: none; }
+.kd-card-header { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #0d253d; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+.kd-source-link:hover { text-decoration: underline; }
+
+.dark .kd-card { background: #1e293b; border-color: #334155; }
+.dark .kd-header-card { border-top-color: #818cf8; }
+.dark .kd-source-link { color: #818cf8; }
+.dark .kd-card-header { color: #f1f5f9; border-bottom-color: #334155; }
 .knowledge-content :deep(h1) { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; }
 .knowledge-content :deep(h2) { font-size: 1.25rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }
 .knowledge-content :deep(h3) { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
@@ -156,13 +167,13 @@ onMounted(() => loadArticle());
 .dark .knowledge-content :deep(pre) { background: #1f2937; }
 .knowledge-content :deep(code) { font-size: 13px; background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
 .dark .knowledge-content :deep(code) { background: #374151; }
-.knowledge-content :deep(blockquote) { border-left: 3px solid #3b82f6; padding: 4px 0 4px 16px; margin: 0.75rem 0; color: #6b7280; background: #f9fafb; border-radius: 0 4px 4px 0; }
+.knowledge-content :deep(blockquote) { border-left: 3px solid #533afd; padding: 4px 0 4px 16px; margin: 0.75rem 0; color: #64748d; background: #f8fafc; border-radius: 0 4px 4px 0; }
 .dark .knowledge-content :deep(blockquote) { background: #111827; }
 .knowledge-content :deep(table) { width: 100%; border-collapse: collapse; margin: 0.75rem 0; }
 .knowledge-content :deep(th), .knowledge-content :deep(td) { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
-.knowledge-content :deep(th) { background: #f9fafb; font-weight: 600; }
+.knowledge-content :deep(th) { background: #f8fafc; font-weight: 600; }
 .dark .knowledge-content :deep(th) { background: #1f2937; }
 .dark .knowledge-content :deep(th), .dark .knowledge-content :deep(td) { border-color: #374151; }
 .knowledge-content :deep(img) { max-width: 100%; border-radius: 6px; margin: 0.5rem 0; }
-.knowledge-content :deep(a) { color: #3b82f6; text-decoration: underline; }
+.knowledge-content :deep(a) { color: #533afd; text-decoration: underline; }
 </style>

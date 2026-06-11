@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
@@ -23,8 +23,6 @@ const draftLoading = ref(false);
 const workspace = ref<AiWorkspace | null>(null);
 const currentDraft = ref<AiReplyDraft | null>(null);
 const draftDialogVisible = ref(false);
-const errorMessage = ref("");
-const debugInfo = ref("");
 const currentTime = ref(dayjs().format("HH:mm:ss"));
 setInterval(() => { currentTime.value = dayjs().format("HH:mm:ss"); }, 30000);
 
@@ -59,24 +57,18 @@ function confidenceColor(conf: string): string {
 }
 
 async function loadWorkspace() {
-  errorMessage.value = "";
-  debugInfo.value = "Loading...";
+  
   loading.value = true;
   try {
     const res = await getAiWorkspace();
-    debugInfo.value = "Response: code=" + (res ? res.code : "null") + ", data=" + (res && res.data ? "OK" : "NULL");
-    console.log("[AI Center] API response:", res);
+    
     if (res && res.code === 200 && res.data) {
       workspace.value = res.data;
-      debugInfo.value = "SUCCESS: workspace loaded";
+      
     } else {
-      console.warn("[AI Center] Unexpected response:", res);
-      errorMessage.value = "Unexpected response: " + JSON.stringify(res).substring(0, 200);
     }
   } catch (e) {
-    console.error("[AI Center] Failed to load workspace:", e);
-    errorMessage.value = "Error: " + (e && e.message ? e.message : String(e));
-    debugInfo.value = "ERROR: " + (e && e.message ? e.message : String(e));
+    
     message("Failed to load AI workspace", { type: "error" });
   } finally {
     loading.value = false;
@@ -125,10 +117,10 @@ onMounted(() => loadWorkspace());
 <template>
   <div class="docflow-ai-center" v-loading="loading">
     <!-- Header -->
-    <div class="mb-6">
+    <div class="ai-top">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-xl font-bold text-gray-900 dark:text-white">AI 协作工作区</h2>
+          <h2 class="ai-hero-title">AI 协作工作区</h2>
           <p class="mt-1 text-sm text-gray-500">
             <template v-if="workspace?.heuristicBased">基于规则的 AI 分析（启发式模式）</template>
             <template v-else>AI 智能分析与建议</template>
@@ -143,27 +135,16 @@ onMounted(() => loadWorkspace());
       </div>
     </div>
 
-    <!-- DEBUG PANEL -->
-    <div v-if="debugInfo" style="background:#fef2f2;border:1px solid #fca5a5;padding:8px 16px;margin-bottom:16px;border-radius:6px;font-family:monospace;font-size:13px;">
-      <strong>Debug:</strong> {{ debugInfo }}
-    </div>
-
     <!-- Stats row -->
-    <el-row :gutter="16" class="mb-6">
-      <el-col v-for="(item, i) in stats" :key="i" :xs="12" :sm="8" class="mb-4">
-        <el-card shadow="never" class="stat-card">
-          <div class="flex items-center gap-3">
-            <div class="flex items-center justify-center rounded-lg size-10 shrink-0" :style="{ backgroundColor: item.bg, color: item.color }">
-              <component :is="useRenderIcon(item.icon, { width: '20px', height: '20px' })" />
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm text-gray-500 truncate">{{ item.label }}</p>
-              <p class="text-2xl font-bold tracking-tight" :style="{ color: item.color }">{{ item.value }}</p>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="ai-stats">
+      <div v-for="(item, i) in stats" :key="i" class="ai-stat-card">
+        <div class="ai-stat-icon" :style="{ background: item.bg, color: item.color }">
+          <component :is="useRenderIcon(item.icon, { width: '18px', height: '18px' })" />
+        </div>
+        <div class="ai-stat-val" :style="{ color: item.color }">{{ item.value }}</div>
+        <div class="ai-stat-lbl">{{ item.label }}</div>
+      </div>
+    </div>
 
     <!-- Two-column layout -->
     <el-row :gutter="16">
@@ -176,7 +157,7 @@ onMounted(() => loadWorkspace());
                 <component :is="useRenderIcon('ep:star-filled', { width: '16px', height: '16px' })" class="text-yellow-500" />
                 <span class="font-semibold">首要建议</span>
               </div>
-              <el-tag size="small" :color="confidenceColor(workspace.primarySuggestion.confidence)" effect="dark" round>
+              <el-tag type="info" size="small" :color="confidenceColor(workspace.primarySuggestion.confidence)" effect="dark" round>
                 置信度 {{ workspace.primarySuggestion.confidence }}
               </el-tag>
             </div>
@@ -297,7 +278,6 @@ onMounted(() => loadWorkspace());
 
     <!-- Empty -->
     <el-empty v-if="!loading && !workspace" description="AI 工作区暂无数据" :image-size="120">
-      <div v-if="errorMessage" style="color: #dc2626; font-size: 12px; margin-bottom: 8px; max-width: 400px; word-break: break-all;">{{ errorMessage }}</div>
       <el-button type="primary" @click="loadWorkspace">重新加载</el-button>
     </el-empty>
 
@@ -308,7 +288,7 @@ onMounted(() => loadWorkspace());
         <div class="flex items-center gap-3 text-sm">
           <span class="font-mono text-gray-400">{{ currentDraft.ticketNo }}</span>
           <span class="font-medium">{{ currentDraft.ticketTitle }}</span>
-          <el-tag size="small" :color="confidenceColor(currentDraft.confidence)" effect="dark" round>
+          <el-tag type="info" size="small" :color="confidenceColor(currentDraft.confidence)" effect="dark" round>
             {{ currentDraft.confidence }}
           </el-tag>
         </div>
@@ -359,6 +339,35 @@ onMounted(() => loadWorkspace());
 </template>
 
 <style scoped>
+@import "@/styles/animations.css";
+/* === AI Center: Stripe Design Language === */
+.ai-top { margin-bottom: 12px; }
+.ai-hero-title { font-size: 22px; font-weight: 800; color: #0d253d; margin: 0 0 4px; line-height: 1; letter-spacing: -0.3px; }
+.ai-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 12px;
+}
+.ai-stat-card {
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;
+}
+.ai-stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #533afd, #7c3aed); opacity: 0; transition: opacity 0.25s;
+}
+.ai-stat-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+.ai-stat-card:hover::before { opacity: 1; }
+.ai-stat-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ai-stat-val { font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -0.5px; font-feature-settings: "tnum"; }
+.ai-stat-lbl { font-size: 14px; font-weight: 600; color: #64748d; margin-left: auto; white-space: nowrap; }
+
 .docflow-ai-center .stat-card :deep(.el-card__body) { padding: 20px; }
 .docflow-ai-center .primary-card :deep(.el-card__body) { padding: 20px 24px; }
 .docflow-ai-center .feed-card :deep(.el-card__body) { padding: 12px 24px 16px; }
@@ -367,4 +376,43 @@ onMounted(() => loadWorkspace());
 .stat-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .stat-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 .draft-dialog :deep(.el-dialog__body) { padding-top: 8px; }
+
+/* Stripe card overrides */
+:deep(.el-card) { border: 1px solid #e8ecf1; border-radius: 8px; background: #fff; }
+:deep(.el-card__header) { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; }
+:deep(.el-card__body) { padding: 16px 20px; }
+
+.dark .ai-hero-title { color: #f1f5f9; }
+.dark .ai-stat-card { background: #1e293b; border-color: #334155; }
+.dark .ai-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.dark .ai-stat-card::before { background: linear-gradient(90deg, #818cf8, #a78bfa); }
+.dark .ai-stat-lbl { color: #94a3b8; }
+.dark :deep(.el-card) { background: #1e293b; border-color: #334155; }
+.dark :deep(.el-card__header) { border-bottom-color: #334155; }
+
+/* AI Center animations */
+:deep(.el-card) {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.ai-suggestion-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: scaleIn 0.5s ease-out forwards;
+}
+
+.ai-suggestion-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+  border-color: #818cf8;
+}
+
+/* Magic icon animation */
+.magic-icon {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Confidence bar animation */
+.confidence-bar {
+  transition: width 1s ease-out;
+}
 </style>

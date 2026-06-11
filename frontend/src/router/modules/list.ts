@@ -5,6 +5,7 @@ export default {
   path: "/list",
   redirect: "/list/card",
   meta: {
+    showLink: false,
     icon: "ri/list-check",
     title: $t("menus.pureList"),
     rank: list

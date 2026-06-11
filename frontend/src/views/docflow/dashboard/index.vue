@@ -2,9 +2,10 @@
 import { computed, onMounted, ref, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
-import { getTickets, getTicketStats, type TicketListItem, type TicketStats } from "@/api/tickets";
+import { getTickets, getTicketStats, getDashboard, type TicketListItem, type TicketStats, type DashboardData } from "@/api/tickets";
 import { getKnowledgeArticles, type KnowledgeArticle } from "@/api/knowledge";
 import { getTicketStatusLabel } from "@/constants/tickets";
+import { extractArray } from "@/utils/api-helper";
 import * as echarts from "echarts";
 import dayjs from "dayjs";
 
@@ -15,6 +16,7 @@ const loading = ref(false);
 const tickets = ref<TicketListItem[]>([]);
 const articles = ref<KnowledgeArticle[]>([]);
 const ticketStats = ref<TicketStats | null>(null);
+const dashboardData = ref<DashboardData | null>(null);
 const statusChartRef = ref<HTMLDivElement>();
 const priorityChartRef = ref<HTMLDivElement>();
 let statusChart: echarts.ECharts | null = null;
@@ -100,11 +102,11 @@ const todayStats = computed(() => {
   ];
 });
 
-// ── Recent Items ──
+// Recent Items
 const recentTickets = computed(() => tickets.value.slice(0, 4));
 const recentArticles = computed(() => articles.value.slice(0, 2));
 
-// ── Helpers ──
+// Helpers
 function statusTagType(status?: number | null) {
   if (status === 3) return "success";
   if (status === 4) return "info";
@@ -179,16 +181,19 @@ function renderCharts() {
 async function loadData() {
   loading.value = true;
   try {
-    const [tRes, aRes, sRes] = await Promise.all([
+    const [tRes, aRes, sRes, dRes] = await Promise.all([
       getTickets({ size: 50 }),
       getKnowledgeArticles({ size: 50 }),
       getTicketStats(),
+      getDashboard(),
     ]);
-    if (tRes.code === 200) tickets.value = tRes.data.records;
-    if (aRes.code === 200) articles.value = aRes.data.records;
+    if (tRes.code === 200) tickets.value = extractArray(tRes.data);
+    if (dRes) dashboardData.value = dRes;
+    if (aRes.code === 200) articles.value = extractArray(aRes.data);
     if (sRes.code === 200) ticketStats.value = sRes.data;
     await nextTick();
-    renderCharts();
+    // Delay chart rendering to ensure DOM has dimensions
+    setTimeout(() => renderCharts(), 100);
   } finally {
     loading.value = false;
   }
@@ -295,6 +300,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import "@/styles/animations.css";
 /* === Dashboard: One-Page Compact === */
 
 .db {
@@ -313,13 +319,18 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .db-top-left { display: flex; align-items: baseline; gap: 8px; }
-.db-hero-title { font-size: 20px; font-weight: 700; color: #0d253d; margin: 0; line-height: 1; }
+.db-hero-title { 
+  font-size: 22px; font-weight: 800; color: #0d253d; margin: 0; line-height: 1; letter-spacing: -0.3px;
+  animation: slideInDown 0.5s ease-out forwards;
+}
 .db-hero-date { font-size: 13px; color: #94a3b8; }
+.db-hero-welcome { font-size: 13px; color: #533afd; font-weight: 600; margin-left: 12px; }
 .db-today-inline { display: flex; gap: 4px; margin-left: auto; }
 .db-today-tag {
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 5px;
   font-size: 13px; color: #64748d; background: #f8fafc;
-  padding: 3px 10px; border-radius: 6px; font-weight: 500; line-height: 1.4;
+  padding: 4px 12px; border-radius: 8px; font-weight: 500; line-height: 1.4;
+  border: 1px solid #e8ecf1;
 }
 .db-today-tag strong { color: #0d253d; font-weight: 700; }
 .db-today-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
@@ -333,22 +344,42 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .db-stat-card {
-  background: #fff; border: 1px solid #e8ecf1; border-radius: 8px;
-  padding: 12px 14px; display: flex; align-items: center; gap: 10px;
-  cursor: pointer; transition: all 0.2s; position: relative;
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
 }
+.db-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.db-stat-card:nth-child(2) { animation-delay: 0.2s; }
+.db-stat-card:nth-child(3) { animation-delay: 0.3s; }
+.db-stat-card:nth-child(4) { animation-delay: 0.4s; }
+.db-stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent); 
+  opacity: 0; transition: opacity 0.25s;
+}
+.db-stat-card:hover::before { opacity: 1; }
 .db-stat-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
 }
+.db-stat-card:hover::before { opacity: 1; }
 .db-stat-icon {
   width: 36px; height: 36px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .db-stat-val {
-  font-size: 24px; font-weight: 700; color: #0d253d; line-height: 1;
-  flex-shrink: 0;
+  font-size: 28px; font-weight: 800; color: #0d253d; line-height: 1;
+  flex-shrink: 0; letter-spacing: -0.5px;
+  font-feature-settings: "tnum";
+  transition: all 0.3s ease;
+}
+.db-stat-card:hover .db-stat-val {
+  transform: scale(1.05);
+  color: var(--accent);
 }
 .db-stat-lbl {
   font-size: 19px; font-weight: 700; color: #0d253d;
@@ -357,9 +388,9 @@ onMounted(() => {
 }
 .db-stat-chip {
   display: inline-flex; align-items: center;
-  font-size: 10px; font-weight: 600; color: #10b981;
-  background: #ecfdf5; padding: 1px 6px; border-radius: 999px;
-  white-space: nowrap; flex-shrink: 0;
+  font-size: 11px; font-weight: 700; color: #10b981;
+  background: #ecfdf5; padding: 2px 8px; border-radius: 999px;
+  white-space: nowrap; flex-shrink: 0; letter-spacing: 0.2px;
 }
 
 /* ── Main 3-Col ── */
@@ -373,9 +404,18 @@ onMounted(() => {
 
 /* ── Cards ── */
 .db-card {
-  background: #fff; border: 1px solid #e8ecf1; border-radius: 8px;
-  padding: 10px 14px; display: flex; flex-direction: column; min-height: 0;
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 10px;
+  padding: 12px 16px; display: flex; flex-direction: column; min-height: 0;
+  transition: box-shadow 0.2s, transform 0.2s;
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+  animation-delay: 0.3s;
 }
+.db-card:hover { 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+  transform: translateY(-2px);
+}
+.db-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
 .db-card-hd {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 6px; flex-shrink: 0;
@@ -398,7 +438,12 @@ onMounted(() => {
   display: flex; align-items: center; gap: 8px; padding: 7px 4px;
   border-radius: 4px; cursor: pointer; transition: background 0.12s; flex-shrink: 0;
 }
-.db-item:hover { background: #f8fafc; }
+.db-item { border-radius: 6px; margin: 0 -4px; padding-left: 8px; padding-right: 8px; }
+.db-item { transition: all 0.2s ease; }
+.db-item:hover { 
+  background: #f0f4ff; 
+  transform: translateX(4px);
+}
 .db-item + .db-item { border-top: 1px solid #f1f5f9; }
 
 .db-item-prio {
@@ -431,4 +476,17 @@ onMounted(() => {
   .db-main { grid-template-columns: 1fr; }
   .db-today-inline { display: none; }
 }
+
+/* Dark mode */
+.dark .db-hero-title { color: #f1f5f9; }
+.dark .db-hero-welcome { color: #818cf8; }
+.dark .db-stat-card { background: #1e293b; border-color: #334155; }
+.dark .db-stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.dark .db-stat-val { color: #f1f5f9; }
+.dark .db-stat-lbl { color: #94a3b8; }
+.dark .db-card { background: #1e293b; border-color: #334155; }
+.dark .db-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.dark .db-card-tt { color: #f1f5f9; }
+.dark .db-item-tt { color: #e2e8f0; }
+.dark .db-item:hover { background: rgba(99, 102, 241, 0.08); }
 </style>

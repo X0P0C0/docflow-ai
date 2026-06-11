@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { message } from "@/utils/message";
@@ -125,7 +125,7 @@ async function loadArticle() {
       summary: data.summary || "",
       content: data.content,
       status: data.status ?? 0,
-      ticketNo: data.ticketNo ?? null
+      ticketNo: (data as any).ticketNo ?? null
     };
     // Check for newer local draft
     const raw = localStorage.getItem(draftKey.value);
@@ -219,10 +219,10 @@ onBeforeUnmount(() => {
           <component :is="useRenderIcon('ep:arrow-left', { width: '20px', height: '20px' })" />
         </el-button>
         <div>
-          <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 class="ke-hero-title">
             {{ isEdit ? '编辑文章' : '新建文章' }}
           </h2>
-          <p class="text-xs text-gray-500 mt-0.5">
+          <p class="ke-hero-sub">
             {{ isEdit ? '编辑已有知识库文章' : '撰写新的知识库文章' }}
             <template v-if="autoSaveStatus">
               <span class="mx-1 text-gray-300">|</span>
@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
           </p>
         </div>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 ke-actions">
         <el-button @click="goBack">取消</el-button>
         <el-button type="primary" :loading="saving" @click="submit" :disabled="!form.title.trim()">
           <component :is="useRenderIcon('ep:check', { width: '16px', height: '16px' })" class="mr-1" />
@@ -242,7 +242,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Source ticket -->
-    <div v-if="isEdit && form.ticketNo" class="mb-4 flex items-center gap-4 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm">
+    <div v-if="isEdit && form.ticketNo" class="ke-source-bar">
       <span class="text-gray-500">来源工单：</span>
       <router-link :to="`/tickets/${form.ticketNo}`" class="text-blue-600 font-medium hover:underline flex items-center gap-1">
         <component :is="useRenderIcon('ep:link', { width: '14px', height: '14px' })" />
@@ -281,12 +281,12 @@ onBeforeUnmount(() => {
     </el-card>
 
     <!-- Bottom -->
-    <div class="mt-5 flex items-center justify-between">
-      <span class="text-xs text-gray-400">
+    <div class="ke-footer">
+      <span class="ke-footer-hint">
         每 15 秒自动保存草稿 · 支持富文本编辑
         <span v-if="autoSaveStatus === 'saved'" class="ml-2 text-green-500">✓ 已保存</span>
       </span>
-      <div class="flex gap-2">
+      <div class="flex gap-2 ke-actions">
         <el-button @click="goBack">取消</el-button>
         <el-button type="primary" :loading="saving" @click="submit" :disabled="!form.title.trim()">
           <component :is="useRenderIcon('ep:check', { width: '16px', height: '16px' })" class="mr-1" />
@@ -298,8 +298,27 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* === Knowledge Editor: Stripe Design Language === */
 .docflow-knowledge-editor .metadata-card :deep(.el-card__body) { padding: 20px 24px; }
 .docflow-knowledge-editor .editor-card :deep(.el-card__body) { padding: 0; }
+
+.ke-hero-title {
+  font-size: 20px; font-weight: 700; color: #0d253d; margin: 0; line-height: 1;
+}
+.ke-hero-sub {
+  font-size: 13px; color: #94a3b8; margin: 4px 0 0;
+}
+.ke-back { color: #64748d; }
+.ke-back:hover { color: #0d253d; }
+
+/* Stripe card overrides */
+:deep(.el-card) { border: 1px solid #e8ecf1; border-radius: 8px; background: #fff; }
+:deep(.el-card__header) { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; }
+:deep(.el-card__body) { padding: 16px 20px; }
+
+.docflow-knowledge-editor :deep(.el-card) {
+  border: 1px solid #e8ecf1; border-radius: 8px;
+}
 
 .title-input :deep(.el-input__wrapper) {
   box-shadow: none !important;
@@ -307,18 +326,63 @@ onBeforeUnmount(() => {
   border-radius: 0;
   padding: 0 0 4px 0;
 }
-.title-input :deep(.el-input__wrapper:hover) { border-bottom-color: #3b82f6; }
-.title-input :deep(.el-input__wrapper.is-focus) { border-bottom-color: #3b82f6; box-shadow: none !important; }
+.title-input :deep(.el-input__wrapper:hover) { border-bottom-color: #533afd; }
+.title-input :deep(.el-input__wrapper.is-focus) { border-bottom-color: #533afd; box-shadow: none !important; }
 .title-input :deep(.el-input__inner) { font-size: 18px; font-weight: 600; }
 .title-input :deep(.el-input__inner::placeholder) { color: #9ca3af; font-weight: 400; font-size: 16px; }
 
-.dark .title-input :deep(.el-input__wrapper) { border-bottom-color: #374151; }
-.dark .title-input :deep(.el-input__wrapper:hover),
-.dark .title-input :deep(.el-input__wrapper.is-focus) { border-bottom-color: #60a5fa; }
-.dark .title-input :deep(.el-input__inner) { color: #f3f4f6; }
+.metadata-card :deep(.el-form-item__label) {
+  font-size: 12px; font-weight: 600; color: #64748d;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.ke-source-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; margin-bottom: 12px;
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+  font-size: 13px; color: #1e40af;
+}
+.ke-source-bar a { color: #533afd; font-weight: 600; }
+.ke-source-bar a:hover { text-decoration: underline; }
 
 .wangeditor-wrapper { border: 0; }
-.toolbar-border { border-bottom: 1px solid #e5e7eb !important; }
-.dark .toolbar-border { border-bottom-color: #374151 !important; }
+.toolbar-border { border-bottom: 1px solid #e8ecf1 !important; }
 .editor-body { height: 480px; overflow-y: hidden; }
+
+.ke-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16px;
+}
+.ke-footer-hint {
+  font-size: 12px; color: #94a3b8;
+}
+
+.ke-actions :deep(.el-button--primary) {
+  background: #533afd; border-color: #533afd;
+}
+.ke-actions :deep(.el-button--primary:hover) {
+  background: #4338ca; border-color: #4338ca;
+}
+
+/* Dark mode */
+.dark .ke-hero-title { color: #f1f5f9; }
+.dark .ke-hero-sub { color: #94a3b8; }
+.dark .ke-back { color: #94a3b8; }
+.dark .ke-back:hover { color: #f1f5f9; }
+.dark /* Stripe card overrides */
+:deep(.el-card) { border: 1px solid #e8ecf1; border-radius: 8px; background: #fff; }
+:deep(.el-card__header) { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; }
+:deep(.el-card__body) { padding: 16px 20px; }
+
+.docflow-knowledge-editor :deep(.el-card) { background: #1e293b; border-color: #334155; }
+.dark .title-input :deep(.el-input__wrapper) { border-bottom-color: #374151; }
+.dark .title-input :deep(.el-input__wrapper:hover),
+.dark .title-input :deep(.el-input__wrapper.is-focus) { border-bottom-color: #818cf8; }
+.dark .title-input :deep(.el-input__inner) { color: #f3f4f6; }
+.dark .ke-source-bar { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
+.dark .ke-source-bar a { color: #818cf8; }
+.dark .toolbar-border { border-bottom-color: #334155 !important; }
+.dark .ke-footer-hint { color: #64748d; }
+.dark :deep(.el-card) { background: #1e293b; border-color: #334155; }
+.dark :deep(.el-card__header) { border-bottom-color: #334155; }
 </style>

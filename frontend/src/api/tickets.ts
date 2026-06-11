@@ -189,3 +189,116 @@ export const getTicketStats = () => {
   return http.request<ApiResult<TicketStats>>("get", "/api/tickets/stats");
 };
 
+
+// ===== Phase 1: Transfer / Escalate / Merge / Link / Satisfaction / Batch / Export =====
+
+export type TransferTicketRequest = {
+  newAssigneeUserId: number;
+  reason?: string;
+};
+
+export type EscalateTicketRequest = {
+  escalationLevel: number;
+  reason?: string;
+};
+
+export type MergeTicketRequest = {
+  targetTicketId: number;
+  reason?: string;
+};
+
+export type LinkTicketRequest = {
+  linkedTicketId: number;
+  linkType?: string;
+};
+
+export type SatisfactionRequest = {
+  score: number;
+  comment?: string;
+};
+
+export type BatchStatusRequest = {
+  ticketIds: number[];
+  status: number;
+  remark?: string;
+};
+
+export type BatchAssignRequest = {
+  ticketIds: number[];
+  assigneeUserId: number;
+  remark?: string;
+};
+
+export type BatchOperationResponse = {
+  successCount: number;
+  failCount: number;
+  failedIds: number[];
+  errors: string[];
+};
+
+export const transferTicket = (id: number, data: TransferTicketRequest) => {
+  return http.request<ApiResult<TicketDetail>>("post", `/api/tickets/${id}/transfer`, { data });
+};
+
+export const escalateTicket = (id: number, data: EscalateTicketRequest) => {
+  return http.request<ApiResult<TicketDetail>>("post", `/api/tickets/${id}/escalate`, { data });
+};
+
+export const mergeTicket = (id: number, data: MergeTicketRequest) => {
+  return http.request<ApiResult<TicketDetail>>("post", `/api/tickets/${id}/merge`, { data });
+};
+
+export const linkTicket = (id: number, data: LinkTicketRequest) => {
+  return http.request<ApiResult<void>>("post", `/api/tickets/${id}/link`, { data });
+};
+
+export const rateSatisfaction = (id: number, data: SatisfactionRequest) => {
+  return http.request<ApiResult<TicketDetail>>("post", `/api/tickets/${id}/satisfaction`, { data });
+};
+
+export const batchUpdateStatus = (data: BatchStatusRequest) => {
+  return http.request<ApiResult<BatchOperationResponse>>("post", "/api/tickets/batch/status", { data });
+};
+
+export const batchAssign = (data: BatchAssignRequest) => {
+  return http.request<ApiResult<BatchOperationResponse>>("post", "/api/tickets/batch/assign", { data });
+};
+
+export const exportTickets = (params?: TicketQuery) => {
+  return http.request("get", "/api/tickets/export", { params, responseType: "blob" });
+};
+
+export type SatisfactionStats = {
+  totalRated: number;
+  averageScore: number;
+  distribution: Record<number, number>;
+  byAssignee: Array<{
+    assigneeId: number;
+    assigneeName: string;
+    ratedCount: number;
+    avgScore: number;
+  }>;
+};
+
+export type DashboardData = {
+  ticketStats: TicketStats;
+  satisfactionStats: SatisfactionStats;
+  statusTrend: Array<{ date: string; created: number; resolved: number; closed: number }>;
+  typeDistribution: Array<{ type: string; count: number }>;
+  priorityDistribution: Array<{ priority: number; label: string; count: number }>;
+  recentActivities: Array<{
+    ticketId: number;
+    ticketNo: string;
+    title: string;
+    actionType: string;
+    operatorName: string;
+    remark: string;
+    time: string;
+  }>;
+  breachedCount: number;
+  unassignedCount: number;
+};
+
+export function getDashboard() {
+  return http.request<DashboardData>("get", "/api/dashboard");
+}

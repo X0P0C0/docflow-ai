@@ -5,6 +5,7 @@ export default {
   path: "/menuoverflow",
   redirect: "/menuoverflow/index",
   meta: {
+    showLink: false,
     title: $t("menus.pureMenuOverflow"),
     rank: menuoverflow
   },

@@ -5,6 +5,7 @@ export default {
   path: "/result",
   redirect: "/result/success",
   meta: {
+    showLink: false,
     icon: "ri/checkbox-circle-line",
     title: $t("menus.pureResult"),
     rank: result

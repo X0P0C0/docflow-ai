@@ -6,6 +6,7 @@ export default {
   path: "/board",
   redirect: "/board/index",
   meta: {
+    showLink: false,
     icon: "ri/artboard-line",
     title: $t("menus.pureBoard"),
     rank: board

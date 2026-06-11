@@ -276,8 +276,7 @@ export function useUser(tableRef: Ref, treeRef: Ref) {
     if (code === 0) {
       dataList.value = data.list;
       pagination.total = data.total;
-      pagination.pageSize = data.pageSize;
-      pagination.currentPage = data.currentPage;
+      // pageSize and currentPage are managed by the pagination object
     }
 
     setTimeout(() => {

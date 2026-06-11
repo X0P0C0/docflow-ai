@@ -5,6 +5,7 @@ export default {
   path: "/ppt",
   redirect: "/ppt/index",
   meta: {
+    showLink: false,
     icon: "ri/file-ppt-2-line",
     title: "PPT",
     rank: ppt

@@ -5,6 +5,7 @@ export default {
   path: "/able",
   redirect: "/able/watermark",
   meta: {
+    showLink: false,
     icon: "ri/ubuntu-fill",
     title: $t("menus.pureAble"),
     rank: able

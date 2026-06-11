@@ -5,6 +5,7 @@ export default {
   path: "/table",
   redirect: "/table/index",
   meta: {
+    showLink: false,
     icon: "ri/table-line",
     title: $t("menus.pureTable"),
     rank: table

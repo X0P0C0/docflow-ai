@@ -5,6 +5,7 @@ export default {
   path: "/form",
   redirect: "/form/index",
   meta: {
+    showLink: false,
     icon: "ri/edit-box-line",
     title: $t("menus.pureSchemaForm"),
     rank: form

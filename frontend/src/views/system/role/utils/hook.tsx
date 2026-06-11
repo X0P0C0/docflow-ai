@@ -167,8 +167,7 @@ export function useRole(treeRef: Ref) {
     if (code === 0) {
       dataList.value = data.list;
       pagination.total = data.total;
-      pagination.pageSize = data.pageSize;
-      pagination.currentPage = data.currentPage;
+      // pageSize and currentPage are managed by the pagination object
     }
 
     setTimeout(() => {
@@ -231,7 +230,7 @@ export function useRole(treeRef: Ref) {
     if (id) {
       curRow.value = row;
       isShow.value = true;
-      const { code, data } = await getRoleMenuIds({ id });
+      const { code, data } = await getRoleMenuIds({ roleId: id });
       if (code === 0) {
         treeRef.value.setCheckedKeys(data);
       }

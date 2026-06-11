@@ -1,87 +1,155 @@
 import { http } from "@/utils/http";
 
-type Result = {
+type ApiResult<T> = {
   code: number;
   message: string;
-  data?: Array<any>;
+  data: T;
 };
 
-type ResultTable = {
-  code: number;
-  message: string;
-  data?: {
-    /** 列表数据 */
-    list: Array<any>;
-    /** 总条目数 */
-    total?: number;
-    /** 每页显示条目个数 */
-    pageSize?: number;
-    /** 当前页数 */
-    currentPage?: number;
+export type SystemHealth = {
+  status: string;
+  timestamp: string;
+  redis: { status: string };
+  circuitBreakers: Record<string, {
+    state: string;
+    failureRate: number;
+    bufferedCalls: number;
+  }>;
+  jvm: {
+    heapUsedMB: number;
+    heapMaxMB: number;
+    uptimeMinutes: number;
   };
 };
 
-/** 获取系统管理-用户管理列表 */
-export const getUserList = (data?: object) => {
-  return http.request<ResultTable>("post", "/user", { data });
+export const getSystemHealth = () => {
+  return http.request<ApiResult<SystemHealth>>("get", "/api/system/health");
 };
 
-/** 系统管理-用户管理-获取所有角色列表 */
+// ===== Monitoring APIs (stubs for build compatibility) =====
+
+export type LogEntry = {
+  id: number;
+  module: string;
+  url: string;
+  method: string;
+  ip: string;
+  address: string;
+  system: string;
+  browser: string;
+  takesTime: number;
+  requestTime: string;
+  [key: string]: any;
+};
+
+export type LogListResponse = {
+  list: LogEntry[];
+  total: number;
+  pageSize: number;
+  currentPage: number;
+};
+
+export type OnlineUser = {
+  id: number;
+  username: string;
+  ip: string;
+  address: string;
+  browser: string;
+  system: string;
+  loginTime: string;
+};
+
+export const getLoginLogsList = (params?: any) => {
+  return http.request<ApiResult<LogListResponse>>("get", "/api/system/logs/login", { params });
+};
+
+export const getOperationLogsList = (params?: any) => {
+  return http.request<ApiResult<LogListResponse>>("get", "/api/system/logs/operation", { params });
+};
+
+export const getSystemLogsList = (params?: any) => {
+  return http.request<ApiResult<LogListResponse>>("get", "/api/system/logs/system", { params });
+};
+
+export const getSystemLogsDetail = (params?: { id: number }) => {
+  return http.request<ApiResult<LogEntry>>("get", `/api/system/logs/system/${params?.id}`);
+};
+
+export const getOnlineLogsList = (params?: any) => {
+  return http.request<ApiResult<LogListResponse>>("get", "/api/system/online", { params });
+};
+
+// ===== System Management APIs =====
+
+export type RoleItem = {
+  id: number;
+  name: string;
+  code: string;
+  status: number;
+  remark?: string;
+  createTime?: string;
+};
+
+export type DeptItem = {
+  id: number;
+  name: string;
+  parentId: number;
+  sort: number;
+  status: number;
+  children?: DeptItem[];
+};
+
+export type MenuItem = {
+  id: number;
+  title: string;
+  parentId: number;
+  path?: string;
+  icon?: string;
+  sort: number;
+  status: number;
+  children?: MenuItem[];
+};
+
+export type UserItem = {
+  id: number;
+  username: string;
+  nickname: string;
+  phone?: string;
+  email?: string;
+  status: number;
+  deptId?: number;
+  roles?: string[];
+  createTime?: string;
+};
+
 export const getAllRoleList = () => {
-  return http.request<Result>("get", "/list-all-role");
+  return http.request<ApiResult<RoleItem[]>>("get", "/api/system/roles/all");
 };
 
-/** 系统管理-用户管理-根据userId，获取对应角色id列表（userId：用户id） */
-export const getRoleIds = (data?: object) => {
-  return http.request<Result>("post", "/list-role-ids", { data });
+export const getRoleList = (params?: any) => {
+  return http.request<ApiResult<{ list: RoleItem[]; total: number }>>("get", "/api/system/roles", { params });
 };
 
-/** 获取系统管理-角色管理列表 */
-export const getRoleList = (data?: object) => {
-  return http.request<ResultTable>("post", "/role", { data });
+export const getRoleMenu = (params?: { roleId: number }) => {
+  return http.request<ApiResult<MenuItem[]>>("get", `/api/system/roles/${params?.roleId}/menus`);
 };
 
-/** 获取系统管理-菜单管理列表 */
-export const getMenuList = (data?: object) => {
-  return http.request<Result>("post", "/menu", { data });
+export const getRoleMenuIds = (params?: { roleId: number }) => {
+  return http.request<ApiResult<number[]>>("get", `/api/system/roles/${params?.roleId}/menu-ids`);
 };
 
-/** 获取系统管理-部门管理列表 */
-export const getDeptList = (data?: object) => {
-  return http.request<Result>("post", "/dept", { data });
+export const getDeptList = (params?: any) => {
+  return http.request<ApiResult<DeptItem[]>>("get", "/api/system/depts", { params });
 };
 
-/** 获取系统监控-在线用户列表 */
-export const getOnlineLogsList = (data?: object) => {
-  return http.request<ResultTable>("post", "/online-logs", { data });
+export const getMenuList = (params?: any) => {
+  return http.request<ApiResult<MenuItem[]>>("get", "/api/system/menus", { params });
 };
 
-/** 获取系统监控-登录日志列表 */
-export const getLoginLogsList = (data?: object) => {
-  return http.request<ResultTable>("post", "/login-logs", { data });
+export const getUserList = (params?: any) => {
+  return http.request<ApiResult<{ list: UserItem[]; total: number }>>("get", "/api/system/users", { params });
 };
 
-/** 获取系统监控-操作日志列表 */
-export const getOperationLogsList = (data?: object) => {
-  return http.request<ResultTable>("post", "/operation-logs", { data });
-};
-
-/** 获取系统监控-系统日志列表 */
-export const getSystemLogsList = (data?: object) => {
-  return http.request<ResultTable>("post", "/system-logs", { data });
-};
-
-/** 获取系统监控-系统日志-根据 id 查日志详情 */
-export const getSystemLogsDetail = (data?: object) => {
-  return http.request<Result>("post", "/system-logs-detail", { data });
-};
-
-/** 获取角色管理-权限-菜单权限 */
-export const getRoleMenu = (data?: object) => {
-  return http.request<Result>("post", "/role-menu", { data });
-};
-
-/** 获取角色管理-权限-菜单权限-根据角色 id 查对应菜单 */
-export const getRoleMenuIds = (data?: object) => {
-  return http.request<Result>("post", "/role-menu-ids", { data });
+export const getRoleIds = (params?: { userId: number }) => {
+  return http.request<ApiResult<number[]>>("get", `/api/system/users/${params?.userId}/role-ids`);
 };
