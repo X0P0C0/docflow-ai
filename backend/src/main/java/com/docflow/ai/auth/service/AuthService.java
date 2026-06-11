@@ -8,4 +8,6 @@ public interface AuthService {
     LoginResponse login(String username, String password);
 
     CurrentUserResponse getCurrentUser(Long userId);
+
+    LoginResponse refreshToken(String refreshToken);
 }

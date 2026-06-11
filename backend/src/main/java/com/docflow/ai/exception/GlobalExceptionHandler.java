@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.docflow.ai.common.resilience.ResilienceService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -81,6 +82,37 @@ public class GlobalExceptionHandler {
                 ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.fail(ResultCode.FORBIDDEN, request.getRequestURI()));
+    }
+
+
+    // ==================== Circuit Breaker ====================
+
+    @ExceptionHandler(ResilienceService.CircuitBreakerOpenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCircuitBreakerOpen(ResilienceService.CircuitBreakerOpenException ex, HttpServletRequest req) {
+        log.warn("Circuit breaker OPEN: {} {} instance={}", req.getMethod(), req.getRequestURI(), ex.getInstanceName());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.<Void>builder()
+                        .code(ResultCode.CIRCUIT_BREAKER_OPEN.getCode())
+                        .error(ResultCode.CIRCUIT_BREAKER_OPEN.getError())
+                        .message(ResultCode.CIRCUIT_BREAKER_OPEN.getMessage())
+                        .path(req.getRequestURI())
+                        .timestamp(java.time.OffsetDateTime.now())
+                        .traceId(org.slf4j.MDC.get("traceId"))
+                        .build());
+    }
+
+    @ExceptionHandler(ResilienceService.ResilienceExecutionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResilienceFailure(ResilienceService.ResilienceExecutionException ex, HttpServletRequest req) {
+        log.error("Resilience failed: {} {} instance={}", req.getMethod(), req.getRequestURI(), ex.getInstanceName(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.<Void>builder()
+                        .code(ResultCode.EXTERNAL_SERVICE_ERROR.getCode())
+                        .error(ResultCode.EXTERNAL_SERVICE_ERROR.getError())
+                        .message("Service [" + ex.getInstanceName() + "] temporarily unavailable")
+                        .path(req.getRequestURI())
+                        .timestamp(java.time.OffsetDateTime.now())
+                        .traceId(org.slf4j.MDC.get("traceId"))
+                        .build());
     }
 
     @ExceptionHandler(Exception.class)

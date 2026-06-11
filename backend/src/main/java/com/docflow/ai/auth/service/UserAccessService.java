@@ -13,6 +13,7 @@ public interface UserAccessService {
     void requireKnowledgeManager(Long userId);
 
     void requireAiCenterAccess(Long userId);
+    void requireSystemAdmin(Long userId);
 
     boolean canOperateTickets(Long userId);
 

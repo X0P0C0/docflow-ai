@@ -12,5 +12,7 @@ public class LoginResponse {
     private Long expireSeconds;
 
     // 登录成功后把当前用户画像一起返回，前端首屏无需再额外拼装角色/能力信息。
+    private String refreshToken;
+    private Long refreshTokenExpireSeconds;
     private CurrentUserResponse user;
 }

@@ -10,8 +10,10 @@ import com.docflow.ai.auth.service.AuthService;
 import com.docflow.ai.auth.service.UserAccessService;
 import com.docflow.ai.common.enums.ResultCode;
 import com.docflow.ai.exception.BusinessException;
+import com.docflow.ai.monitoring.BusinessMetricsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +27,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserAccessService userAccessService;
+    private final BusinessMetricsService metrics;
+    private final StringRedisTemplate redisTemplate;
 
     @Override
     public LoginResponse login(String username, String password) {
@@ -48,6 +52,9 @@ public class AuthServiceImpl implements AuthService {
         LoginResponse response = new LoginResponse();
         response.setToken(jwtTokenProvider.createToken(user.getId(), user.getUsername(), roles));
         response.setExpireSeconds(jwtTokenProvider.getExpireSeconds());
+        response.setRefreshToken(jwtTokenProvider.createToken(user.getId(), user.getUsername(), roles));
+        response.setRefreshTokenExpireSeconds(jwtTokenProvider.getExpireSeconds() * 7);
+        metrics.loginAttempt("success");
         response.setUser(toCurrentUser(user, roles, permissions));
         return response;
     }
@@ -84,6 +91,38 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ResultCode.FORBIDDEN);
         }
         return user;
+    }
+
+    @Override
+    public LoginResponse refreshToken(String refreshToken) {
+        // Validate the refresh token
+        if (!jwtTokenProvider.isValid(refreshToken)) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+
+        // Check if token was already used (single-use)
+        String usedKey = "auth:refresh:used:" + refreshToken;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(usedKey))) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+
+        // Mark as used
+        redisTemplate.opsForValue().set(usedKey, "1", java.time.Duration.ofDays(7));
+
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
+        String username = jwtTokenProvider.getUsername(refreshToken);
+        List<String> roles = sysUserMapper.selectRoleCodesByUserId(userId);
+
+        LoginResponse response = new LoginResponse();
+        response.setToken(jwtTokenProvider.createToken(userId, username, roles));
+        response.setExpireSeconds(jwtTokenProvider.getExpireSeconds());
+        response.setRefreshToken(jwtTokenProvider.createToken(userId, username, roles));
+        response.setRefreshTokenExpireSeconds(jwtTokenProvider.getExpireSeconds() * 7);
+
+        SysUser user = sysUserMapper.selectById(userId);
+        response.setUser(toCurrentUser(user, roles, sysUserMapper.selectPermissionCodesByUserId(userId)));
+
+        return response;
     }
 
     private CurrentUserResponse toCurrentUser(SysUser user, List<String> roles, List<String> permissions) {

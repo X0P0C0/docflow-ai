@@ -154,4 +154,14 @@ public class UserAccessServiceImpl implements UserAccessService {
         }
         return values.stream().anyMatch(expectedValues::contains);
     }
+
+    @Override
+    public void requireSystemAdmin(Long userId) {
+        requireActiveUser(userId);
+        List<String> roles = sysUserMapper.selectRoleCodesByUserId(userId);
+        if (!roles.contains("ADMIN")) {
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+    }
+
 }
