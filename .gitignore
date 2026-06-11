@@ -65,3 +65,7 @@ vite_err.log
 vite_out.log
 backend-error.log
 backend.log
+# Seed SQL scratch files
+seed_*.sql
+test_comment.sql
+backend/token.txt
