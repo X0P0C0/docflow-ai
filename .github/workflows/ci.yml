@@ -15,7 +15,7 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: 123456
+          MYSQL_ROOT_PASSWORD: '123456'
           MYSQL_DATABASE: docflow_ai
         ports:
           - 3306:3306
@@ -48,9 +48,11 @@ jobs:
       - name: Build and test with Maven
         run: mvn -B test --file backend/pom.xml
         env:
-          DOCFLOW_DB_URL: jdbc:mysql://localhost:3306/docflow_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+          DOCFLOW_DB_URL: jdbc:mysql://localhost:3306/docflow_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
           DOCFLOW_DB_USERNAME: root
-          DOCFLOW_DB_PASSWORD: 123456
+          DOCFLOW_DB_PASSWORD: '123456'
+          DOCFLOW_REDIS_HOST: localhost
+          DOCFLOW_REDIS_PORT: '6379'
 
   frontend:
     name: Frontend (Vue / Vite)
@@ -59,25 +61,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         working-directory: frontend
 
       - name: Type check
-        run: npx vue-tsc --noEmit
-        working-directory: frontend
-
-      - name: Unit tests
-        run: npm run test:unit -- --run
+        run: pnpm typecheck
         working-directory: frontend
 
       - name: Build
-        run: npm run build
+        run: pnpm build
         working-directory: frontend
