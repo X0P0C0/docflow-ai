@@ -1,138 +1,115 @@
-# DocFlow AI Project Closeout Plan
+# DocFlow AI 项目收尾计划
 
-## Purpose
+## 用途
 
-This document answers four practical questions as of `2026-05-25`:
+本文档回答四个实际问题（截至 2026-06-11）：
 
-- how close the project is to the original product goal
-- what is already complete
-- what is still missing before phase closeout
-- in what order the remaining work should happen
+- 项目距离原始产品目标有多近
+- 哪些已经完成
+- 收尾前还缺什么
+- 剩余工作的执行顺序
 
-## Short Answer
+## 简短回答
 
-`DocFlow AI` is already beyond prototype stage and has reached a real, demoable, handoff-capable product milestone.
+DocFlow AI 已经超越原型阶段，达到了可演示、可交接的产品里程碑。
 
-Current overall completion estimate:
+当前整体完成度评估：
 
-- Product skeleton and mainline workflow: `95%`
-- Backend core workflow and test coverage: `90%`
-- Frontend migration and active baseline stabilization: `95%`
-- Engineering hardening and release readiness: `70%`
-- Full phase-closeout state: `90% to 95%`
+| 维度 | 完成度 |
+|------|--------|
+| 产品骨架和主线工作流 | 95% |
+| 后端核心工作流和测试覆盖 | 95% |
+| 前端迁移和活跃基线稳定 | 95% |
+| 工程加固和发布就绪度 | 85% |
+| 全阶段收尾状态 | 95% |
 
-This means:
+这意味着：
+- 已经足够用于本地演示、代码交接和继续开发
+- 所有主要验证（包括 Docker）已通过
+- 剩余工作主要是文档冻结和最终快照
 
-- it is already good enough for local demo, code handoff, and continued development
-- the only remaining blocker is Docker-backed verification
-- otherwise the phase is essentially complete
+## 原始目标重述
 
-## Original Goal Restated
+原始项目目标可以概括为：
 
-The original project goal can be summarized as:
+构建一个有说服力的全栈内部运维产品，围绕工单、知识库和 AI 辅助工作流，具备真实后端集成、连贯 UI、角色感知行为，以及足够的工程质量和代码注解，能够自信地演示、交接和扩展。
 
-`Build a convincing full-stack internal operations product around tickets, knowledge, and AI-assisted workflow, with real backend integration, coherent UI, role-aware behavior, and enough engineering quality to demo, hand off, and extend confidently.`
+## 已完成的工作
 
-## What Is Already Done
+### 1. 核心产品形态就位
+- 登录、仪表盘、工单、知识库和 AI 中心全部存在
+- 应用读起来像一个产品，而非断开的页面集合
+- 后端角色和能力概念存在并接入真实端点
+- 侧边栏仅显示 DocFlow 菜单
 
-### 1. Core product shape is in place
+### 2. 工单工作流是真实的
+- 工单列表、详情、创建、评论、指派和状态流转存在
+- 工单详情包含时间线和相关业务上下文
+- 工单到知识库草稿已实现
 
-- login, dashboard, tickets, knowledge, and AI Center all exist
-- the app reads like one product instead of disconnected pages
-- backend role and capability concepts exist and are wired into real endpoints
-- sidebar shows only DocFlow menus (template demo routes hidden)
+### 3. 知识库工作流是真实的
+- 文章 CRUD、版本管理、归档/恢复存在
+- 知识库可链接回源工单
+- 编辑器支持 Markdown 编辑/预览
 
-### 2. Ticket workflow is real
+### 4. AI 中心由后端支持
+- AI 工作台后端存在并返回真实数据
+- 工作台概览、回复草稿详情、采纳/取消流程存在
+- 知识推荐和后续跟进项存在
 
-- ticket list, detail, create, comment, assign, and status flows exist
-- ticket detail includes timeline and related business context
-- ticket-to-knowledge drafting is implemented with business-state guardrails
-- All pages UI polished to professional admin console standard
+### 5. 前端迁移基线已稳定
+- 活跃前端明确为 rontend/
+- 应用通过类型检查和构建
+- 归档目录已分离
 
-### 3. Knowledge workflow is real
+### 6. 后端质量显著提升
+- 控制器测试更真实地覆盖受保护路径
+- 服务测试、Spring Boot 测试和容器集成测试存在
+- Testcontainers 后端验证脚手架就位
+- 45 个测试全部通过
 
-- knowledge list, detail, create, update, archive, restore, and versioning exist
-- knowledge can link back to source tickets
-- ticket-to-knowledge flow is not just a frontend mock
-- Editor has Markdown edit/preview tabs with real-time rendering
+### 7. Docker 后端验收已完成
+- Docker Desktop 恢复运行
+- Testcontainers 2.0.5 兼容 Docker Engine 29
+- 容器化测试不再自动跳过
 
-### 4. AI Center is backend-backed
+### 8. 全产品走查验收已完成
+- 所有 9 个检查点通过
+- 登录、工单 CRUD、知识库、AI 工作台全部验证
 
-- AI workspace backend exists and returns real data
-- workspace overview, reply draft detail, adopt/unadopt flows exist
-- knowledge recommendations with match-rate progress bars
-- followup items with priority tagging
+### 9. 后端新增模块
+- 客户门户（独立认证体系）
+- 审计日志（AOP 切面）
+- 监控和健康检查
+- 通知服务
+- 系统管理（自动化规则、Webhook、系统配置）
+- WebSocket 实时通知
 
-### 5. Frontend migration baseline has been stabilized
+## 未完全完成的部分
 
-- the active frontend is now clearly `frontend/`
-- the app typechecks and builds successfully
-- archive directories are separated from the active app boundary
-- main startup and handoff docs now match the real runtime setup
+### 1. 发布加固未完成
+- 工作区仍处于迁移状态而非阶段关闭
+- 最终验收说明和交付快照尚未冻结
 
-### 6. Backend quality improved significantly
+### 2. 前端构建体积较大
+- 当前约 23.5MB，包含 vue-pure-admin 模板冗余
+- 许多未使用的模板页面仍被打包
 
-- controller tests exercise protected paths more realistically
-- access denied behavior maps cleanly to `403`
-- service tests, Spring Boot tests, and container integration tests exist for key paths
-- Testcontainers-based backend verification scaffold is in place
+## 剩余工作按阶段
 
-### 7. Full product walkthrough acceptance completed (2026-05-25)
+### 阶段 A: 前端迁移基线稳定 ✓
+### 阶段 B: 目标和收尾文档重新基线 ✓
+### 阶段 C: Docker 后端验收 ✓
+### 阶段 D: 最终集成验收 ✓
+### 阶段 E: 最终收尾清理 (进行中)
 
-All 9 checkpoints passed:
+## 最终评估
 
-- Login ✅
-- User info ✅
-- Ticket list ✅
-- Ticket create ✅
-- Ticket detail ✅
-- Add comment ✅
-- Knowledge list ✅
-- Knowledge create ✅
-- AI workspace ✅
+**问：这个项目可以演示和交接了吗？**
+答：是的 - 所有页面已打磨，所有 API 真实，完整走查已验证。
 
-## What Is Not Fully Done Yet
+**问：这个项目可以称为本阶段完全完成了吗？**
+答：接近 - 仅剩文档冻结和最终快照。
 
-### 1. Docker-backed backend acceptance is still incomplete
-
-- on `2026-05-25`, Docker Desktop still fails to start on this machine
-- container-backed tests therefore cannot yet serve as final acceptance evidence
-
-### 2. Release hardening is not finished
-
-- the worktree is still migration-heavy rather than phase-closed
-- final acceptance notes and final delivery snapshot are not yet frozen
-
-## Remaining Work by Phase
-
-### Phase A: Frontend migration baseline stabilization ✅
-### Phase B: Goal and closeout document rebaseline ✅
-### Phase C: Docker-backed backend acceptance (Blocked)
-### Phase D: Final integrated acceptance ✅
-### Phase E: Final closeout cleanup (In Progress)
-
-## Final Assessment
-
-If the question is:
-
-`Can this project already be demonstrated and handed off?`
-
-Answer:
-
-- `Yes` — All 8 pages polished, all APIs real, full walkthrough verified.
-
-If the question is:
-
-`Can this project already be called fully finished for this phase?`
-
-Answer:
-
-- `Nearly` — Docker verification is the only remaining blocker.
-
-If the question is:
-
-`How much is left?`
-
-Answer:
-
-- roughly `5% to 10%` — mostly Docker verification and final doc freeze.
+**问：还剩多少？**
+答：约 5% - 主要是文档冻结和交付快照。

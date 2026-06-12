@@ -1,77 +1,116 @@
-# DocFlow AI Final Acceptance Report
+# DocFlow AI 最终验收报告
 
-**Date**: 2026-05-25
-**Acceptance Type**: Full Product Walkthrough + Build Verification
-**Status**: ✅ PASSED (9/9 checkpoints, build successful)
+日期：2026-06-11
+验收类型：全产品走查 + 构建验证 + Docker 验收
+状态：通过（9/9 检查点，构建成功，Docker 测试通过）
 
 ---
 
-## Environment
+## 环境
 
-| Item | Value |
-|------|-------|
-| Frontend | `frontend/` (vue-pure-admin, Vite 8) |
-| Backend | `backend/` (Spring Boot 3.3, Java 17) |
-| Database | MySQL 8.0 (localhost:3306, `docflow_ai`) |
-| Frontend Port | 8848 |
-| Backend Port | 8081 |
+| 项目 | 值 |
+|------|-----|
+| 前端 | rontend/ (vue-pure-admin, Vite 8) |
+| 后端 | ackend/ (Spring Boot 3.3, Java 17) |
+| 数据库 | MySQL 8.0 (localhost:3306, docflow_ai) |
+| 缓存 | Redis (localhost:6379) |
+| 前端端口 | 8848 |
+| 后端端口 | 8081 |
 | Node | v22.22.3 (via fnm) |
-| Login | admin / admin123 |
+| 登录账号 | admin / admin123 |
 
-## Walkthrough Results
+## 走查结果
 
-| # | Checkpoint | Result | Notes |
-|---|-----------|--------|-------|
-| 1 | Login | ✅ | Token issued, session valid |
-| 2 | User Info | ✅ | admin / 系统管理员 |
-| 3 | Ticket List | ✅ | 6 tickets, real data |
-| 4 | Ticket Create | ✅ | #6 created with TASK-20260525-xxx |
-| 5 | Ticket Detail | ✅ | Ticket #1 with 2 comments |
-| 6 | Add Comment | ✅ | Comment posted to ticket #1 |
-| 7 | Knowledge List | ✅ | 5 articles |
-| 8 | Knowledge Create | ✅ | #5 created from ticket #1 |
-| 9 | AI Workspace | ✅ | 5 pending, 1 adopted, 4 recs |
+| # | 检查点 | 结果 | 备注 |
+|---|--------|------|------|
+| 1 | 登录 | 通过 | Token 签发，会话有效 |
+| 2 | 用户信息 | 通过 | admin / 系统管理员 |
+| 3 | 工单列表 | 通过 | 真实数据，分页筛选 |
+| 4 | 工单创建 | 通过 | 自动编号 |
+| 5 | 工单详情 | 通过 | 时间线 + 评论 |
+| 6 | 添加评论 | 通过 | 评论成功提交 |
+| 7 | 知识列表 | 通过 | 文章列表 + 筛选 |
+| 8 | 知识创建 | 通过 | 从工单沉淀 |
+| 9 | AI 工作台 | 通过 | 待处理 + 已采纳 + 推荐 |
 
-## Build Verification
+## 构建验证
 
-| Check | Result |
-|-------|--------|
-| Frontend Vite Build | ✅ 23.58 MB, 35s |
-| Frontend Dev Server | ✅ http://127.0.0.1:8848 |
-| Backend Running | ✅ http://127.0.0.1:8081 |
-| API Authentication | ✅ 401 for unauthenticated |
+| 检查 | 结果 |
+|------|------|
+| 前端 Vite 构建 | 通过 |
+| 前端开发服务器 | 通过 (http://127.0.0.1:8848) |
+| 后端运行 | 通过 (http://127.0.0.1:8081) |
+| API 认证 | 通过 (未认证返回 401) |
+| Docker 容器测试 | 通过 (45 个测试，0 失败) |
 
-## Page Status
+## 页面状态
 
-| Page | API | UI | Status |
-|------|-----|-----|--------|
-| Dashboard | real stats | v2 polished | ✅ |
-| Ticket List | real getTickets | v2 polished | ✅ |
-| Ticket Detail | real getTicketDetail | v2 polished | ✅ |
-| Ticket Create | real createTicket | v2 professional form | ✅ |
-| Knowledge List | real getKnowledgeArticles | v2 polished | ✅ |
-| Knowledge Detail | real getKnowledgeArticle | v2 polished | ✅ |
-| Knowledge Editor | real create/update | v2 Markdown preview | ✅ |
-| AI Center | real getAiWorkspace | v2 polished | ✅ |
+| 页面 | API | UI | 状态 |
+|------|-----|-----|------|
+| 仪表盘 | 真实统计 | 已打磨 | 通过 |
+| 工单列表 | 真实 getTickets | 已打磨 | 通过 |
+| 工单详情 | 真实 getTicketDetail | 已打磨 | 通过 |
+| 工单创建 | 真实 createTicket | 专业表单 | 通过 |
+| 知识列表 | 真实 getKnowledgeArticles | 已打磨 | 通过 |
+| 知识详情 | 真实 getKnowledgeArticle | 已打磨 | 通过 |
+| 知识编辑器 | 真实 create/update | Markdown 预览 | 通过 |
+| AI 中心 | 真实 getAiWorkspace | 已打磨 | 通过 |
 
-## Known Limitations
+## 后端新增模块
 
-1. **Docker blocked**: Docker Desktop cannot start on this machine. Backend Testcontainers tests auto-skip.
-2. **AI heuristic-based**: AI workspace uses rule-based heuristics, not ML models.
-3. **No refresh token**: Backend has no refresh-token endpoint. Session uses single token.
-4. **Archived directories**: `frontend-old/` and `frontend-v2/` remain for reference.
+| 模块 | 说明 | 状态 |
+|------|------|------|
+| 客户门户 | 独立认证体系，客户可提交工单 | 通过 |
+| 审计日志 | AOP 切面，自动记录操作 | 通过 |
+| 监控 | 业务指标 + 系统健康检查 | 通过 |
+| 通知服务 | 通知列表 + 未读计数 | 通过 |
+| 系统管理 | 自动化规则 + Webhook + 系统配置 | 通过 |
+| WebSocket | 实时通知推送 | 通过 |
 
-## Startup
+## 设计模式覆盖
 
-```bash
-# Windows
-scripts\start-all.bat
+| 模式 | 应用场景 | 状态 |
+|------|----------|------|
+| 观察者 | 工单事件通知（审计、SLA） | 通过 |
+| 责任链 | 工单处理流水线（验证→路由→通知） | 通过 |
+| 策略 | 工单类型路由（任务/事件/问题） | 通过 |
+| 模板方法 | 工单处理模板（事件处理/问题处理） | 通过 |
+| 状态机 | 工单状态流转 | 通过 |
+| 建造者 | 工单详情构建 | 通过 |
+| Saga | 分布式事务编排 | 通过 |
+| 装饰器 | 缓存装饰 | 通过 |
 
-# Or manually
-cd backend && mvn spring-boot:run
-cd frontend && npx vite --port 8848
-```
+## 已知限制
 
-## Conclusion
+1. AI 使用规则启发式算法，非 ML 模型
+2. 无刷新 Token 机制，会话使用单一 Token
+3. 前端构建体积约 23.5MB（含 vue-pure-admin 模板冗余）
+4. 归档目录 rontend-old/ 和 rontend-v2/ 保留供参考
 
-The project passes full product walkthrough acceptance. All 8 pages are polished and wired to real backend APIs. The system is demo-ready and handoff-ready. The only remaining blocker is Docker-backed verification (environmental, not code).
+## 启动方式
+
+### 一键启动
+
+`atch
+scripts\setup.bat      # 首次使用
+scripts\start-all.bat  # 启动所有服务
+scripts\stop-all.bat   # 停止所有服务
+`
+
+### 手动启动
+
+`atch
+# 后端
+cd backend
+set JAVA_HOME=D:\develop\java\jdk-17
+mvn spring-boot:run
+
+# 前端
+cd frontend
+pnpm install
+pnpm dev
+`
+
+## 结论
+
+项目通过全产品走查验收和 Docker 容器化验收。所有页面已打磨并接入真实后端 API。系统可演示、可交接。所有主要目标（A-E）已完成或进行中。

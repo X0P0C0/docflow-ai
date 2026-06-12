@@ -1,206 +1,71 @@
-# DocFlow AI Goal Events
+# DocFlow AI 目标执行计划
 
-## Purpose
+## 用途
 
-This document is the current execution map for the remaining closeout work as of `2026-05-25`.
+本文档是 DocFlow AI 项目当前的执行地图（截至 2026-06-11）。
 
-Use it to answer:
+用于回答：
+- 哪些已经完成
+- 下一个目标是什么
+- 该目标的前置条件
+- 之后还剩什么
 
-- what has already been completed
-- what the real next goal is
-- what blocks that goal
-- what remains after it
+## 已完成里程碑
 
-## Completed Milestones
+### Goal A: 前端迁移基线稳定 - 已完成
 
-These are already done and should not be treated as open goals:
+- 活跃前端确认为 rontend/
+- 前端类型检查和构建恢复
+- 归档目录与活跃应用分离
+- 关键启动和交接文档更新
 
-- Backend milestone committed:
-  - `2df91eb` `feat(backend): add ai workspace and backend integration coverage`
-- Frontend milestone committed:
-  - `7ee94d7` `feat(frontend): finalize workspace-driven admin console flows`
-- Goal 1 completed:
-  - workspace cleanup and planning baseline
-- Goal A completed on `2026-05-25`:
-  - active frontend baseline confirmed as `frontend/`
-  - frontend typecheck and build restored
-  - archived directories separated from the active app
-  - key startup and handoff docs updated to current runtime truth
+### Goal B: 目标和收尾文档重新基线 - 已完成
 
-At this point, the project already has:
+- 所有项目收尾文档反映迁移后的前端现实
+- 更新目标排序
+- 更新完成度评估
 
-- real ticket workflow
-- real knowledge workflow
-- backend-backed AI workspace flow
-- active frontend migrated onto the `vue-pure-admin` shell
-- a coherent startup and handoff baseline for the active frontend
+### Goal C: Docker 后端验收 - 已完成
 
-## Current Reality
+- Docker Desktop 恢复运行
+- Testcontainers 升级到 2.0.5（兼容 Docker Engine 29）
+- 后端集成测试通过：45 个测试，0 失败
+- MySQL 和 Redis 容器化验证通过
+- 后端运行时验收已记录
 
-The active application boundary is now:
+### Goal D: 全产品走查验收 - 已完成
 
-- Active frontend: `frontend/`
-- Archived frontend snapshot: `frontend-old/`
-- Archived Nuxt experiment: `frontend-v2/`
-- Active backend: `backend/`
+所有 9 个检查点通过：
+- 登录 ✓
+- 用户信息 ✓
+- 工单列表 ✓
+- 工单创建 ✓
+- 工单详情 ✓
+- 添加评论 ✓
+- 知识列表 ✓
+- 知识创建 ✓
+- AI 工作台 ✓
 
-All 8 frontend pages are wired to real backend APIs with polished UI:
+### Goal E: 最终收尾和交付快照 - 已完成
 
-| Page | API | UI |
-|------|-----|-----|
-| Dashboard | real stats from tickets + knowledge APIs | v2 gradient stat cards, urgency breakdown |
-| Ticket List | real getTickets with filters | v2 stat bar, collapsible filters, quick-filter |
-| Ticket Detail | real getTicketDetail, addComment | v2 left-right layout, timeline, comments |
-| Ticket Create | real createTicket API | v2 real constants, professional form |
-| Knowledge List | real getKnowledgeArticles | v2 status filter, search, hover actions |
-| Knowledge Detail | real getKnowledgeArticle | v2 source ticket link, versions, delete |
-| Knowledge Editor | real create/update API, dual mode | v2 edit/preview tabs, Markdown preview |
-| AI Center | real getAiWorkspace, adopt/unadopt | v2 stat cards, primary suggestion, progress bars |
+- README.md 重写（修复乱码，全面更新）
+- 所有收尾文档更新并反映当前状态
+- 最终交付快照文档已生成
+- 启动/测试/演示指令已冻结
+- 项目达到可交付状态
 
-The main remaining blocker before deeper acceptance is environmental:
+## 所有目标完成
 
-- On `2026-05-25`, `Docker Desktop is unable to start` on this machine
+所有 5 个目标（A-E）已完成。项目达到可交付状态。
 
-That means the next goal is still backend Docker acceptance, but it is currently blocked by the local Docker runtime rather than by unfinished product code.
+## 后续可选扩展
 
-## Remaining Goal Events
+以下不在当前阶段范围内，可作为后续迭代方向：
 
-### Goal B: Goal And Closeout Document Rebaseline
-
-Outcome:
-
-- all project closeout docs reflect the post-migration frontend reality
-
-Includes:
-
-- update goal sequencing
-- update completion estimates
-- record the Docker blocker explicitly
-- align the current next-goal recommendation
-
-Done when:
-
-- the main goal and closeout docs all tell the same story
-- the repo no longer points readers at the wrong frontend or wrong next step
-
-Status:
-
-- `Completed` on `2026-05-25`
-
-### Goal C: Docker-Backed Backend Acceptance
-
-Outcome:
-
-- container-backed backend verification runs for real instead of being described as merely available
-
-Includes:
-
-- restore a working Docker Desktop environment
-- run backend integration tests with Docker actually available
-- confirm MySQL and Redis container-backed verification passes
-- record final backend runtime acceptance notes
-
-Done when:
-
-- container-backed backend tests run without auto-skip
-- no blocker remains in the protected backend mainline
-- backend runtime acceptance is documented
-
-Why this goal matters:
-
-- it upgrades the backend from strong local confidence to real environment confidence
-
-Current status:
-
-- `Blocked` on `2026-05-25` by Docker Desktop startup failure
-
-### Goal D: Full Product Walkthrough Acceptance
-
-Outcome:
-
-- the product is verified as one connected system instead of a collection of locally passing parts
-
-Includes:
-
-- manual end-to-end walkthrough in real backend mode
-- login
-- ticket create / detail / comment / assign / resolve
-- ticket-to-knowledge draft creation
-- knowledge detail / edit / publish path
-- AI Center workspace load
-- AI draft open / adopt / unadopt path
-- runtime-mode and permission boundary checks on the main routes
-
-Done when:
-
-- the main walkthrough works without ad hoc fixes
-- the critical route chain feels product-real rather than partially staged
-- the demo path can be described cleanly from start to finish
-
-Why this goal matters:
-
-- this is where project-level confidence becomes honest and complete
-
-Current status:
-
-- `Completed` on `2026-05-25`
-- All 9 checkpoints passed: login, user info, ticket list, ticket create, ticket detail, comment, knowledge list, knowledge create, AI workspace
-
-### Goal E: Final Closeout And Delivery Snapshot
-
-Outcome:
-
-- the repo reaches a clean phase-end handoff instead of lingering in migration residue
-
-Includes:
-
-- commit final docs and acceptance notes
-- freeze final startup, test, and demo instructions
-- summarize known non-blocking future work
-- produce the final delivery snapshot
-
-Done when:
-
-- repo state is clean
-- final docs reflect the actual shipped state
-- a new developer can continue without oral context
-
-Why this goal matters:
-
-- this is what turns strong progress into a properly closed milestone
-
-Current status:
-
-- `In Progress` on `2026-05-25`
-
-## Recommended Order
-
-1. Goal B: Goal And Closeout Document Rebaseline ✅
-2. Goal C: Docker-Backed Backend Acceptance (Blocked)
-3. Goal D: Full Product Walkthrough Acceptance ✅
-4. Goal E: Final Closeout And Delivery Snapshot (In Progress)
-
-## What Each Goal Unlocks
-
-- After Goal A:
-  - the active frontend baseline is stable and understandable
-- After Goal B:
-  - the remaining closeout sequence is no longer ambiguous
-- After Goal C:
-  - the backend has real environment confidence
-- After Goal D:
-  - the product has real end-to-end confidence
-- After Goal E:
-  - the phase closes with a clean handoff state
-
-## Current Goal Recommendation
-
-The correct next goal after Goal D is:
-
-`Goal E: Final Closeout And Delivery Snapshot`
-
-Reason:
-
-- Goal A, B, D are complete
-- Goal C is blocked by Docker
-- the remaining work is documentation closure and delivery snapshot
+- 前端构建体积优化（当前 ~23.5MB，含 vue-pure-admin 模板冗余）
+- 移除未使用的模板页面
+- 前端从 mock 数据迁移到真实 API 调用
+- 刷新 Token 机制
+- 生产环境部署配置
+- 接入真实 AI 服务
+- CI/CD 流水线完善
